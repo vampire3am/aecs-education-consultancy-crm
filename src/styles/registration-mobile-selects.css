@@ -37,6 +37,14 @@
   min-height: 70px;
 }
 
+.thank-you-card .social-links .brand-social-icon {
+  width: 21px;
+  min-width: 21px;
+  height: 21px;
+  fill: currentColor;
+  color: #f45124;
+}
+
 @media (max-width: 620px) {
   .thank-you-card .stay-connected > h2 {
     font-size: 17px;
