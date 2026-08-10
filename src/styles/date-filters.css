@@ -4,6 +4,7 @@
 .date-filter-title strong{font-size:11px;color:#344054}
 .date-filter-title span{font-size:9px;color:#98a2b3;margin-top:2px}
 .date-filter-bar>label{font-size:9px;font-weight:700;text-transform:uppercase;color:#667085}
+.date-filter-bar>label small{font-size:8px;font-weight:500;text-transform:none;color:#98a2b3;margin-left:3px}
 .date-filter-bar>label input{display:block;width:142px;height:36px;margin-top:4px;padding:0 9px;border:1px solid #dfe4ea;border-radius:8px;background:#fff;color:#344054;outline:0}
 .date-filter-bar>label input:focus{border-color:var(--orange);box-shadow:0 0 0 3px #f4512414}
 .weekday-filter{display:flex;gap:5px;margin-left:auto}
