@@ -1,0 +1,58 @@
+.public-registration-card .public-brand > div {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.public-registration-card .public-brand small {
+  display: block;
+  width: 100%;
+  margin-inline: auto;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .public-registration-card .fancy-menu {
+    position: absolute;
+    inset: 51px 0 auto;
+    width: 100%;
+    max-height: min(260px, 46dvh);
+    padding: 6px;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 14px 34px rgb(16 24 40 / 18%);
+    z-index: 100;
+  }
+
+  .public-registration-card .fancy-options {
+    max-height: min(206px, 38dvh);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .public-registration-card .fancy-options > button {
+    height: 44px;
+    min-height: 44px;
+    padding-inline: 12px;
+    border-radius: 8px;
+    font-family: "Public Sans", Arial, sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  .public-registration-card .fancy-trigger {
+    min-height: 46px;
+    font-family: "Public Sans", Arial, sans-serif;
+    font-size: 14px;
+    font-style: normal;
+  }
+
+  .public-registration-card .fancy-search input {
+    font-family: "Public Sans", Arial, sans-serif;
+    font-size: 13px;
+    font-style: normal;
+  }
+}

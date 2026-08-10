@@ -14,6 +14,7 @@ import "./styles/mobile-hardening.css";
 import "./styles/brand-redesign.css";
 import "./styles/date-filters.css";
 import "./styles/logo-fit.css";
+import "./styles/registration-mobile-selects.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

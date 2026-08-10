@@ -70,4 +70,14 @@ export function PublicRegistration() {
 
 function Grid({children}:{children:React.ReactNode}) { return <div className="public-grid">{children}</div>; }
 function Input({label,value,change,type="text",required,hint}:{label:string;value:string;change:(v:string)=>void;type?:string;required?:boolean;hint?:string}) { return <label>{label}{required&&<b> *</b>}{hint&&<span>{hint}</span>}<input type={type} value={value} onChange={e=>change(e.target.value)} aria-required={required}/></label>; }
-function Select({label,value,change,options,required,yesNo=false}:{label:string;value:string;change:(v:string)=>void;options:string[];required?:boolean;yesNo?:boolean}) { if(label==="Preferred country")return <FancySelect label={label} value={value} onChange={change} options={options} required={required} country/>;return <label>{label}{required&&<b> *</b>}<select value={value} onChange={event=>change(event.target.value)} aria-required={required}><option value="">Select an option</option>{options.map(option=><option value={option} key={option}>{yesNo?(option==="true"?"Yes":"No"):option}</option>)}</select></label>; }
+function Select({label,value,change,options,required,yesNo=false}:{label:string;value:string;change:(v:string)=>void;options:string[];required?:boolean;yesNo?:boolean}) {
+  return <FancySelect
+    label={label}
+    value={value}
+    onChange={change}
+    options={options}
+    required={required}
+    country={label==="Preferred country"}
+    format={yesNo ? option => option==="true" ? "Yes" : "No" : undefined}
+  />;
+}
