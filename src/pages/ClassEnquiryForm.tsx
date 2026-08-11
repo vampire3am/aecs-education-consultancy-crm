@@ -14,6 +14,8 @@ function ClassBadge({ type }: { type: string }) {
   return <span className={`class-brand-badge ${type.toLowerCase()}`}>{text}</span>;
 }
 
+function PublicServiceFooter(){return <footer className="service-footer"><div><strong>Abroad Education Consultancy Services</strong><span>Choose Abroad to Study Abroad</span></div><nav aria-label="AECS links"><a href="https://aecsnepal.com/" target="_blank" rel="noreferrer">Website</a><a href="https://www.facebook.com/abroadeducation.np" target="_blank" rel="noreferrer">Facebook</a><a href="https://www.instagram.com/abroadeducation.np/" target="_blank" rel="noreferrer">Instagram</a></nav><small>© {new Date().getFullYear()} AECS. Your information is handled securely.</small></footer>}
+
 export function ClassEnquiryForm({ onBack }: { onBack: () => void }) {
   const [step,setStep] = useState(0);
   const [form,setForm] = useState<State>(initial);
@@ -37,7 +39,7 @@ export function ClassEnquiryForm({ onBack }: { onBack: () => void }) {
   function previous(){setError("");if(step===0)onBack();else setStep(value=>value-1)}
   async function submit(){const missing=missingFields();if(missing.length){setError(`Please complete: ${missing.join(", ")}.`);return}setBusy(true);setError("");const{supabase}=await import("../lib/supabase");const{data,error:submitError}=await supabase.rpc("submit_class_enquiry",{payload:{...form,needs_counselling:form.needs_counselling==="true"}});if(submitError)setError(submitError.message);else setDone(data.enquiry_code);setBusy(false)}
 
-  if(done)return <main className="public-register thank-you-page"><section className="public-success thank-you-card class-success"><div className="success-check"><Check/></div><p className="eyebrow">Class enquiry received</p><h1>Thank you for your interest in AECS classes!</h1><p>Your enquiry reference is <strong>{done}</strong>. Our class coordinator will review your preferences and contact you shortly with schedules, fees and the next available intake.</p><button className="secondary-button" onClick={onBack}>Submit another enquiry</button></section></main>;
+  if(done)return <main className="public-register thank-you-page class-thank-you"><section className="public-success thank-you-card class-success"><div className="success-check"><Check/></div><p className="eyebrow">Class enquiry received</p><h1>Thank you for your interest in AECS classes!</h1><p>Your information has been submitted securely. Our class coordinator will review your preferences and contact you shortly with schedules, fees and the next available intake.</p><button className="secondary-button" onClick={onBack}>Submit another enquiry</button></section><PublicServiceFooter/></main>;
 
   const titles=["Your information","Class preference","Current level","Counselling & consent"];
   return <main className="public-register class-enquiry-page"><section className="public-registration-card">
@@ -51,7 +53,7 @@ export function ClassEnquiryForm({ onBack }: { onBack: () => void }) {
       {error&&<div className="validation-error" role="alert">{error}</div>}
       <footer><button className="secondary-button" disabled={busy} onClick={previous}><ArrowLeft size={16}/>Back</button>{step<3?<button className="primary-button" onClick={next}>Continue<ArrowRight size={16}/></button>:<button className="primary-button" disabled={busy} onClick={submit}>{busy?"Submitting…":"Submit class enquiry"}</button>}</footer>
     </section>
-  </section><p className="public-footer">Need help? Contact the Abroad Education Consultancy Services Kathmandu office.</p></main>;
+  </section><PublicServiceFooter/></main>;
 }
 
 function Field({label,value,onChange,type="text",required,hint,inputMode,maxLength}:{label:string;value:string;onChange:(value:string)=>void;type?:string;required?:boolean;hint?:string;inputMode?:"numeric";maxLength?:number}){return <label>{label}{required&&<b> *</b>}{hint&&<span>{hint}</span>}<input type={type} value={value} onChange={event=>onChange(event.target.value)} inputMode={inputMode} maxLength={maxLength} aria-required={required}/></label>}

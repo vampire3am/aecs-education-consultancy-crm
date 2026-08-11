@@ -16,6 +16,7 @@ import "./styles/date-filters.css";
 import "./styles/logo-fit.css";
 import "./styles/registration-mobile-selects.css";
 import "./styles/class-enquiries.css";
+import "./styles/class-enquiries-polish.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

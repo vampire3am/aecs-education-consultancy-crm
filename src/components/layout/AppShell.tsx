@@ -40,7 +40,7 @@ export function AppShell() {
   const navigate=useNavigate();
   const {profile,signOut}=useAuth();
   const canManageSettings = ["ADMIN", "DIRECTOR"].includes(profile?.role || "");
-  const title=nav.find(([,path])=>path===location.pathname)?.[0] ?? (location.pathname==="/students/new" ? "New student" : "Workspace");
+  const title=nav.find(([,path])=>path===location.pathname)?.[0] ?? (location.pathname==="/students/new" ? "New student" : location.pathname.startsWith("/students/") ? "Student profile" : location.pathname.startsWith("/class-enquiries/") ? "Class enquiry" : "Workspace");
   const results = useMemo(() => searchItems.filter(item => (!item.adminOnly || canManageSettings) && `${item.label} ${item.detail}`.toLowerCase().includes(query.toLowerCase())), [query,canManageSettings]);
 
   useEffect(()=>setOpen(false),[location.pathname]);
