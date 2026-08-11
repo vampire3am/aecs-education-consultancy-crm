@@ -18,6 +18,8 @@ import "./styles/registration-mobile-selects.css";
 import "./styles/class-enquiries.css";
 import "./styles/class-enquiries-polish.css";
 import "./styles/student-profile-polish.css";
+import "./styles/footer-icons.css";
+import "./styles/dashboard-charts.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

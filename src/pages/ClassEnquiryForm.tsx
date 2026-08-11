@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Globe2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { FancySelect } from "../components/shared/FancySelect";
 
@@ -14,7 +14,11 @@ function ClassBadge({ type }: { type: string }) {
   return <span className={`class-brand-badge ${type.toLowerCase()}`}>{text}</span>;
 }
 
-function PublicServiceFooter(){return <footer className="service-footer"><div><strong>Abroad Education Consultancy Services</strong><span>Choose Abroad to Study Abroad</span></div><nav aria-label="AECS links"><a href="https://aecsnepal.com/" target="_blank" rel="noreferrer">Website</a><a href="https://www.facebook.com/abroadeducation.np" target="_blank" rel="noreferrer">Facebook</a><a href="https://www.instagram.com/abroadeducation.np/" target="_blank" rel="noreferrer">Instagram</a></nav><small>© {new Date().getFullYear()} AECS. Your information is handled securely.</small></footer>}
+function PublicServiceFooter(){return <footer className="service-footer"><div><strong>Abroad Education Consultancy Services</strong><span>Find us online and stay connected.</span></div><nav aria-label="Find AECS online"><a href="https://aecsnepal.com/" target="_blank" rel="noreferrer" aria-label="Visit the AECS website" title="Website"><Globe2/></a><a href="https://www.facebook.com/abroadeducation.np" target="_blank" rel="noreferrer" aria-label="Follow AECS on Facebook" title="Facebook"><FacebookLogo/></a><a href="https://www.tiktok.com/@aecsnepal" target="_blank" rel="noreferrer" aria-label="Follow AECS on TikTok" title="TikTok"><TikTokLogo/></a><a href="https://www.instagram.com/abroadeducation.np/" target="_blank" rel="noreferrer" aria-label="Follow AECS on Instagram" title="Instagram"><InstagramLogo/></a></nav><small>© {new Date().getFullYear()} AECS. Your information is handled securely.</small></footer>}
+
+function FacebookLogo(){return <svg className="footer-brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.7 21v-8h2.8l.4-3.1h-3.2v-2c0-.9.3-1.5 1.6-1.5H17V3.6c-.7-.1-1.5-.2-2.3-.2-2.4 0-4.1 1.5-4.1 4.2v2.3H8V13h2.6v8h3.1Z"/></svg>}
+function TikTokLogo(){return <svg className="footer-brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.3 3c.3 2.1 1.5 3.4 3.7 3.6v3.1a7.8 7.8 0 0 1-3.6-1v6.1a6.1 6.1 0 1 1-5.3-6v3.2a3 3 0 1 0 2.1 2.8V3h3.1Z"/></svg>}
+function InstagramLogo(){return <svg className="footer-brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path fillRule="evenodd" d="M7.2 2.8h9.6a4.4 4.4 0 0 1 4.4 4.4v9.6a4.4 4.4 0 0 1-4.4 4.4H7.2a4.4 4.4 0 0 1-4.4-4.4V7.2a4.4 4.4 0 0 1 4.4-4.4Zm0 2.2A2.2 2.2 0 0 0 5 7.2v9.6A2.2 2.2 0 0 0 7.2 19h9.6a2.2 2.2 0 0 0 2.2-2.2V7.2A2.2 2.2 0 0 0 16.8 5H7.2Zm9.95 1.35a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6ZM12 7.3a4.7 4.7 0 1 1 0 9.4 4.7 4.7 0 0 1 0-9.4Zm0 2.2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>}
 
 export function ClassEnquiryForm({ onBack }: { onBack: () => void }) {
   const [step,setStep] = useState(0);
