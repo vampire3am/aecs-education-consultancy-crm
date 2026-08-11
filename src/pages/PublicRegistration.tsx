@@ -9,7 +9,7 @@ const countries = ["Australia", "UK", "USA", "New Zealand", "Canada", "Germany",
 const initial = { full_name:"", gender:"", dob:"", whatsapp:"", email:"", current_address:"", highest_qualification:"", latest_result:"", study_gap:"", employment_status:"", preferred_country:"", second_country:"", preferred_intake:"", preferred_intake_year:"", preferred_course:"", budget_range:"", test_taken:"", test_type:"", score:"", has_passport:"", message:"", consent:false, website:"" };
 type State = typeof initial;
 
-export function PublicRegistration() {
+export function PublicRegistration({onBack}:{onBack?:()=>void}={}) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<State>(initial);
   const [error, setError] = useState("");
@@ -63,7 +63,7 @@ export function PublicRegistration() {
       {step===4 && <Grid><Select label="Do you have a valid passport?" value={form.has_passport} change={v=>set("has_passport",v)} options={["true","false"]} yesNo required/></Grid>}
       {step===5 && <div className="finish-fields"><label>Anything else you would like us to know? <span>Optional</span><textarea value={form.message} onChange={e=>set("message",e.target.value)} maxLength={2000}/></label><label className="consent"><input type="checkbox" checked={form.consent} onChange={e=>set("consent",e.target.checked)}/><span>I consent to AECS securely storing and using this information to contact me about education counselling and applications. <b>*</b></span></label><input className="honeypot" tabIndex={-1} autoComplete="off" value={form.website} onChange={e=>set("website",e.target.value)}/></div>}
       {error && <div className="validation-error" role="alert">{error}</div>}
-      <footer><button className="secondary-button" disabled={step===0||busy} onClick={()=>{setError("");setStep(current=>current-1)}}><ArrowLeft size={16}/>Back</button>{step<5?<button className="primary-button" onClick={next}>Continue<ArrowRight size={16}/></button>:<button className="primary-button" disabled={busy} onClick={submit}>{busy?"Submitting…":"Submit registration"}</button>}</footer>
+      <footer><button className="secondary-button" disabled={(step===0&&!onBack)||busy} onClick={()=>{setError("");if(step===0)onBack?.();else setStep(current=>current-1)}}><ArrowLeft size={16}/>Back</button>{step<5?<button className="primary-button" onClick={next}>Continue<ArrowRight size={16}/></button>:<button className="primary-button" disabled={busy} onClick={submit}>{busy?"Submitting…":"Submit registration"}</button>}</footer>
     </section></section><p className="public-footer">Need help? Contact the Abroad Education Consultancy Services Kathmandu office.</p>
   </main>;
 }

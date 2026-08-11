@@ -1,18 +1,19 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, BookOpen, Check, ChevronDown, LayoutDashboard, LogOut, Menu, Moon, Search, Settings, Sun, UserPlus, Users, X } from "lucide-react";
+import { Bell, BookOpen, BookOpenCheck, Check, ChevronDown, LayoutDashboard, LogOut, Menu, Moon, Search, Settings, Sun, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/AuthProvider";
 
 const nav = [
   ["Dashboard", "/dashboard", LayoutDashboard], ["Students", "/students", Users],
-  ["Counselling", "/counselling", BookOpen], ["Settings", "/settings", Settings],
+  ["Class Enquiries", "/class-enquiries", BookOpenCheck], ["Counselling", "/counselling", BookOpen], ["Settings", "/settings", Settings],
 ] as const;
 
 const searchItems = [
   { label: "Dashboard", detail: "Workspace overview", to: "/dashboard", icon: LayoutDashboard },
   { label: "Students", detail: "Search and manage student records", to: "/students", icon: Users },
   { label: "Register student", detail: "Create a new student record", to: "/students/new", icon: UserPlus },
+  { label: "Class Enquiries", detail: "Manage class and test preparation enquiries", to: "/class-enquiries", icon: BookOpenCheck },
   { label: "Counselling", detail: "Counselling records and follow-ups", to: "/counselling", icon: BookOpen },
   { label: "Settings", detail: "Staff accounts and permissions", to: "/settings", icon: Settings, adminOnly: true },
 ];
