@@ -1,52 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertCircle,
-  ArrowRight,
-  Award,
-  BookOpen,
-  Building,
-  Calendar,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  Clock,
-  Download,
-  ExternalLink,
-  Eye,
-  FileCheck2,
-  FileSpreadsheet,
-  FileText,
-  Filter,
-  Globe,
-  GraduationCap,
-  Kanban,
-  Layers,
-  Mail,
-  MapPin,
-  MessageCircle,
-  MessageSquare,
-  PlaneTakeoff,
-  Plus,
-  RotateCcw,
-  Search,
-  Sparkles,
-  Table as TableIcon,
-  TrendingUp,
-  User,
-  UserCheck,
-  UserPlus,
-  Users,
-  X,
-  Zap,
-} from "lucide-react";
+import { BookOpen, Check, CheckCircle2, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CountryFlag } from "../../components/ui/PhoneInput";
 import {
   ApplicationService,
-  DEFAULT_APPLICATIONS,
   type UniversityApplication,
 } from "../../services/applicationService";
 import { useAuth } from "../auth/AuthProvider";
+import { CaseTaskPanel } from "./CaseTaskPanel";
 
 type ApplicationStage = UniversityApplication["stage"];
 
@@ -86,7 +46,7 @@ export function ApplicationWorkspace() {
     course: "",
     intake: "September 2026",
     stage: "SUBMITTED" as ApplicationStage,
-    deadline: "15 Sep 2026",
+    deadline: "2026-09-15",
     officer: profile?.full_name || "Sita Adhikari",
     tuitionFee: "£16,000",
     scholarship: "Standard Assessment",
@@ -101,7 +61,9 @@ export function ApplicationWorkspace() {
   };
 
   useEffect(() => {
-    loadApplications();
+    // Initial remote hydration is intentionally performed once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadApplications();
   }, []);
 
   // Compute 4 Top Metrics (Matching User Screenshot)
@@ -190,7 +152,7 @@ export function ApplicationWorkspace() {
       course: "",
       intake: "September 2026",
       stage: "SUBMITTED",
-      deadline: "15 Sep 2026",
+      deadline: "2026-09-15",
       officer: profile?.full_name || "Sita Adhikari",
       tuitionFee: "£16,000",
       scholarship: "Standard Assessment",
@@ -208,6 +170,7 @@ export function ApplicationWorkspace() {
 
   return (
     <div className="page-container">
+      {loading && <div className="phase2-loading" role="status">Loading live applications…</div>}
       {/* 1. Header Row (Matching User Screenshot Layout) */}
       <div className="page-header-row">
         <div className="page-header-titles">
@@ -286,10 +249,12 @@ export function ApplicationWorkspace() {
               <GraduationCap size={17} />
             </div>
           </div>
-          <div className="metric-value">96.2%</div>
-          <span className="metric-sub">Statutory grant ratio</span>
+          <div className="metric-value">{visasApproved}</div>
+          <span className="metric-sub">Approved application records</span>
         </div>
       </div>
+
+      <CaseTaskPanel />
 
       {/* 3. Search & Toolbar Filter Row (Matching User Screenshot) */}
       <div
@@ -812,7 +777,7 @@ export function ApplicationWorkspace() {
                       <label>Destination Country *</label>
                       <select
                         value={newAppForm.country}
-                        onChange={e => setNewAppForm({ ...newAppForm, country: e.target.value as any })}
+                        onChange={e => setNewAppForm({ ...newAppForm, country: e.target.value as UniversityApplication["country"] })}
                       >
                         <option value="UK">United Kingdom</option>
                         <option value="Australia">Australia</option>
@@ -883,7 +848,7 @@ export function ApplicationWorkspace() {
                       <label>Initial Application Stage *</label>
                       <select
                         value={newAppForm.stage}
-                        onChange={e => setNewAppForm({ ...newAppForm, stage: e.target.value as any })}
+                        onChange={e => setNewAppForm({ ...newAppForm, stage: e.target.value as ApplicationStage })}
                       >
                         <option value="SUBMITTED">Under Review</option>
                         <option value="CONDITIONAL_OFFER">Conditional Offer</option>
@@ -903,6 +868,11 @@ export function ApplicationWorkspace() {
                         onChange={e => setNewAppForm({ ...newAppForm, officer: e.target.value })}
                       />
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Submission / offer deadline *</label>
+                    <input type="date" required value={newAppForm.deadline} onChange={e => setNewAppForm({ ...newAppForm, deadline: e.target.value })} />
                   </div>
 
                   <div className="form-group">

@@ -1,182 +1,31 @@
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 
-export interface StudentPayload {
-  id?: string;
-  code?: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  dob: string;
-  gender: "Male" | "Female" | "Other";
-  address?: string;
-  targetCountry: string;
-  targetCourse: string;
-  targetIntake?: string;
-  budget?: string;
-  counsellor?: string;
-  status?: "NEW_LEAD" | "COUNSELLING" | "APPLICATION_SUBMITTED" | "OFFER_RECEIVED" | "VISA_PROCESSING" | "ENROLLED";
-}
-
+export interface StudentPayload { id?:string; code?:string; fullName:string; email:string; phone:string; dob:string; gender:"Male"|"Female"|"Other"; address?:string; targetCountry:string; targetCourse:string; targetIntake?:string; budget?:string; counsellor?:string; status?:string }
 export interface LeadRecord {
-  id: string;
-  leadCode: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  source: "Facebook / Instagram Ads" | "Google Search" | "Walk-in Inquiry" | "Education Fair 2026" | "Student Referral" | "TikTok / Social";
-  targetCountry: "UK" | "Australia" | "Canada" | "USA" | "Germany" | "New Zealand";
-  targetCourse: string;
-  targetIntake: string;
-  budgetEstimate: string;
-  assignedCounsellor: string;
-  stage: "NEW_INQUIRY" | "CONTACTED" | "COUNSELLING_SCHEDULED" | "HOT_PROSPECT" | "CONVERTED" | "LOST";
-  priority: "HIGH" | "MEDIUM" | "LOW";
-  lastContactDate: string;
-  notes: string[];
-  createdAt: string;
+  id:string; leadCode:string; fullName:string; email:string; phone:string;
+  source:"Facebook / Instagram Ads"|"Google Search"|"Walk-in Inquiry"|"Education Fair 2026"|"Student Referral"|"TikTok / Social";
+  targetCountry:"UK"|"Australia"|"Canada"|"USA"|"Germany"|"New Zealand"; targetCourse:string; targetIntake:string;
+  budgetEstimate:string; assignedCounsellor:string; assignedCounsellorId?:string;
+  stage:"NEW_INQUIRY"|"CONTACTED"|"COUNSELLING_SCHEDULED"|"HOT_PROSPECT"|"CONVERTED"|"LOST";
+  priority:"HIGH"|"MEDIUM"|"LOW"; lastContactDate:string; notes:string[]; followUps:Array<{id:string;dueAt:string;note:string;completedAt:string|null}>; createdAt:string;
 }
+type LeadRow={id:string;lead_code:string;full_name:string;email:string|null;phone:string;source:LeadRecord["source"];target_country:LeadRecord["targetCountry"];target_course:string|null;target_intake:string|null;budget_estimate:string|null;assigned_counsellor:string|null;stage:LeadRecord["stage"];priority:LeadRecord["priority"];last_contact_at:string|null;created_at:string;staff_profiles?:{full_name:string}|null;lead_activities?:Array<{body:string|null;created_at:string}>;lead_follow_ups?:Array<{id:string;due_at:string;note:string;completed_at:string|null}>};
+const friendlyDate=(value:string|null)=>value?new Intl.DateTimeFormat("en-NP",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Kathmandu"}).format(new Date(value)):"Not contacted";
+const mapLead=(row:LeadRow):LeadRecord=>({id:row.id,leadCode:row.lead_code,fullName:row.full_name,email:row.email??"",phone:row.phone,source:row.source,targetCountry:row.target_country,targetCourse:row.target_course??"Undecided",targetIntake:row.target_intake??"Undecided",budgetEstimate:row.budget_estimate??"Not provided",assignedCounsellor:row.staff_profiles?.full_name??"Unassigned",assignedCounsellorId:row.assigned_counsellor??undefined,stage:row.stage,priority:row.priority,lastContactDate:friendlyDate(row.last_contact_at),notes:(row.lead_activities??[]).filter(a=>a.body).map(a=>`[${friendlyDate(a.created_at)}] ${a.body}`),followUps:(row.lead_follow_ups??[]).map(f=>({id:f.id,dueAt:f.due_at,note:f.note,completedAt:f.completed_at})),createdAt:friendlyDate(row.created_at)});
 
-const STORAGE_STUDENTS = "aecs_persistent_students";
-const STORAGE_LEADS = "aecs_persistent_leads";
-
-const DEFAULT_LEADS: LeadRecord[] = [];
-
-const DEFAULT_STUDENTS: any[] = [];
-
-export const StudentService = {
-  getStudents: async () => {
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from("students")
-          .select("*, study_preferences(*), academic_information(*), staff_profiles(full_name)")
-          .order("created_at", { ascending: false });
-        if (!error && data && data.length > 0) {
-          return data;
-        }
-      } catch (err) {
-        console.warn("Falling back to local reactive storage for students:", err);
-      }
-    }
-
-    const saved = localStorage.getItem(STORAGE_STUDENTS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // Return default
-      }
-    }
-    return DEFAULT_STUDENTS;
-  },
-
-  createStudent: async (payload: StudentPayload) => {
-    const nextCode = `AECS-2026-${String(Math.floor(10000 + Math.random() * 90000))}`;
-    const nextId = `std-${Date.now()}`;
-
-    const newRecord = {
-      id: nextId,
-      code: nextCode,
-      fullName: payload.fullName,
-      email: payload.email,
-      phone: payload.phone,
-      dob: payload.dob || "2003-01-01",
-      gender: payload.gender || "Female",
-      address: payload.address || "Kathmandu, Nepal",
-      status: payload.status || "COUNSELLING",
-      targetCountry: payload.targetCountry || "UK",
-      targetCourse: payload.targetCourse || "Higher Education",
-      targetIntake: payload.targetIntake || "September 2026",
-      budget: payload.budget || "NPR 25-30 Lakhs",
-      counsellor: payload.counsellor || "Sita Adhikari",
-      englishTest: { test: "Enquiry in Progress", score: "Pending assessment" },
-      academicSummary: "Profile registered via AECS intake portal",
-      documentsVerified: 1,
-      documentsTotal: 10,
-      notes: ["Registered student profile created in AECS CRM."],
-      createdAt: "Just now",
-    };
-
-    const currentList = await StudentService.getStudents();
-    const updated = [newRecord, ...currentList];
-    localStorage.setItem(STORAGE_STUDENTS, JSON.stringify(updated));
-
-    return newRecord;
-  },
-
-  updateStatus: async (studentId: string, status: string) => {
-    const currentList = await StudentService.getStudents();
-    const updated = currentList.map((s: any) =>
-      s.id === studentId ? { ...s, status } : s
-    );
-    localStorage.setItem(STORAGE_STUDENTS, JSON.stringify(updated));
-    return updated;
-  },
-
-  deleteStudent: async (studentId: string) => {
-    const currentList = await StudentService.getStudents();
-    const updated = currentList.filter((s: any) => s.id !== studentId);
-    localStorage.setItem(STORAGE_STUDENTS, JSON.stringify(updated));
-    return updated;
-  },
+export const StudentService={
+  async getStudents(){const{data,error}=await supabase.from("students").select("*, study_preferences(*), academic_information(*), staff_profiles!students_assigned_counsellor_fkey(full_name)").order("created_at",{ascending:false});if(error)throw error;return data??[]},
+  async createStudent(payload:StudentPayload){const{data,error}=await supabase.rpc("register_student",{payload:{full_name:payload.fullName,email:payload.email,whatsapp:payload.phone,dob:payload.dob,gender:payload.gender,current_address:payload.address??"",preferred_country:payload.targetCountry,second_country:"",preferred_course:payload.targetCourse,preferred_intake:payload.targetIntake??"Undecided",budget:(payload.budget??"").replace(/[^0-9.]/g,""),highest_qualification:"To be assessed",current_status:"Prospective student",latest_result:"",study_gap:"",employment_status:"",test_taken:false,has_passport:false,lead_source:"Staff entry",message:""}});if(error)throw error;return{...data,code:data.student_code}},
+  async updateStatus(studentId:string,status:string){const{error}=await supabase.from("students").update({status}).eq("id",studentId);if(error)throw error;return this.getStudents()},
+  async deleteStudent(studentId:string){const{error}=await supabase.from("students").delete().eq("id",studentId);if(error)throw error;return this.getStudents()},
 };
 
-export const LeadService = {
-  getLeads: async (): Promise<LeadRecord[]> => {
-    const saved = localStorage.getItem(STORAGE_LEADS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // Return default
-      }
-    }
-    return DEFAULT_LEADS;
-  },
-
-  createLead: async (payload: Omit<LeadRecord, "id" | "leadCode" | "createdAt" | "lastContactDate" | "notes">): Promise<LeadRecord> => {
-    const nextCode = `LEAD-2026-${String(Math.floor(100 + Math.random() * 900))}`;
-    const newLead: LeadRecord = {
-      ...payload,
-      id: `lead-${Date.now()}`,
-      leadCode: nextCode,
-      lastContactDate: "Just now",
-      notes: ["Initial prospect inquiry recorded in Leads Hub."],
-      createdAt: "Just now",
-    };
-
-    const current = await LeadService.getLeads();
-    const updated = [newLead, ...current];
-    localStorage.setItem(STORAGE_LEADS, JSON.stringify(updated));
-    return newLead;
-  },
-
-  updateLeadStage: async (leadId: string, stage: LeadRecord["stage"]) => {
-    const current = await LeadService.getLeads();
-    const updated = current.map(l => (l.id === leadId ? { ...l, stage } : l));
-    localStorage.setItem(STORAGE_LEADS, JSON.stringify(updated));
-    return updated;
-  },
-
-  convertLeadToStudent: async (lead: LeadRecord) => {
-    // 1. Create official student record
-    const student = await StudentService.createStudent({
-      fullName: lead.fullName,
-      email: lead.email,
-      phone: lead.phone,
-      dob: "2003-01-01",
-      gender: "Female",
-      targetCountry: lead.targetCountry,
-      targetCourse: lead.targetCourse,
-      targetIntake: lead.targetIntake,
-      budget: lead.budgetEstimate,
-      counsellor: lead.assignedCounsellor,
-      status: "COUNSELLING",
-    });
-
-    // 2. Mark lead as CONVERTED
-    await LeadService.updateLeadStage(lead.id, "CONVERTED");
-
-    return student;
-  },
+export const LeadService={
+  async getLeads():Promise<LeadRecord[]>{const{data,error}=await supabase.from("leads").select("*, staff_profiles!leads_assigned_counsellor_fkey(full_name), lead_activities(body,created_at), lead_follow_ups(id,due_at,note,completed_at)").order("created_at",{ascending:false}).order("created_at",{referencedTable:"lead_activities",ascending:false}).order("due_at",{referencedTable:"lead_follow_ups",ascending:true});if(error)throw error;return((data??[])as unknown as LeadRow[]).map(mapLead)},
+  async createLead(payload:Omit<LeadRecord,"id"|"leadCode"|"createdAt"|"lastContactDate"|"notes"|"followUps">){const{data,error}=await supabase.rpc("create_lead",{payload:{full_name:payload.fullName,email:payload.email,phone:payload.phone,source:payload.source,target_country:payload.targetCountry,target_course:payload.targetCourse,target_intake:payload.targetIntake,budget_estimate:payload.budgetEstimate,assigned_counsellor:payload.assignedCounsellorId??"",stage:payload.stage,priority:payload.priority}});if(error)throw error;return data as{id:string;lead_code:string}},
+  async updateLeadStage(leadId:string,stage:LeadRecord["stage"]){const{error}=await supabase.rpc("update_lead_stage",{lead_uuid:leadId,next_stage:stage});if(error)throw error},
+  async addNote(leadId:string,note:string){const{error}=await supabase.rpc("add_lead_note",{lead_uuid:leadId,note});if(error)throw error},
+  async scheduleFollowUp(leadId:string,dueAt:string,note:string){const{error}=await supabase.rpc("schedule_lead_follow_up",{lead_uuid:leadId,due_at:new Date(dueAt).toISOString(),follow_up_note:note});if(error)throw error},
+  async completeFollowUp(followUpId:string){const{error}=await supabase.rpc("complete_lead_follow_up",{follow_up_uuid:followUpId});if(error)throw error},
+  async convertLeadToStudent(lead:LeadRecord,profile:{dob:string;gender:string;highestQualification:string;currentAddress:string}){const{data,error}=await supabase.rpc("convert_lead",{lead_uuid:lead.id,student_payload:{dob:profile.dob,gender:profile.gender,current_address:profile.currentAddress,second_country:"",budget:"",highest_qualification:profile.highestQualification,current_status:"Prospective student",latest_result:"Pending assessment",study_gap:"",employment_status:"",test_taken:false,has_passport:false,message:"Converted from lead pipeline"}});if(error)throw error;return{...data,code:data.student_code}as{id:string;code:string;student_code:string}},
 };

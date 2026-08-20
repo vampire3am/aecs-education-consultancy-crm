@@ -1,105 +1,20 @@
-export interface UniversityApplication {
-  id: string;
-  studentCode: string;
-  studentName: string;
-  universityName: string;
-  country: "UK" | "Australia" | "Canada" | "USA" | "Germany" | "New Zealand" | "Finland" | "Ireland" | "Japan";
-  countryCode: "GB" | "AU" | "CA" | "US" | "DE" | "NZ" | "FI" | "IE" | "JP";
-  course: string;
-  intake: string;
-  stage: "SUBMITTED" | "CONDITIONAL_OFFER" | "UNCONDITIONAL_OFFER" | "CAS_ISSUED" | "VISA_LODGED" | "VISA_APPROVED";
-  deadline: string;
-  officer: string;
-  tuitionFee: string;
-  scholarship: string;
-  appliedDate?: string;
-  notes?: string;
-}
+import { supabase } from "../lib/supabase";
+export interface UniversityApplication{id:string;studentCode:string;studentName:string;universityName:string;country:"UK"|"Australia"|"Canada"|"USA"|"Germany"|"New Zealand"|"Finland"|"Ireland"|"Japan";countryCode:"GB"|"AU"|"CA"|"US"|"DE"|"NZ"|"FI"|"IE"|"JP";course:string;intake:string;stage:"SUBMITTED"|"CONDITIONAL_OFFER"|"UNCONDITIONAL_OFFER"|"CAS_ISSUED"|"VISA_LODGED"|"VISA_APPROVED";deadline:string;officer:string;tuitionFee:string;scholarship:string;appliedDate?:string;notes?:string}
+type Row={id:string;university_name:string;country:UniversityApplication["country"];course_name:string;intake:string;stage:UniversityApplication["stage"];deadline:string|null;tuition_fee:string|null;scholarship:string|null;notes:string|null;created_at:string;students?:{student_code:string;full_name:string}|null;staff_profiles?:{full_name:string}|null};
+const codes:Record<UniversityApplication["country"],UniversityApplication["countryCode"]>={UK:"GB",Australia:"AU",Canada:"CA",USA:"US",Germany:"DE","New Zealand":"NZ",Finland:"FI",Ireland:"IE",Japan:"JP"};
+const map=(r:Row):UniversityApplication=>({id:r.id,studentCode:r.students?.student_code??"—",studentName:r.students?.full_name??"Unknown student",universityName:r.university_name,country:r.country,countryCode:codes[r.country],course:r.course_name,intake:r.intake,stage:r.stage,deadline:r.deadline??"",officer:r.staff_profiles?.full_name??"Unassigned",tuitionFee:r.tuition_fee??"Not recorded",scholarship:r.scholarship??"None",appliedDate:r.created_at.slice(0,10),notes:r.notes??""});
+export const ApplicationService={
+ async getApplications():Promise<UniversityApplication[]>{const{data,error}=await supabase.from("university_applications").select("*,students(student_code,full_name),staff_profiles!university_applications_officer_id_fkey(full_name)").order("created_at",{ascending:false});if(error)throw error;return((data??[])as unknown as Row[]).map(map)},
+ async createApplication(payload:Omit<UniversityApplication,"id">){const{data,error}=await supabase.rpc("create_university_application",{payload:{student_code:payload.studentCode,university_name:payload.universityName,country:payload.country,course:payload.course,intake:payload.intake,stage:payload.stage,deadline:payload.deadline,tuition_fee:payload.tuitionFee,scholarship:payload.scholarship,notes:payload.notes??""}});if(error)throw error;return data as string},
+ async updateApplicationStage(id:string,newStage:UniversityApplication["stage"]){const{error}=await supabase.rpc("advance_application_stage",{application_uuid:id,next_stage:newStage,stage_note:"Updated from application workspace"});if(error)throw error;return this.getApplications()},
+ async deleteApplication(id:string){const{error}=await supabase.from("university_applications").delete().eq("id",id);if(error)throw error;return true},
+ exportCsv(apps:UniversityApplication[]){const headers=["Student Code","Student Name","Target University","Destination Country","Degree / Course","Intake Cycle","Tuition Fee","Scholarship","Status Stage","Application Officer","Deadline"];const quote=(v:string)=>`"${v.replace(/"/g,'""')}"`;const rows=apps.map(a=>[a.studentCode,a.studentName,a.universityName,a.country,a.course,a.intake,a.tuitionFee,a.scholarship,a.stage,a.officer,a.deadline].map(quote));const blob=new Blob([[headers.join(","),...rows.map(r=>r.join(","))].join("\n")],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=`AECS_University_Applications_${new Date().toISOString().slice(0,10)}.csv`;link.click();URL.revokeObjectURL(url)},
+};
 
-const STORAGE_KEY = "aecs_persistent_applications_v3";
-
-export const DEFAULT_APPLICATIONS: UniversityApplication[] = [];
-
-export const ApplicationService = {
-  getApplications: async (): Promise<UniversityApplication[]> => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return DEFAULT_APPLICATIONS;
-  },
-
-  saveApplications: (apps: UniversityApplication[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
-  },
-
-  createApplication: async (payload: Omit<UniversityApplication, "id">): Promise<UniversityApplication> => {
-    const newRecord: UniversityApplication = {
-      ...payload,
-      id: `app-${Date.now()}`,
-    };
-    const current = await ApplicationService.getApplications();
-    const updated = [newRecord, ...current];
-    ApplicationService.saveApplications(updated);
-    return newRecord;
-  },
-
-  updateApplicationStage: async (
-    id: string,
-    newStage: UniversityApplication["stage"]
-  ): Promise<UniversityApplication[]> => {
-    const current = await ApplicationService.getApplications();
-    const updated = current.map(app => (app.id === id ? { ...app, stage: newStage } : app));
-    ApplicationService.saveApplications(updated);
-    return updated;
-  },
-
-  deleteApplication: async (id: string): Promise<boolean> => {
-    const current = await ApplicationService.getApplications();
-    const updated = current.filter(app => app.id !== id);
-    ApplicationService.saveApplications(updated);
-    return true;
-  },
-
-  exportCsv: (apps: UniversityApplication[]) => {
-    const headers = [
-      "Student Code",
-      "Student Name",
-      "Target University",
-      "Destination Country",
-      "Degree / Course",
-      "Intake Cycle",
-      "Tuition Fee",
-      "Scholarship",
-      "Status Stage",
-      "Application Officer",
-      "Deadline",
-    ];
-
-    const rows = apps.map(a => [
-      `"${a.studentCode}"`,
-      `"${a.studentName.replace(/"/g, '""')}"`,
-      `"${a.universityName.replace(/"/g, '""')}"`,
-      `"${a.country}"`,
-      `"${a.course.replace(/"/g, '""')}"`,
-      `"${a.intake}"`,
-      `"${a.tuitionFee}"`,
-      `"${a.scholarship.replace(/"/g, '""')}"`,
-      `"${a.stage}"`,
-      `"${a.officer}"`,
-      `"${a.deadline}"`,
-    ]);
-
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `AECS_University_Applications_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  },
+export interface CaseTask{id:string;studentCode:string;studentName:string;title:string;description:string;dueAt:string;priority:"HIGH"|"MEDIUM"|"LOW";status:"OPEN"|"IN_PROGRESS"|"COMPLETED"|"CANCELLED";assignee:string}
+type TaskRow={id:string;title:string;description:string|null;due_at:string;priority:CaseTask["priority"];status:CaseTask["status"];students?:{student_code:string;full_name:string}|null;staff_profiles?:{full_name:string}|null};
+export const CaseTaskService={
+ async list():Promise<CaseTask[]>{const{data,error}=await supabase.from("case_tasks").select("id,title,description,due_at,priority,status,students(student_code,full_name),staff_profiles!case_tasks_assigned_to_fkey(full_name)").neq("status","CANCELLED").order("due_at");if(error)throw error;return((data??[])as unknown as TaskRow[]).map(t=>({id:t.id,studentCode:t.students?.student_code??"—",studentName:t.students?.full_name??"Unknown",title:t.title,description:t.description??"",dueAt:t.due_at,priority:t.priority,status:t.status,assignee:t.staff_profiles?.full_name??"Unassigned"}))},
+ async create(payload:{studentCode:string;title:string;description:string;dueAt:string;priority:CaseTask["priority"]}){const{error}=await supabase.rpc("create_case_task",{payload:{student_code:payload.studentCode,title:payload.title,description:payload.description,due_at:new Date(payload.dueAt).toISOString(),priority:payload.priority,application_id:"",assigned_to:""}});if(error)throw error},
+ async complete(id:string){const{error}=await supabase.from("case_tasks").update({status:"COMPLETED",completed_at:new Date().toISOString()}).eq("id",id);if(error)throw error},
 };

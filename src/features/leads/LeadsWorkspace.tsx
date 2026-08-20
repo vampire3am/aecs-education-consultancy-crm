@@ -1,33 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
-  ArrowRight,
   Award,
-  Calendar,
-  Check,
   CheckCircle2,
-  Clock,
   Download,
-  Eye,
-  FileCheck2,
-  FileText,
-  Filter,
-  Globe,
-  GraduationCap,
-  Layers,
-  Mail,
-  MapPin,
   MessageCircle,
-  MessageSquare,
-  Phone,
-  Plus,
   Search,
   Send,
   Sparkles,
   TrendingUp,
   UserCheck,
-  UserPlus,
-  Users,
   X,
   Zap,
 } from "lucide-react";
@@ -60,6 +42,12 @@ export function LeadsWorkspace() {
   const [activeLead, setActiveLead] = useState<LeadRecord | null>(null);
   const [newNote, setNewNote] = useState("");
   const [conversionSuccess, setConversionSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [conversionLead, setConversionLead] = useState<LeadRecord | null>(null);
+  const [conversionProfile, setConversionProfile] = useState({ dob: "", gender: "", highestQualification: "", currentAddress: "" });
+  const [followUp, setFollowUp] = useState({ dueAt: "", note: "" });
 
   const navigate = useNavigate();
 
@@ -78,20 +66,32 @@ export function LeadsWorkspace() {
     priority: "HIGH" as LeadRecord["priority"],
   });
 
-  useEffect(() => {
-    loadLeads();
-  }, []);
+  async function loadLeads() {
+    setIsLoading(true);
+    setErrorMessage("");
+    try {
+      setLeads(await LeadService.getLeads());
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to load leads.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
-  const loadLeads = async () => {
-    const list = await LeadService.getLeads();
-    setLeads(list);
-  };
+  useEffect(() => {
+    // Initial remote hydration is intentionally performed once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadLeads();
+  }, []);
 
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.fullName.trim() || !form.phone.trim()) return;
 
-    await LeadService.createLead({
+    setIsSaving(true);
+    setErrorMessage("");
+    try {
+      await LeadService.createLead({
       fullName: form.fullName,
       email: form.email,
       phone: form.phone,
@@ -103,11 +103,10 @@ export function LeadsWorkspace() {
       assignedCounsellor: form.assignedCounsellor,
       stage: form.stage,
       priority: form.priority,
-    });
-
-    await loadLeads();
-    setShowCaptureModal(false);
-    setForm({
+      });
+      await loadLeads();
+      setShowCaptureModal(false);
+      setForm({
       fullName: "",
       email: "",
       phone: "",
@@ -119,26 +118,76 @@ export function LeadsWorkspace() {
       assignedCounsellor: "Sita Adhikari",
       stage: "NEW_INQUIRY",
       priority: "HIGH",
-    });
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to create this lead.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleConvertToStudent = async (lead: LeadRecord) => {
-    const student = await LeadService.convertLeadToStudent(lead);
-    await loadLeads();
-    setConversionSuccess(student.code);
+  const beginConversion = (lead: LeadRecord) => {
+    setConversionLead(lead);
     setActiveLead(null);
   };
 
-  const handleAddNote = (leadId: string) => {
-    if (!newNote.trim()) return;
-    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const noteText = `[${time}] ${newNote.trim()}`;
-    const updated = leads.map(l => (l.id === leadId ? { ...l, notes: [noteText, ...l.notes] } : l));
-    setLeads(updated);
-    if (activeLead && activeLead.id === leadId) {
-      setActiveLead({ ...activeLead, notes: [noteText, ...activeLead.notes] });
+  const handleConvertToStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!conversionLead) return;
+    setIsSaving(true);
+    setErrorMessage("");
+    try {
+      const student = await LeadService.convertLeadToStudent(conversionLead, conversionProfile);
+      await loadLeads();
+      setConversionSuccess(student.code);
+      setConversionLead(null);
+      setConversionProfile({ dob: "", gender: "", highestQualification: "", currentAddress: "" });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to convert this lead.");
+    } finally {
+      setIsSaving(false);
     }
-    setNewNote("");
+  };
+
+  const handleAddNote = async (leadId: string) => {
+    if (!newNote.trim()) return;
+    setIsSaving(true);
+    setErrorMessage("");
+    try {
+      await LeadService.addNote(leadId, newNote.trim());
+      setNewNote("");
+      const refreshed = await LeadService.getLeads();
+      setLeads(refreshed);
+      setActiveLead(refreshed.find(lead => lead.id === leadId) ?? null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to save this note.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const refreshActiveLead = async (leadId: string) => {
+    const refreshed = await LeadService.getLeads();
+    setLeads(refreshed);
+    setActiveLead(refreshed.find(lead => lead.id === leadId) ?? null);
+  };
+
+  const handleScheduleFollowUp = async (e: React.FormEvent, leadId: string) => {
+    e.preventDefault();
+    setIsSaving(true); setErrorMessage("");
+    try {
+      await LeadService.scheduleFollowUp(leadId, followUp.dueAt, followUp.note);
+      setFollowUp({ dueAt: "", note: "" });
+      await refreshActiveLead(leadId);
+    } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Unable to schedule follow-up."); }
+    finally { setIsSaving(false); }
+  };
+
+  const handleCompleteFollowUp = async (leadId: string, followUpId: string) => {
+    setIsSaving(true); setErrorMessage("");
+    try { await LeadService.completeFollowUp(followUpId); await refreshActiveLead(leadId); }
+    catch (error) { setErrorMessage(error instanceof Error ? error.message : "Unable to complete follow-up."); }
+    finally { setIsSaving(false); }
   };
 
   const exportCSV = () => {
@@ -209,6 +258,17 @@ export function LeadsWorkspace() {
           </button>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="phase2-alert phase2-alert-error" role="alert">
+          <AlertCircle size={18} />
+          <span>{errorMessage}</span>
+          <button type="button" onClick={() => setErrorMessage("")} aria-label="Dismiss error"><X size={16} /></button>
+        </div>
+      )}
+
+      {isLoading && <div className="phase2-loading" role="status">Loading live lead pipeline…</div>}
+      {isSaving && <div className="phase2-saving" role="status">Saving…</div>}
 
       {/* Conversion Banner Alert */}
       {conversionSuccess && (
@@ -535,7 +595,7 @@ export function LeadsWorkspace() {
                             style={{ padding: "4px 10px", fontSize: "11px", gap: "4px" }}
                             onClick={e => {
                               e.stopPropagation();
-                              handleConvertToStudent(lead);
+                              beginConversion(lead);
                             }}
                             title="Convert to Enrolled Student Profile"
                           >
@@ -629,7 +689,7 @@ export function LeadsWorkspace() {
                               style={{ padding: "2px 6px", fontSize: "10.5px" }}
                               onClick={e => {
                                 e.stopPropagation();
-                                handleConvertToStudent(lead);
+                                beginConversion(lead);
                               }}
                             >
                               Convert
@@ -707,7 +767,7 @@ export function LeadsWorkspace() {
                     <label>Marketing Source Attribution *</label>
                     <select
                       value={form.source}
-                      onChange={e => setForm({ ...form, source: e.target.value as any })}
+                      onChange={e => setForm({ ...form, source: e.target.value as LeadRecord["source"] })}
                     >
                       <option value="Facebook / Instagram Ads">Facebook / Instagram Ads</option>
                       <option value="Google Search">Google Search & SEO</option>
@@ -725,7 +785,7 @@ export function LeadsWorkspace() {
                     <CountrySelect
                       required
                       value={form.targetCountry}
-                      onChange={country => setForm({ ...form, targetCountry: country as any })}
+                      onChange={country => setForm({ ...form, targetCountry: country as LeadRecord["targetCountry"] })}
                     />
                   </div>
 
@@ -755,7 +815,7 @@ export function LeadsWorkspace() {
                     <label>Priority Level</label>
                     <select
                       value={form.priority}
-                      onChange={e => setForm({ ...form, priority: e.target.value as any })}
+                      onChange={e => setForm({ ...form, priority: e.target.value as LeadRecord["priority"] })}
                     >
                       <option value="HIGH">HIGH (Immediate follow-up)</option>
                       <option value="MEDIUM">MEDIUM (Standard follow-up)</option>
@@ -854,7 +914,7 @@ export function LeadsWorkspace() {
                       type="button"
                       className="btn-primary"
                       style={{ width: "100%", justifyContent: "center" }}
-                      onClick={() => handleConvertToStudent(activeLead)}
+                      onClick={() => beginConversion(activeLead)}
                     >
                       <Sparkles size={15} />
                       <span>✨ Convert to Registered Student Profile</span>
@@ -898,6 +958,19 @@ export function LeadsWorkspace() {
                 </div>
 
                 {/* Counsellor Notes Feed */}
+                <div className="phase2-followups">
+                  <strong>Follow-ups</strong>
+                  <form onSubmit={e=>handleScheduleFollowUp(e,activeLead.id)}>
+                    <input type="datetime-local" required value={followUp.dueAt} onChange={e=>setFollowUp({...followUp,dueAt:e.target.value})}/>
+                    <input required maxLength={1000} value={followUp.note} onChange={e=>setFollowUp({...followUp,note:e.target.value})} placeholder="Purpose of the follow-up"/>
+                    <button type="submit" className="btn-secondary" disabled={isSaving}>Schedule</button>
+                  </form>
+                  <div className="phase2-followup-list">
+                    {activeLead.followUps.length===0&&<small>No follow-ups scheduled.</small>}
+                    {activeLead.followUps.map(item=><div key={item.id} className={item.completedAt?"is-complete":""}><span><b>{new Date(item.dueAt).toLocaleString()}</b><small>{item.note}</small></span>{item.completedAt?<em>Completed</em>:<button type="button" onClick={()=>handleCompleteFollowUp(activeLead.id,item.id)}>Mark complete</button>}</div>)}
+                  </div>
+                </div>
+
                 <div>
                   <strong style={{ fontSize: "13px", display: "block", marginBottom: "10px", color: "var(--text-main)" }}>
                     Counsellor Consultation Notes
@@ -954,6 +1027,21 @@ export function LeadsWorkspace() {
           </div>
         )}
       </AnimatePresence>
+
+      {conversionLead && (
+        <div className="modal-backdrop-clean" onClick={() => setConversionLead(null)}>
+          <div className="modal-dialog-clean phase2-conversion" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-clean"><div><small>Complete required identity details</small><h3>Convert {conversionLead.fullName}</h3></div><button type="button" className="drawer-close-btn" onClick={() => setConversionLead(null)}><X size={18}/></button></div>
+            <form onSubmit={handleConvertToStudent} className="modal-form-clean">
+              <p className="phase2-form-note">This creates one official student dossier and permanently links it to {conversionLead.leadCode}. Review these details before continuing.</p>
+              <div className="form-row-2"><div className="form-group"><label>Date of birth *</label><input type="date" required max={new Date().toISOString().slice(0,10)} value={conversionProfile.dob} onChange={e=>setConversionProfile({...conversionProfile,dob:e.target.value})}/></div><div className="form-group"><label>Gender *</label><select required value={conversionProfile.gender} onChange={e=>setConversionProfile({...conversionProfile,gender:e.target.value})}><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></div></div>
+              <div className="form-group"><label>Highest qualification *</label><input required minLength={2} value={conversionProfile.highestQualification} onChange={e=>setConversionProfile({...conversionProfile,highestQualification:e.target.value})} placeholder="e.g. Bachelor of Business Studies"/></div>
+              <div className="form-group"><label>Current address</label><input value={conversionProfile.currentAddress} onChange={e=>setConversionProfile({...conversionProfile,currentAddress:e.target.value})} placeholder="City, district"/></div>
+              <div className="modal-footer-clean"><button type="button" className="btn-secondary" onClick={()=>setConversionLead(null)}>Cancel</button><button type="submit" className="btn-primary" disabled={isSaving}><UserCheck size={15}/>Create student profile</button></div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
