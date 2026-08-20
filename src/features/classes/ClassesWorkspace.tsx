@@ -1,50 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertCircle,
-  ArrowRight,
-  Award,
-  BadgeCheck,
-  BookOpen,
-  Calendar,
-  CalendarCheck2,
-  CalendarClock,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  Clock,
-  CreditCard,
-  Download,
-  Edit,
-  Eye,
-  FileCheck2,
-  FileSpreadsheet,
-  FileText,
-  Filter,
-  GraduationCap,
-  Info,
-  Laptop,
-  Mail,
-  MapPin,
-  MessageCircle,
-  MessageSquare,
-  Phone,
-  Plus,
-  RotateCcw,
-  Search,
-  Sparkles,
-  Trash2,
-  TrendingUp,
-  User,
-  UserCheck,
-  UserPlus,
-  Users,
-  X,
-  Zap,
-} from "lucide-react";
+import { AlertCircle, Award, BookOpen, CalendarCheck2, Check, ChevronRight, Clock, GraduationCap, Plus, Search, TrendingUp, UserPlus, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClassStudent, ClassStudentService } from "../../services/classStudentService";
-import { useAuth } from "../auth/AuthProvider";
 
 interface BatchItem {
   id: string;
@@ -59,8 +17,6 @@ interface BatchItem {
   status: "ACTIVE" | "UPCOMING" | "COMPLETED";
 }
 
-const BATCHES_STORAGE_KEY = "aecs_course_batches_v2";
-
 const INITIAL_BATCHES: BatchItem[] = [];
 
 const TEACHERS_LIST = [
@@ -73,20 +29,11 @@ const TEACHERS_LIST = [
 ];
 
 export function ClassesWorkspace() {
-  const { profile } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<"students" | "batches" | "attendance" | "faculty">("students");
   const [students, setStudents] = useState<ClassStudent[]>([]);
-  const [batches, setBatches] = useState<BatchItem[]>(() => {
-    const saved = localStorage.getItem(BATCHES_STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return INITIAL_BATCHES;
-  });
+  const [batches, setBatches] = useState<BatchItem[]>(INITIAL_BATCHES);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("ALL");
@@ -96,6 +43,8 @@ export function ClassesWorkspace() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddBatchModal, setShowAddBatchModal] = useState(false);
   const [activeStudentDetail, setActiveStudentDetail] = useState<ClassStudent | null>(null);
+  const [attendance, setAttendance] = useState<Record<string,"PRESENT"|"ABSENT"|"LATE">>({});
+  const [errorMessage,setErrorMessage]=useState("");
 
   // Exact Add Student Form State matching the user's uploaded screenshot!
   const [studentForm, setStudentForm] = useState({
@@ -139,18 +88,14 @@ export function ClassesWorkspace() {
 
   // Load students
   const loadStudents = async () => {
-    const data = await ClassStudentService.getStudents();
-    setStudents(data);
+    const [data,batchRows] = await Promise.all([ClassStudentService.getStudents(),ClassStudentService.getBatches()]);
+    setStudents(data);setBatches(batchRows as BatchItem[]);
   };
 
   useEffect(() => {
-    loadStudents();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadStudents();
   }, []);
-
-  const saveBatches = (updated: BatchItem[]) => {
-    setBatches(updated);
-    localStorage.setItem(BATCHES_STORAGE_KEY, JSON.stringify(updated));
-  };
 
   // Submit Handler for Add Class Student (Matching User's Screenshot Form)
   const handleCreateStudent = async (e: React.FormEvent) => {
@@ -209,24 +154,12 @@ export function ClassesWorkspace() {
   };
 
   // Submit Handler for Add Batch
-  const handleCreateBatch = (e: React.FormEvent) => {
+  const handleCreateBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!batchForm.batchCode.trim()) return;
 
-    const newBatch: BatchItem = {
-      id: `b-${Date.now()}`,
-      batchCode: batchForm.batchCode.trim(),
-      courseName: batchForm.courseName,
-      timing: batchForm.timing.trim(),
-      instructor: batchForm.instructor,
-      enrolledStudents: 0,
-      maxCapacity: Number(batchForm.maxCapacity) || 15,
-      room: batchForm.room.trim(),
-      startDate: batchForm.startDate,
-      status: batchForm.status,
-    };
-
-    saveBatches([newBatch, ...batches]);
+    await ClassStudentService.createBatch({...batchForm,batchCode:batchForm.batchCode.trim(),timing:batchForm.timing.trim(),maxCapacity:Number(batchForm.maxCapacity)||15,room:batchForm.room.trim()});
+    await loadStudents();
     setShowAddBatchModal(false);
     setBatchForm({
       batchCode: "",
@@ -239,6 +172,8 @@ export function ClassesWorkspace() {
       status: "ACTIVE",
     });
   };
+
+  const markAttendance=async(studentId:string,status:"PRESENT"|"ABSENT"|"LATE")=>{try{await ClassStudentService.markAttendance(studentId,status);setAttendance(current=>({...current,[studentId]:status}));setErrorMessage("")}catch(error){setErrorMessage(error instanceof Error?error.message:"Unable to mark attendance")}};
 
   // Filtered students
   const filteredStudents = useMemo(() => {
@@ -313,6 +248,7 @@ export function ClassesWorkspace() {
           </button>
         </div>
       </div>
+      {errorMessage&&<div className="phase2-alert phase2-alert-error"><AlertCircle size={16}/>{errorMessage}<button type="button" onClick={()=>setErrorMessage("")}><X size={14}/></button></div>}
 
       {/* 2. Top 4 Metric Strip */}
       <div className="metrics-grid-4" style={{ marginBottom: "20px" }}>
@@ -728,16 +664,16 @@ export function ClassesWorkspace() {
                     <td><span className="badge-status counselling">{s.batchName}</span></td>
                     <td><span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{s.schedule}</span></td>
                     <td>
-                      <span className="badge-status enrolled">
+                      <span className={`badge-status ${attendance[s.id]==="ABSENT"?"visa":attendance[s.id]==="LATE"?"counselling":"enrolled"}`}>
                         <Check size={11} style={{ display: "inline", marginRight: "3px" }} />
-                        Present (07:05 AM)
+                        {attendance[s.id]??"Not marked"}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px" }}>
-                        <button type="button" className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--success, #059669)" }}>P</button>
-                        <button type="button" className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--danger, #DC2626)" }}>A</button>
-                        <button type="button" className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--accent-orange, #EA580C)" }}>L</button>
+                        <button type="button" onClick={()=>markAttendance(s.id,"PRESENT")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--success, #059669)" }}>P</button>
+                        <button type="button" onClick={()=>markAttendance(s.id,"ABSENT")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--danger, #DC2626)" }}>A</button>
+                        <button type="button" onClick={()=>markAttendance(s.id,"LATE")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--accent-orange, #EA580C)" }}>L</button>
                       </div>
                     </td>
                   </tr>
@@ -943,7 +879,7 @@ export function ClassesWorkspace() {
                       <label>Gender</label>
                       <select
                         value={studentForm.gender}
-                        onChange={e => setStudentForm({ ...studentForm, gender: e.target.value as any })}
+                        onChange={e => setStudentForm({ ...studentForm, gender: e.target.value as ClassStudent["gender"] })}
                       >
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -995,7 +931,7 @@ export function ClassesWorkspace() {
                     <label>Record status</label>
                     <select
                       value={studentForm.recordStatus}
-                      onChange={e => setStudentForm({ ...studentForm, recordStatus: e.target.value as any })}
+                      onChange={e => setStudentForm({ ...studentForm, recordStatus: e.target.value as ClassStudent["recordStatus"] })}
                     >
                       <option value="Active">Active</option>
                       <option value="Completed">Completed</option>
@@ -1049,7 +985,7 @@ export function ClassesWorkspace() {
                       <label>Class *</label>
                       <select
                         value={studentForm.enrolledClass}
-                        onChange={e => setStudentForm({ ...studentForm, enrolledClass: e.target.value as any })}
+                        onChange={e => setStudentForm({ ...studentForm, enrolledClass: e.target.value as ClassStudent["enrolledClass"] })}
                       >
                         <option value="IELTS Preparation">IELTS Preparation</option>
                         <option value="PTE Academic">PTE Academic</option>
@@ -1125,7 +1061,7 @@ export function ClassesWorkspace() {
                       <label>Mode</label>
                       <select
                         value={studentForm.mode}
-                        onChange={e => setStudentForm({ ...studentForm, mode: e.target.value as any })}
+                        onChange={e => setStudentForm({ ...studentForm, mode: e.target.value as ClassStudent["mode"] })}
                       >
                         <option value="Classroom">Classroom</option>
                         <option value="Online">Online</option>
@@ -1140,7 +1076,7 @@ export function ClassesWorkspace() {
                       <label>Class status</label>
                       <select
                         value={studentForm.classStatus}
-                        onChange={e => setStudentForm({ ...studentForm, classStatus: e.target.value as any })}
+                        onChange={e => setStudentForm({ ...studentForm, classStatus: e.target.value as ClassStudent["classStatus"] })}
                       >
                         <option value="Active">Active</option>
                         <option value="Completed">Completed</option>
@@ -1240,7 +1176,7 @@ export function ClassesWorkspace() {
                       <label>Course *</label>
                       <select
                         value={batchForm.courseName}
-                        onChange={e => setBatchForm({ ...batchForm, courseName: e.target.value as any })}
+                        onChange={e => setBatchForm({ ...batchForm, courseName: e.target.value as BatchItem["courseName"] })}
                       >
                         <option value="IELTS Preparation">IELTS Preparation</option>
                         <option value="PTE Academic">PTE Academic</option>

@@ -1,98 +1,10 @@
-export interface MockTestResult {
-  id: string;
-  testCode: string; // e.g. MOCK-2026-0815
-  studentName: string;
-  studentCode: string; // e.g. CLS-2026-001 or AECS-2026-00001
-  testType: "IELTS Academic" | "PTE Academic" | "Duolingo (DET)" | "German A1" | "JLPT N5" | "TOEFL iBT";
-  testDate: string;
-  venue: string;
-  examiner: string;
-
-  // Sectional Scores
-  listening: string | number; // e.g. 7.5 or 68
-  reading: string | number;   // e.g. 6.5 or 62
-  writing: string | number;   // e.g. 6.5 or 65
-  speaking: string | number;  // e.g. 7.0 or 72
-  overallScore: string;       // e.g. "7.0 Band" or "67 / 90"
-
-  status: "Score Issued" | "Pending Evaluation" | "Absent" | "Scheduled";
-  examinerFeedback: string;
-  targetAchieved: boolean;
-  createdAt: string;
-}
-
-export interface MockTestSlot {
-  id: string;
-  title: string;
-  testType: "IELTS Academic" | "PTE Academic" | "Duolingo (DET)" | "German A1" | "JLPT N5";
-  date: string;
-  time: string;
-  room: string;
-  invigilator: string;
-  bookedSeats: number;
-  totalSeats: number;
-  status: "OPEN" | "FULL" | "COMPLETED";
-}
-
-const RESULTS_KEY = "aecs_mock_test_results_v2";
-const SLOTS_KEY = "aecs_mock_test_slots_v2";
-
-const INITIAL_MOCK_RESULTS: MockTestResult[] = [];
-
-const INITIAL_MOCK_SLOTS: MockTestSlot[] = [];
-
-export const MockTestService = {
-  getResults: async (): Promise<MockTestResult[]> => {
-    const saved = localStorage.getItem(RESULTS_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return INITIAL_MOCK_RESULTS;
-  },
-
-  saveResults: (results: MockTestResult[]) => {
-    localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
-  },
-
-  getSlots: async (): Promise<MockTestSlot[]> => {
-    const saved = localStorage.getItem(SLOTS_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return INITIAL_MOCK_SLOTS;
-  },
-
-  saveSlots: (slots: MockTestSlot[]) => {
-    localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
-  },
-
-  createResult: async (res: Omit<MockTestResult, "id" | "testCode" | "createdAt">): Promise<MockTestResult> => {
-    const current = await MockTestService.getResults();
-    const nextNum = String(current.length + 1).padStart(2, "0");
-    const testCode = `MOCK-2026-${res.testDate.replace(/-/g, "").substring(4)}-${nextNum}`;
-    const newRes: MockTestResult = {
-      ...res,
-      id: `m-${Date.now()}`,
-      testCode: testCode,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    const updated = [newRes, ...current];
-    MockTestService.saveResults(updated);
-    return newRes;
-  },
-
-  createSlot: async (slot: Omit<MockTestSlot, "id">): Promise<MockTestSlot> => {
-    const current = await MockTestService.getSlots();
-    const newSlot: MockTestSlot = {
-      ...slot,
-      id: `slot-${Date.now()}`,
-    };
-    const updated = [newSlot, ...current];
-    MockTestService.saveSlots(updated);
-    return newSlot;
-  },
+import { supabase } from "../lib/supabase";
+export interface MockTestResult{id:string;testCode:string;studentName:string;studentCode:string;testType:"IELTS Academic"|"PTE Academic"|"Duolingo (DET)"|"German A1"|"JLPT N5"|"TOEFL iBT";testDate:string;venue:string;examiner:string;listening:string|number;reading:string|number;writing:string|number;speaking:string|number;overallScore:string;status:"Score Issued"|"Pending Evaluation"|"Absent"|"Scheduled";examinerFeedback:string;targetAchieved:boolean;createdAt:string}
+export interface MockTestSlot{id:string;title:string;testType:"IELTS Academic"|"PTE Academic"|"Duolingo (DET)"|"German A1"|"JLPT N5";date:string;time:string;room:string;invigilator:string;bookedSeats:number;totalSeats:number;status:"OPEN"|"FULL"|"COMPLETED"}
+type ResultRow={id:string;test_code:string;test_type:MockTestResult["testType"];test_date:string;venue:string;examiner:string;listening:number|null;reading:number|null;writing:number|null;speaking:number|null;overall_score:string;status:MockTestResult["status"];examiner_feedback:string|null;target_achieved:boolean;created_at:string;class_students?:{student_code:string;full_name:string}|null};
+export const MockTestService={
+ async getResults():Promise<MockTestResult[]>{const{data,error}=await supabase.from("mock_test_results").select("*,class_students(student_code,full_name)").order("test_date",{ascending:false});if(error)throw error;return((data??[])as unknown as ResultRow[]).map(r=>({id:r.id,testCode:r.test_code,studentName:r.class_students?.full_name??"Unknown",studentCode:r.class_students?.student_code??"—",testType:r.test_type,testDate:r.test_date,venue:r.venue,examiner:r.examiner,listening:r.listening??"—",reading:r.reading??"—",writing:r.writing??"—",speaking:r.speaking??"—",overallScore:r.overall_score,status:r.status,examinerFeedback:r.examiner_feedback??"",targetAchieved:r.target_achieved,createdAt:r.created_at.slice(0,10)}))},
+ async getSlots():Promise<MockTestSlot[]>{const{data,error}=await supabase.from("mock_test_slots").select("*").order("test_date");if(error)throw error;return(data??[]).map(s=>({id:s.id,title:s.title,testType:s.test_type as MockTestSlot["testType"],date:s.test_date,time:s.test_time,room:s.room,invigilator:s.invigilator,bookedSeats:0,totalSeats:s.total_seats,status:s.status as MockTestSlot["status"]}))},
+ async createResult(res:Omit<MockTestResult,"id"|"testCode"|"createdAt">){const{error}=await supabase.rpc("create_mock_result",{payload:{student_code:res.studentCode,test_type:res.testType,test_date:res.testDate,venue:res.venue,examiner:res.examiner,listening:String(res.listening),reading:String(res.reading),writing:String(res.writing),speaking:String(res.speaking),overall_score:res.overallScore,status:res.status,examiner_feedback:res.examinerFeedback,target_achieved:res.targetAchieved}});if(error)throw error;return res},
+ async createSlot(slot:Omit<MockTestSlot,"id">){const{error}=await supabase.rpc("create_mock_slot",{payload:{title:slot.title,test_type:slot.testType,date:slot.date,time:slot.time,room:slot.room,invigilator:slot.invigilator,total_seats:slot.totalSeats,status:slot.status}});if(error)throw error;return slot},
 };

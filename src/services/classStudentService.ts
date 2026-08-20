@@ -1,78 +1,14 @@
-export interface ClassStudent {
-  id: string;
-  studentCode: string; // e.g. CLS-2026-001
-  fullName: string;
-  phone: string;
-  altPhone?: string;
-  email?: string;
-  gender?: "Male" | "Female" | "Other";
-  educationLevel?: string;
-  guardianName?: string;
-  guardianPhone?: string;
-  address?: string;
-  recordStatus: "Active" | "Completed" | "On Hold" | "Dropped";
-  notes?: string;
-
-  // First class enrolment
-  enrolledClass: "IELTS Preparation" | "PTE Academic" | "Duolingo (DET)" | "TOEFL iBT" | "German Language (A1/A2)" | "Japanese (NAT/JLPT)" | "Korean (TOPIK)";
-  teacher: string;
-  startDate: string;
-  expectedCompletion: string;
-  batchName: string;
-  schedule: string;
-  mode: "Classroom" | "Online" | "Hybrid";
-  classStatus: "Active" | "Completed" | "Transferred" | "On Hold";
-  enrolmentNotes?: string;
-  feePaid: string;
-  createdAt: string;
-}
-
-const STORAGE_KEY = "aecs_class_students_v2";
-
-const INITIAL_CLASS_STUDENTS: ClassStudent[] = [];
-
-export const ClassStudentService = {
-  getStudents: async (): Promise<ClassStudent[]> => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return INITIAL_CLASS_STUDENTS;
-  },
-
-  saveStudents: (students: ClassStudent[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
-  },
-
-  createStudent: async (student: Omit<ClassStudent, "id" | "studentCode" | "createdAt">): Promise<ClassStudent> => {
-    const current = await ClassStudentService.getStudents();
-    const nextCode = `CLS-2026-${String(current.length + 1).padStart(3, "0")}`;
-    const newStudent: ClassStudent = {
-      ...student,
-      id: `cls-${Date.now()}`,
-      studentCode: nextCode,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    const updated = [newStudent, ...current];
-    ClassStudentService.saveStudents(updated);
-    return newStudent;
-  },
-
-  updateStudent: async (id: string, patch: Partial<ClassStudent>): Promise<ClassStudent | null> => {
-    const current = await ClassStudentService.getStudents();
-    const index = current.findIndex(s => s.id === id);
-    if (index === -1) return null;
-    current[index] = { ...current[index], ...patch };
-    ClassStudentService.saveStudents(current);
-    return current[index];
-  },
-
-  deleteStudent: async (id: string): Promise<boolean> => {
-    const current = await ClassStudentService.getStudents();
-    const updated = current.filter(s => s.id !== id);
-    ClassStudentService.saveStudents(updated);
-    return true;
-  },
+import { supabase } from "../lib/supabase";
+export interface ClassStudent{id:string;studentCode:string;fullName:string;phone:string;altPhone?:string;email?:string;gender?:"Male"|"Female"|"Other";educationLevel?:string;guardianName?:string;guardianPhone?:string;address?:string;recordStatus:"Active"|"Completed"|"On Hold"|"Dropped";notes?:string;enrolledClass:"IELTS Preparation"|"PTE Academic"|"Duolingo (DET)"|"TOEFL iBT"|"German Language (A1/A2)"|"Japanese (NAT/JLPT)"|"Korean (TOPIK)";teacher:string;startDate:string;expectedCompletion:string;batchName:string;schedule:string;mode:"Classroom"|"Online"|"Hybrid";classStatus:"Active"|"Completed"|"Transferred"|"On Hold";enrolmentNotes?:string;feePaid:string;createdAt:string}
+export interface BatchRecord{id:string;batchCode:string;courseName:string;courseType:string;timing:string;instructor:string;enrolledStudents:number;maxCapacity:number;room:string;startDate:string;status:"ACTIVE"|"UPCOMING"|"COMPLETED"}
+type Row={id:string;student_code:string;full_name:string;phone:string;alt_phone:string|null;email:string|null;gender:ClassStudent["gender"];education_level:string|null;guardian_name:string|null;guardian_phone:string|null;address:string|null;record_status:ClassStudent["recordStatus"];notes:string|null;created_at:string;batch_enrollments?:Array<{mode:ClassStudent["mode"];expected_completion:string|null;status:ClassStudent["classStatus"];notes:string|null;test_prep_batches?:{batch_code:string;title:string;timing:string;instructor_name:string;start_date:string}|null}>};
+const courseType:Record<string,string>={"IELTS Preparation":"IELTS_PREP","PTE Academic":"PTE_ACADEMIC","Duolingo (DET)":"DUOLINGO_DET","German Language (A1/A2)":"GERMAN_A1","Japanese (NAT/JLPT)":"JAPANESE_N5","TOEFL iBT":"SAT_PREP","Korean (TOPIK)":"SAT_PREP"};
+export const ClassStudentService={
+ async getStudents():Promise<ClassStudent[]>{const{data,error}=await supabase.from("class_students").select("*,batch_enrollments(mode,expected_completion,status,notes,test_prep_batches(batch_code,title,timing,instructor_name,start_date))").order("created_at",{ascending:false});if(error)throw error;return((data??[])as unknown as Row[]).map(r=>{const e=r.batch_enrollments?.[0],b=e?.test_prep_batches;return{id:r.id,studentCode:r.student_code,fullName:r.full_name,phone:r.phone,altPhone:r.alt_phone??undefined,email:r.email??undefined,gender:r.gender,educationLevel:r.education_level??undefined,guardianName:r.guardian_name??undefined,guardianPhone:r.guardian_phone??undefined,address:r.address??undefined,recordStatus:r.record_status,notes:r.notes??undefined,enrolledClass:(b?.title??"IELTS Preparation")as ClassStudent["enrolledClass"],teacher:b?.instructor_name??"Unassigned",startDate:b?.start_date??"",expectedCompletion:e?.expected_completion??"",batchName:b?.batch_code??"",schedule:b?.timing??"",mode:e?.mode??"Classroom",classStatus:e?.status??"Active",enrolmentNotes:e?.notes??undefined,feePaid:"Recorded in Finance",createdAt:r.created_at.slice(0,10)}})},
+ async getBatches():Promise<BatchRecord[]>{const{data,error}=await supabase.from("test_prep_batches").select("*,batch_enrollments(count)").order("start_date",{ascending:false});if(error)throw error;return(data??[]).map(b=>({id:b.id,batchCode:b.batch_code,courseName:b.title,courseType:b.course_type,timing:b.timing,instructor:b.instructor_name,enrolledStudents:Number(b.batch_enrollments?.[0]?.count??0),maxCapacity:b.max_capacity,room:b.room,startDate:b.start_date,status:b.status as BatchRecord["status"]}))},
+ async createStudent(student:Omit<ClassStudent,"id"|"studentCode"|"createdAt">){const{data,error}=await supabase.rpc("create_class_student",{payload:{full_name:student.fullName,phone:student.phone,alt_phone:student.altPhone??"",email:student.email??"",gender:student.gender,education_level:student.educationLevel??"",guardian_name:student.guardianName??"",guardian_phone:student.guardianPhone??"",address:student.address??"",record_status:student.recordStatus,notes:student.notes??"",batch_code:student.batchName,mode:student.mode,expected_completion:student.expectedCompletion,class_status:student.classStatus,enrolment_notes:student.enrolmentNotes??""}});if(error)throw error;return data},
+ async createBatch(batch:{batchCode:string;courseName:string;timing:string;instructor:string;maxCapacity:number;room:string;startDate:string;status:string}){const{error}=await supabase.rpc("create_test_batch",{payload:{batch_code:batch.batchCode,course_type:courseType[batch.courseName]??"IELTS_PREP",title:batch.courseName,timing:batch.timing,instructor:batch.instructor,max_capacity:batch.maxCapacity,room:batch.room,start_date:batch.startDate,status:batch.status}});if(error)throw error},
+ async markAttendance(classStudentId:string,status:"PRESENT"|"ABSENT"|"LATE"){const{error}=await supabase.rpc("mark_class_attendance",{class_student_uuid:classStudentId,attendance_date:new Date().toISOString().slice(0,10),attendance_status:status});if(error)throw error},
+ async updateStudent(id:string,patch:Partial<ClassStudent>){const values:Record<string,unknown>={};if(patch.recordStatus)values.record_status=patch.recordStatus;const{error}=await supabase.from("class_students").update(values).eq("id",id);if(error)throw error;return null},
+ async deleteStudent(id:string){const{error}=await supabase.from("class_students").delete().eq("id",id);if(error)throw error;return true},
 };
