@@ -22,6 +22,7 @@ import {
   Handshake,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   MessageSquare,
   Moon,
@@ -61,7 +62,8 @@ const SEARCH_ITEMS = [
   { label: "HRMS & Staff Operations", detail: "Employee master, attendance clock-in, leaves & payroll", to: "/hrms", icon: UserCheck },
   { label: "HRMS - Payroll Register", detail: "Monthly salary disbursement, SSF & 1% TDS", to: "/hrms?tab=payroll", icon: Wallet },
   { label: "HRMS - Attendance Clock-In", detail: "Biometric and daily punch-in log", to: "/hrms?tab=attendance", icon: Clock },
-  { label: "Finance & Chart of Accounts", detail: "Student billing, vouchers and 454-account master ledger", to: "/finance", icon: CreditCard },
+  { label: "Team Messages Hub", detail: "Private staff messaging, channels & calling", to: "/messages", icon: MessageSquare },
+  { label: "Email Automation & Drips", detail: "Automated student lifecycle notifications & intake auto-responders", to: "/email-automation", icon: Mail },
   { label: "50 Core Blueprint Reports", detail: "Operations, finance, and management reports", to: "/analytics", icon: BarChart3 },
   { label: "Users & RBAC Permissions", detail: "18-role security matrix and maker-checker", to: "/settings?tab=roles", icon: ShieldCheck },
   { label: "Settings & ERP Blueprint", detail: "Organization, branches, and statutory profile", to: "/settings", icon: Settings },
@@ -95,6 +97,7 @@ export function AppShell() {
     if (location.pathname.startsWith("/hrms")) return "HRMS, Attendance & Payroll";
     if (location.pathname.startsWith("/finance")) return "Finance & Chart of Accounts";
     if (location.pathname.startsWith("/messages")) return "Team Messages & Collaboration Hub";
+    if (location.pathname.startsWith("/email-automation")) return "Email Automation & Drip Campaigns";
     if (location.pathname.startsWith("/analytics")) return "Analytics & 50 Core Reports";
     if (location.pathname.startsWith("/settings")) return "System Settings & RBAC";
     return "Operations Workspace";
@@ -382,6 +385,18 @@ export function AppShell() {
                 <MessageSquare size={16} />
                 <span>Messages</span>
               </div>
+            </NavLink>
+
+            {/* EMAIL AUTOMATION & DRIP ENGINE */}
+            <NavLink
+              to="/email-automation"
+              className={({ isActive }) => (isActive || location.pathname.startsWith("/email-automation") ? "sidebar-link active" : "sidebar-link")}
+            >
+              <div className="sidebar-link-content">
+                <Mail size={16} />
+                <span>Email Automation</span>
+              </div>
+              <span className="sidebar-badge" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10B981", fontSize: "10.5px", fontWeight: 700 }}>Auto</span>
             </NavLink>
           </div>
 

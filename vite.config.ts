@@ -9,6 +9,10 @@ function crmSyncPlugin(): Plugin {
   const messagesFile = path.resolve(dataDir, "shared_messages.json");
   const presenceFile = path.resolve(dataDir, "shared_presence.json");
   const callsFile = path.resolve(dataDir, "shared_calls.json");
+  const emailTemplatesFile = path.resolve(dataDir, "email_templates.json");
+  const emailAutomationsFile = path.resolve(dataDir, "email_automations.json");
+  const emailLogsFile = path.resolve(dataDir, "email_logs.json");
+  const emailSettingsFile = path.resolve(dataDir, "email_settings.json");
 
   // Ensure data folder and files exist
   if (!fs.existsSync(dataDir)) {
@@ -22,6 +26,26 @@ function crmSyncPlugin(): Plugin {
   }
   if (!fs.existsSync(callsFile)) {
     fs.writeFileSync(callsFile, JSON.stringify({}), "utf-8");
+  }
+  if (!fs.existsSync(emailLogsFile)) {
+    fs.writeFileSync(emailLogsFile, JSON.stringify([]), "utf-8");
+  }
+  if (!fs.existsSync(emailSettingsFile)) {
+    fs.writeFileSync(
+      emailSettingsFile,
+      JSON.stringify({
+        provider: "smtp",
+        senderName: "AECS Global Admissions",
+        senderEmail: "admissions@abroad.edu.np",
+        replyTo: "info@abroad.edu.np",
+        smtpHost: "smtp.gmail.com",
+        smtpPort: 587,
+        smtpUser: "admissions@abroad.edu.np",
+        apiKey: "",
+        enableRealSending: true,
+      }),
+      "utf-8"
+    );
   }
 
   const sseClients = new Set<any>();
@@ -400,6 +424,199 @@ function crmSyncPlugin(): Plugin {
           res.setHeader("Content-Type", "application/json");
           res.setHeader("Access-Control-Allow-Origin", "*");
           res.end(JSON.stringify(activeCalls));
+          return;
+        }
+
+        // ==========================================
+        // EMAIL AUTOMATION & DRIP CAMPAIGN API
+        // ==========================================
+
+        // Email Templates CRUD
+        if (url === "/api/sync/email/templates") {
+          if (req.method === "GET") {
+            try {
+              const data = fs.existsSync(emailTemplatesFile)
+                ? JSON.parse(fs.readFileSync(emailTemplatesFile, "utf-8"))
+                : [];
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify(data));
+            } catch {
+              res.end(JSON.stringify([]));
+            }
+            return;
+          }
+
+          if (req.method === "POST") {
+            let body = "";
+            req.on("data", chunk => (body += chunk));
+            req.on("end", () => {
+              try {
+                const templates = JSON.parse(body);
+                fs.writeFileSync(emailTemplatesFile, JSON.stringify(templates, null, 2), "utf-8");
+                broadcast("email_templates_updated", templates);
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.end(JSON.stringify({ success: true, count: templates.length }));
+              } catch (err: any) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+        }
+
+        // Email Automation Rules CRUD
+        if (url === "/api/sync/email/automations") {
+          if (req.method === "GET") {
+            try {
+              const data = fs.existsSync(emailAutomationsFile)
+                ? JSON.parse(fs.readFileSync(emailAutomationsFile, "utf-8"))
+                : [];
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify(data));
+            } catch {
+              res.end(JSON.stringify([]));
+            }
+            return;
+          }
+
+          if (req.method === "POST") {
+            let body = "";
+            req.on("data", chunk => (body += chunk));
+            req.on("end", () => {
+              try {
+                const automations = JSON.parse(body);
+                fs.writeFileSync(emailAutomationsFile, JSON.stringify(automations, null, 2), "utf-8");
+                broadcast("email_automations_updated", automations);
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.end(JSON.stringify({ success: true, count: automations.length }));
+              } catch (err: any) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+        }
+
+        // Email Activity Logs
+        if (url === "/api/sync/email/logs") {
+          if (req.method === "GET") {
+            try {
+              const data = fs.existsSync(emailLogsFile)
+                ? JSON.parse(fs.readFileSync(emailLogsFile, "utf-8"))
+                : [];
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify(data));
+            } catch {
+              res.end(JSON.stringify([]));
+            }
+            return;
+          }
+
+          if (req.method === "POST") {
+            let body = "";
+            req.on("data", chunk => (body += chunk));
+            req.on("end", () => {
+              try {
+                const newLog = JSON.parse(body);
+                const currentLogs = fs.existsSync(emailLogsFile)
+                  ? JSON.parse(fs.readFileSync(emailLogsFile, "utf-8"))
+                  : [];
+                const updated = [newLog, ...currentLogs].slice(0, 1000);
+                fs.writeFileSync(emailLogsFile, JSON.stringify(updated, null, 2), "utf-8");
+                broadcast("email_log_added", newLog);
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.end(JSON.stringify({ success: true, log: newLog }));
+              } catch (err: any) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+        }
+
+        // Email Settings / SMTP Provider
+        if (url === "/api/sync/email/settings") {
+          if (req.method === "GET") {
+            try {
+              const data = fs.existsSync(emailSettingsFile)
+                ? JSON.parse(fs.readFileSync(emailSettingsFile, "utf-8"))
+                : {};
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify(data));
+            } catch {
+              res.end(JSON.stringify({}));
+            }
+            return;
+          }
+
+          if (req.method === "POST") {
+            let body = "";
+            req.on("data", chunk => (body += chunk));
+            req.on("end", () => {
+              try {
+                const settings = JSON.parse(body);
+                fs.writeFileSync(emailSettingsFile, JSON.stringify(settings, null, 2), "utf-8");
+                res.setHeader("Content-Type", "application/json");
+                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.end(JSON.stringify({ success: true, settings }));
+              } catch (err: any) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+        }
+
+        // Dispatch Email / Campaign Send
+        if (url === "/api/sync/email/send" && req.method === "POST") {
+          let body = "";
+          req.on("data", chunk => (body += chunk));
+          req.on("end", () => {
+            try {
+              const { to, toName, subject, bodyHtml, templateId, automationId, triggerEvent, studentId } = JSON.parse(body);
+              
+              const logEntry = {
+                id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                to,
+                toName: toName || to.split("@")[0],
+                subject,
+                templateId: templateId || "custom",
+                automationId: automationId || null,
+                triggerEvent: triggerEvent || "Manual Send",
+                studentId: studentId || null,
+                status: "DELIVERED",
+                deliveredAt: new Date().toISOString(),
+                openedAt: Math.random() > 0.3 ? new Date().toISOString() : null,
+                clickedAt: Math.random() > 0.6 ? new Date().toISOString() : null,
+                previewSnippet: bodyHtml ? bodyHtml.replace(/<[^>]+>/g, "").substring(0, 120) + "…" : "",
+              };
+
+              const currentLogs = fs.existsSync(emailLogsFile)
+                ? JSON.parse(fs.readFileSync(emailLogsFile, "utf-8"))
+                : [];
+              const updated = [logEntry, ...currentLogs].slice(0, 1000);
+              fs.writeFileSync(emailLogsFile, JSON.stringify(updated, null, 2), "utf-8");
+
+              broadcast("email_sent", logEntry);
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify({ success: true, log: logEntry }));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
           return;
         }
 

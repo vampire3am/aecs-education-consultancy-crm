@@ -52,6 +52,9 @@ const B2BWorkspace = lazy(() =>
 const MessagesWorkspace = lazy(() =>
   import("../features/messages/MessagesWorkspace").then(m => ({ default: m.MessagesWorkspace }))
 );
+const EmailAutomationWorkspace = lazy(() =>
+  import("../features/email/EmailAutomationWorkspace").then(m => ({ default: m.EmailAutomationWorkspace }))
+);
 
 const Loading = () => (
   <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--bg-app)", color: "var(--text-muted)" }}>
@@ -204,6 +207,9 @@ export default function App() {
 
             {/* Team Messages (All 18 Staff Can Chat Privately) */}
             <Route path="/messages" element={<MessagesWorkspace />} />
+
+            {/* Email Automation & Drip Campaigns */}
+            <Route path="/email-automation" element={<EmailAutomationWorkspace />} />
 
             {/* Reports & Analytics */}
             <Route

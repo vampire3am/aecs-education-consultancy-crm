@@ -24,6 +24,7 @@ import "./styles/app.css";
 import "./styles/messages-workspace.css";
 import "./styles/login-page.css";
 import "./styles/call-modal.css";
+import "./styles/email-workspace.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 // Total purge of previous sample dataset keys on initial load
