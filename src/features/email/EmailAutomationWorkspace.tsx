@@ -695,6 +695,11 @@ export function EmailAutomationWorkspace() {
                         <span style={{ display: "block", fontSize: "11.5px", color: "var(--text-muted, #64748B)" }}>
                           {log.previewSnippet}
                         </span>
+                        {(log as any).error && (
+                          <div style={{ marginTop: "4px", fontSize: "11px", color: "#DC2626", background: "#FEF2F2", padding: "4px 8px", borderRadius: "4px", border: "1px solid #FCA5A5" }}>
+                            ⚠️ {(log as any).error}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span style={{ fontSize: "12px", background: "rgba(37,99,235,0.08)", padding: "3px 8px", borderRadius: "6px", color: "#2563EB", fontWeight: 600 }}>
@@ -713,9 +718,15 @@ export function EmailAutomationWorkspace() {
                         <button
                           type="button"
                           className="btn btn-sm btn-secondary"
-                          onClick={() => setSelectedLog(log)}
+                          onClick={() => {
+                            if ((log as any).error) {
+                              setActiveTab("SETTINGS");
+                            } else {
+                              setSelectedLog(log);
+                            }
+                          }}
                         >
-                          Details
+                          {(log as any).error ? "Fix Settings" : "Details"}
                         </button>
                       </td>
                     </tr>
@@ -731,63 +742,189 @@ export function EmailAutomationWorkspace() {
           TAB 6: SMTP & SENDER SETTINGS
           ========================================================================= */}
       {activeTab === "SETTINGS" && settings && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "700px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "850px" }}>
+          {/* Important Alert Callout */}
+          <div style={{ background: "rgba(37, 99, 235, 0.08)", border: "1px solid rgba(37, 99, 235, 0.25)", borderRadius: "14px", padding: "18px 20px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <span style={{ color: "#2563EB", padding: "4px", background: "rgba(37, 99, 235, 0.15)", borderRadius: "8px", marginTop: "2px" }}>
+                <Sparkles size={20} />
+              </span>
+              <div>
+                <strong style={{ fontSize: "14.5px", color: "#1E3A8A", display: "block", marginBottom: "4px" }}>
+                  How to Receive Real Emails in Any External Inbox (Gmail, Yahoo, Outlook, etc.)
+                </strong>
+                <p style={{ fontSize: "12.5px", color: "#334155", margin: 0, lineHeight: 1.5 }}>
+                  To deliver real emails to actual recipients over the internet, connect your Gmail or custom SMTP server.
+                  If using Gmail, Google requires a <strong>16-character App Password</strong> (not your regular password).
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div style={{ background: "var(--bg-card, #FFFFFF)", border: "1px solid var(--border-subtle, #E2E8F0)", borderRadius: "14px", padding: "24px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 16px 0" }}>
               ⚙️ Organization SMTP & Sender Identity
             </h3>
 
+            {/* Provider Quick Presets */}
+            <div style={{ marginBottom: "18px" }}>
+              <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "8px" }}>
+                Select Email Service Provider:
+              </label>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${settings.provider === "smtp" && settings.smtpHost === "smtp.gmail.com" ? "btn-primary" : "btn-secondary"}`}
+                  onClick={() => {
+                    setSettings({
+                      ...settings,
+                      provider: "smtp",
+                      smtpHost: "smtp.gmail.com",
+                      smtpPort: 587,
+                    });
+                  }}
+                >
+                  🔴 Gmail / Google Workspace
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${settings.provider === "resend" ? "btn-primary" : "btn-secondary"}`}
+                  onClick={() => {
+                    setSettings({
+                      ...settings,
+                      provider: "resend",
+                    });
+                  }}
+                >
+                  ⚡ Resend API
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${settings.provider === "smtp" && settings.smtpHost !== "smtp.gmail.com" ? "btn-primary" : "btn-secondary"}`}
+                  onClick={() => {
+                    setSettings({
+                      ...settings,
+                      provider: "smtp",
+                      smtpHost: "mail.abroad.edu.np",
+                      smtpPort: 465,
+                    });
+                  }}
+                >
+                  🌐 Custom Corporate SMTP (cPanel/SES/Office 365)
+                </button>
+              </div>
+            </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div>
-                <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
-                  Sender Display Name
-                </label>
-                <input
-                  type="text"
-                  value={settings.senderName}
-                  onChange={e => setSettings({ ...settings, senderName: e.target.value })}
-                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
-                  Sender Email Address
-                </label>
-                <input
-                  type="email"
-                  value={settings.senderEmail}
-                  onChange={e => setSettings({ ...settings, senderEmail: e.target.value })}
-                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <div>
                   <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
-                    SMTP Host Server
+                    Sender Display Name
                   </label>
                   <input
                     type="text"
-                    value={settings.smtpHost}
-                    onChange={e => setSettings({ ...settings, smtpHost: e.target.value })}
+                    value={settings.senderName}
+                    onChange={e => setSettings({ ...settings, senderName: e.target.value })}
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
                   />
                 </div>
                 <div>
                   <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
-                    Port
+                    Sender Email Address
                   </label>
                   <input
-                    type="number"
-                    value={settings.smtpPort}
-                    onChange={e => setSettings({ ...settings, smtpPort: Number(e.target.value) })}
+                    type="email"
+                    placeholder="admissions@abroad.edu.np"
+                    value={settings.senderEmail}
+                    onChange={e => setSettings({ ...settings, senderEmail: e.target.value, smtpUser: e.target.value })}
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}>
+              {settings.provider === "resend" ? (
+                <div>
+                  <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
+                    Resend API Key (re_...)
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="re_123456789abcdef..."
+                    value={settings.apiKey || ""}
+                    onChange={e => setSettings({ ...settings, apiKey: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
+                    <div>
+                      <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
+                        SMTP Host Server
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.smtpHost}
+                        onChange={e => setSettings({ ...settings, smtpHost: e.target.value })}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
+                        Port (587 or 465)
+                      </label>
+                      <input
+                        type="number"
+                        value={settings.smtpPort}
+                        onChange={e => setSettings({ ...settings, smtpPort: Number(e.target.value) })}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <div>
+                      <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
+                        SMTP Username / Email
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="yourname@gmail.com"
+                        value={settings.smtpUser || ""}
+                        onChange={e => setSettings({ ...settings, smtpUser: e.target.value })}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "12.5px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
+                        SMTP Password / Gmail App Password
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="16-character App Password (e.g. abcd efgh ijkl mnop)"
+                        value={settings.smtpPass || settings.apiKey || ""}
+                        onChange={e => setSettings({ ...settings, smtpPass: e.target.value, apiKey: e.target.value })}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 1-Minute Gmail App Password Guide */}
+              <div style={{ background: "var(--bg-app, #F8FAFC)", border: "1px solid var(--border-subtle, #E2E8F0)", borderRadius: "10px", padding: "14px 16px", marginTop: "4px" }}>
+                <strong style={{ fontSize: "12.5px", color: "#2563EB", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <Info size={14} /> 1-Minute Guide to Create a Gmail App Password:
+                </strong>
+                <ol style={{ fontSize: "12px", color: "#475569", margin: "0 0 0 16px", padding: 0, lineHeight: 1.6 }}>
+                  <li>Open your Google Account: <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" style={{ color: "#2563EB", textDecoration: "underline", fontWeight: 600 }}>Google App Passwords</a> (ensure 2-Step Verification is turned on).</li>
+                  <li>Type App Name: <strong>AECS CRM</strong> and click <strong>Create</strong>.</li>
+                  <li>Copy the 16-character generated password (e.g. <code>abcd efgh ijkl mnop</code>).</li>
+                  <li>Paste it into the <strong>SMTP Password</strong> box above and click <strong>Save Settings</strong>!</li>
+                </ol>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px" }}>
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -801,11 +938,68 @@ export function EmailAutomationWorkspace() {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => alert("✅ SMTP Connection Test Succeeded: 250 OK")}
+                  onClick={async () => {
+                    const result = await EmailAutomationService.testSmtpConnection(settings);
+                    if (result.success) {
+                      alert(`✅ Connection Success!\n${result.message}`);
+                    } else {
+                      alert(`❌ Connection Error:\n${result.error}`);
+                    }
+                  }}
                 >
                   Test Connection
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Real Live Inbox Tester Card */}
+          <div style={{ background: "var(--bg-card, #FFFFFF)", border: "1px solid var(--border-subtle, #E2E8F0)", borderRadius: "14px", padding: "24px" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 8px 0" }}>
+              🧪 Send Real Test Message to My Personal Email
+            </h3>
+            <p style={{ fontSize: "12.5px", color: "var(--text-muted, #64748B)", margin: "0 0 14px 0" }}>
+              Type your personal email address below to test live delivery straight to your real Gmail/Outlook inbox.
+            </p>
+
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <input
+                type="email"
+                placeholder="your.personal.email@gmail.com"
+                value={quickSendRecipient}
+                onChange={e => setQuickSendRecipient(e.target.value)}
+                style={{ flex: 1, minWidth: "240px", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", fontSize: "13px" }}
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!quickSendRecipient.trim() || quickSendSending}
+                onClick={async () => {
+                  setQuickSendSending(true);
+                  const result = await EmailAutomationService.sendEmail({
+                    to: quickSendRecipient.trim(),
+                    toName: "Dear AECS Staff",
+                    templateId: "tpl-welcome",
+                    subject: "🌟 Live Test: AECS Email Automation Verified!",
+                    variables: {
+                      student_name: "Staff Tester",
+                      destination_country: "Australia",
+                    },
+                  });
+                  setQuickSendSending(false);
+                  if (result.success) {
+                    alert(`🎉 Real email dispatched successfully to ${quickSendRecipient}!\nCheck your inbox (or Spam/Promotions folder).`);
+                  } else {
+                    alert(`❌ Dispatch Failed:\n${result.error}\n\nPlease enter your 16-character Gmail App Password in Settings above.`);
+                  }
+                  const freshLogs = await EmailAutomationService.getLogs();
+                  setLogs(freshLogs);
+                }}
+                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                <Send size={14} />
+                <span>{quickSendSending ? "Sending…" : "Send Real Test Email"}</span>
+              </button>
             </div>
           </div>
         </div>

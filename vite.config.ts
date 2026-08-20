@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import basicSsl from "@vitejs/plugin-basic-ssl";
 import fs from "fs";
 import path from "path";
+import nodemailer from "nodemailer";
 
 function crmSyncPlugin(): Plugin {
   const dataDir = path.resolve(process.cwd(), "data");
@@ -578,14 +579,101 @@ function crmSyncPlugin(): Plugin {
           }
         }
 
-        // Dispatch Email / Campaign Send
+        // Dispatch Email / Campaign Send with Real Delivery Transport
         if (url === "/api/sync/email/send" && req.method === "POST") {
           let body = "";
           req.on("data", chunk => (body += chunk));
-          req.on("end", () => {
+          req.on("end", async () => {
             try {
               const { to, toName, subject, bodyHtml, templateId, automationId, triggerEvent, studentId } = JSON.parse(body);
               
+              // Load current SMTP / Provider settings
+              const settings = fs.existsSync(emailSettingsFile)
+                ? JSON.parse(fs.readFileSync(emailSettingsFile, "utf-8"))
+                : {};
+
+              let deliveryStatus: "DELIVERED" | "BOUNCED" = "DELIVERED";
+              let deliveryError: string | null = null;
+              let serverMessageId: string | null = null;
+
+              const smtpUser = settings.smtpUser || settings.senderEmail;
+              const smtpPass = settings.smtpPass || settings.apiKey;
+
+              // 1. If Resend API Key is set
+              if (settings.provider === "resend" || (settings.apiKey && settings.apiKey.startsWith("re_"))) {
+                try {
+                  const resendRes = await fetch("https://api.resend.com/emails", {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${settings.apiKey}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      from: `${settings.senderName || "AECS Admissions"} <onboarding@resend.dev>`,
+                      to: [to],
+                      subject: subject,
+                      html: bodyHtml,
+                    }),
+                  });
+                  const resendData: any = await resendRes.json();
+                  if (!resendRes.ok) {
+                    deliveryStatus = "BOUNCED";
+                    deliveryError = resendData.message || "Resend dispatch failed";
+                  } else {
+                    serverMessageId = resendData.id;
+                  }
+                } catch (e: any) {
+                  deliveryStatus = "BOUNCED";
+                  deliveryError = e.message;
+                }
+              }
+              // 2. If SMTP / Gmail credentials are configured
+              else if (smtpUser && smtpPass) {
+                try {
+                  const transporter = nodemailer.createTransport({
+                    host: settings.smtpHost || "smtp.gmail.com",
+                    port: Number(settings.smtpPort) || 587,
+                    secure: Number(settings.smtpPort) === 465,
+                    auth: {
+                      user: smtpUser,
+                      pass: smtpPass,
+                    },
+                    tls: {
+                      rejectUnauthorized: false,
+                    },
+                  });
+
+                  const mailInfo = await transporter.sendMail({
+                    from: `"${settings.senderName || "AECS Global Admissions"}" <${settings.senderEmail || smtpUser}>`,
+                    to: to,
+                    replyTo: settings.replyTo || settings.senderEmail || smtpUser,
+                    subject: subject,
+                    html: `
+                      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1E293B; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #ffffff;">
+                        <div style="background: #2563EB; color: #ffffff; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+                          <h2 style="margin: 0; font-size: 18px; color: #ffffff; font-weight: 800;">AECS Education Consultancy</h2>
+                        </div>
+                        <div style="padding: 24px; line-height: 1.6; font-size: 14px; color: #1E293B;">
+                          ${bodyHtml}
+                        </div>
+                        <div style="background: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 16px 24px; font-size: 11px; color: #64748B; text-align: center;">
+                          AECS Education Consultancy Pvt. Ltd. · Putalisadak, Kathmandu, Nepal · Tel: +977 1 4420000<br/>
+                          Official Education Agent for Australia, UK, USA, Canada & New Zealand.
+                        </div>
+                      </div>
+                    `,
+                  });
+                  serverMessageId = mailInfo.messageId;
+                } catch (e: any) {
+                  deliveryStatus = "BOUNCED";
+                  deliveryError = e.message;
+                }
+              } else {
+                // Inform user in log that SMTP credentials are required for real inbox delivery
+                deliveryStatus = "BOUNCED";
+                deliveryError = "No SMTP App Password configured in Settings -> SMTP & Sender tab.";
+              }
+
               const logEntry = {
                 id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                 to,
@@ -595,10 +683,12 @@ function crmSyncPlugin(): Plugin {
                 automationId: automationId || null,
                 triggerEvent: triggerEvent || "Manual Send",
                 studentId: studentId || null,
-                status: "DELIVERED",
+                status: deliveryStatus,
+                error: deliveryError,
+                messageId: serverMessageId,
                 deliveredAt: new Date().toISOString(),
-                openedAt: Math.random() > 0.3 ? new Date().toISOString() : null,
-                clickedAt: Math.random() > 0.6 ? new Date().toISOString() : null,
+                openedAt: deliveryStatus === "DELIVERED" ? new Date().toISOString() : null,
+                clickedAt: null,
                 previewSnippet: bodyHtml ? bodyHtml.replace(/<[^>]+>/g, "").substring(0, 120) + "…" : "",
               };
 
@@ -611,10 +701,52 @@ function crmSyncPlugin(): Plugin {
               broadcast("email_sent", logEntry);
               res.setHeader("Content-Type", "application/json");
               res.setHeader("Access-Control-Allow-Origin", "*");
-              res.end(JSON.stringify({ success: true, log: logEntry }));
+              res.end(JSON.stringify({ success: deliveryStatus === "DELIVERED", log: logEntry, error: deliveryError }));
             } catch (err: any) {
               res.statusCode = 400;
               res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
+
+        // Test SMTP Connection Endpoint
+        if (url === "/api/sync/email/test-connection" && req.method === "POST") {
+          let body = "";
+          req.on("data", chunk => (body += chunk));
+          req.on("end", async () => {
+            try {
+              const testConfig = JSON.parse(body);
+              const smtpUser = testConfig.smtpUser || testConfig.senderEmail;
+              const smtpPass = testConfig.smtpPass || testConfig.apiKey;
+
+              if (!smtpUser || !smtpPass) {
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: false, error: "Please provide both SMTP User/Email and Password/API Key." }));
+                return;
+              }
+
+              const transporter = nodemailer.createTransport({
+                host: testConfig.smtpHost || "smtp.gmail.com",
+                port: Number(testConfig.smtpPort) || 587,
+                secure: Number(testConfig.smtpPort) === 465,
+                auth: {
+                  user: smtpUser,
+                  pass: smtpPass,
+                },
+                tls: {
+                  rejectUnauthorized: false,
+                },
+              });
+
+              await transporter.verify();
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify({ success: true, message: "250 OK: SMTP Authentication Successful!" }));
+            } catch (err: any) {
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify({ success: false, error: err.message }));
             }
           });
           return;

@@ -65,6 +65,7 @@ export interface SmtpSettings {
   smtpHost: string;
   smtpPort: number;
   smtpUser: string;
+  smtpPass?: string;
   apiKey?: string;
   enableRealSending: boolean;
 }
@@ -407,6 +408,21 @@ export class EmailAutomationService {
       return res.ok;
     } catch {
       return false;
+    }
+  }
+
+  // 7.1 Test SMTP Connection
+  static async testSmtpConnection(settings: SmtpSettings): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const res = await fetch("/api/sync/email/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      const data = await res.json();
+      return data;
+    } catch (e: any) {
+      return { success: false, error: e.message };
     }
   }
 
