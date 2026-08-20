@@ -50,3 +50,10 @@ data/*.json
 !data/.gitkeep
 
 .env*
+
+# local development and preview artifacts
+/.preview/
+/.preview-server.mjs
+/.npm-cache/
+/work-vite.stdout.log
+/work-vite.stderr.log

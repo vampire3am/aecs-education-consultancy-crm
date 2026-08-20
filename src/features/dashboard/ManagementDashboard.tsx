@@ -2,13 +2,8 @@ import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,67 +11,80 @@ import {
 } from "recharts";
 import {
   ArrowUpRight,
-  Award,
+  AlertTriangle,
   BookOpen,
-  Calendar,
   CheckCircle2,
   ChevronRight,
-  Clock,
   CreditCard,
   FileCheck2,
-  FileText,
   GraduationCap,
-  Layers,
-  MapPin,
-  MessageSquare,
   PlaneTakeoff,
   Plus,
   Receipt,
-  Search,
-  Sparkles,
   TrendingUp,
-  UserCheck,
   UserPlus,
   Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
-import { StudentService } from "../../services/studentService";
+import { supabase } from "../../lib/supabase";
 
 // Trend series for 30-day analytics
-const INTAKE_TREND_DATA = [
-  { day: "01 Aug", leads: 4, applications: 2, classes: 3 },
-  { day: "03 Aug", leads: 6, applications: 3, classes: 4 },
-  { day: "05 Aug", leads: 5, applications: 4, classes: 2 },
-  { day: "07 Aug", leads: 8, applications: 5, classes: 6 },
-  { day: "09 Aug", leads: 7, applications: 4, classes: 5 },
-  { day: "11 Aug", leads: 11, applications: 7, classes: 8 },
-  { day: "13 Aug", leads: 9, applications: 6, classes: 7 },
-  { day: "15 Aug", leads: 12, applications: 8, classes: 9 },
-  { day: "Today", leads: 14, applications: 9, classes: 10 },
-];
+const INTAKE_TREND_DATA: Array<{ day: string; leads: number; applications: number }> = [];
+const DESTINATION_DATA: Array<{ name: string; value: number; color: string }> = [];
 
-const DESTINATION_DATA = [
-  { name: "United Kingdom", value: 42, color: "#2563EB" },
-  { name: "Australia", value: 28, color: "#10B981" },
-  { name: "Canada", value: 16, color: "#F59E0B" },
-  { name: "United States", value: 10, color: "#8B5CF6" },
-  { name: "Germany & Japan", value: 4, color: "#06B6D4" },
-];
+interface DashboardAppointment {
+  id: string;
+  time: string;
+  studentName: string;
+  target: string;
+  counsellor: string;
+  status: string;
+}
 
-const TODAY_APPOINTMENTS: any[] = [];
+interface DashboardActivity {
+  id: string;
+  type: "visa" | "offer" | "invoice" | "student";
+  title: string;
+  desc: string;
+  time: string;
+  user: string;
+}
 
-const RECENT_ACTIVITIES: any[] = [];
+const TODAY_APPOINTMENTS: DashboardAppointment[] = [];
+const RECENT_ACTIVITIES: DashboardActivity[] = [];
 
 export function ManagementDashboard() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
   const [totalStudents, setTotalStudents] = useState(0);
+  const [summary, setSummary] = useState({ counselling: 0, offers: 0, visaRatio: 0, revenue: 0 });
+  const [dashboardError, setDashboardError] = useState("");
 
   useEffect(() => {
-    StudentService.getStudents().then(data => {
-      setTotalStudents(data ? data.length : 0);
+    let active = true;
+    void Promise.all([
+      supabase.from("students").select("id", { count: "exact", head: true }),
+      supabase.from("counselling_records").select("id", { count: "exact", head: true }),
+      supabase.from("university_applications").select("id", { count: "exact", head: true }).in("stage", ["CONDITIONAL_OFFER", "UNCONDITIONAL_OFFER", "CAS_ISSUED", "VISA_LODGED", "VISA_APPROVED", "ENROLLED"]),
+      supabase.from("visa_tracking").select("visa_status"),
+      supabase.from("student_invoices").select("amount_npr").eq("status", "PAID").gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+    ]).then(([students, counselling, offers, visas, invoices]) => {
+      if (!active) return;
+      const firstError = [students.error, counselling.error, offers.error, visas.error, invoices.error].find(Boolean);
+      if (firstError) {
+        setDashboardError("Live dashboard data could not be loaded. Check your connection or ask an administrator to verify your permissions.");
+        return;
+      }
+      const decidedVisas = (visas.data || []).filter(row => row.visa_status === "APPROVED" || row.visa_status === "REJECTED");
+      const approvedVisas = decidedVisas.filter(row => row.visa_status === "APPROVED").length;
+      setTotalStudents(students.count || 0);
+      setSummary({
+        counselling: counselling.count || 0,
+        offers: offers.count || 0,
+        visaRatio: decidedVisas.length ? (approvedVisas / decidedVisas.length) * 100 : 0,
+        revenue: (invoices.data || []).reduce((total, row) => total + Number(row.amount_npr || 0), 0),
+      });
     });
+    return () => { active = false; };
   }, []);
 
   return (
@@ -113,6 +121,17 @@ export function ManagementDashboard() {
         </div>
       </div>
 
+      {dashboardError && (
+        <div className="dashboard-error-banner" role="alert">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>Dashboard unavailable</strong>
+            <span>{dashboardError}</span>
+          </div>
+          <button type="button" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
+
       {/* Flagship KPI Strip */}
       <div className="metrics-grid-4" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
         <div className="metric-box">
@@ -125,7 +144,7 @@ export function ManagementDashboard() {
           <div className="metric-value">{totalStudents}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--success-text)", fontWeight: 600 }}>
             <ArrowUpRight size={13} />
-            <span>+14.2% vs last month</span>
+            <span>Live registered records</span>
           </div>
         </div>
 
@@ -136,8 +155,8 @@ export function ManagementDashboard() {
               <BookOpen size={17} />
             </div>
           </div>
-          <div className="metric-value">26</div>
-          <span className="metric-sub">Active consultations & prep</span>
+          <div className="metric-value">{summary.counselling}</div>
+          <span className="metric-sub">Recorded counselling sessions</span>
         </div>
 
         <div className="metric-box">
@@ -147,8 +166,8 @@ export function ManagementDashboard() {
               <CheckCircle2 size={17} />
             </div>
           </div>
-          <div className="metric-value">18</div>
-          <span className="metric-sub">UK, Australia, Canada, USA</span>
+          <div className="metric-value">{summary.offers}</div>
+          <span className="metric-sub">Offer and post-offer stages</span>
         </div>
 
         <div className="metric-box">
@@ -158,8 +177,8 @@ export function ManagementDashboard() {
               <GraduationCap size={17} />
             </div>
           </div>
-          <div className="metric-value">96.2%</div>
-          <span className="metric-sub">FY 2026/27 Statutory</span>
+          <div className="metric-value">{summary.visaRatio.toFixed(1)}%</div>
+          <span className="metric-sub">Based on recorded decisions</span>
         </div>
 
         <div className="metric-box">
@@ -169,8 +188,8 @@ export function ManagementDashboard() {
               <TrendingUp size={17} />
             </div>
           </div>
-          <div className="metric-value">₨ 8.42L</div>
-          <span className="metric-sub">VAT & PAN Compliant</span>
+          <div className="metric-value">₨ {summary.revenue.toLocaleString("en-NP")}</div>
+          <span className="metric-sub">Paid invoices this month</span>
         </div>
       </div>
 
@@ -187,7 +206,7 @@ export function ManagementDashboard() {
           </div>
 
           <div className="panel-body" style={{ height: "300px" }}>
-            <ResponsiveContainer width="100%" height="100%">
+            {INTAKE_TREND_DATA.length > 0 ? <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={INTAKE_TREND_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
@@ -215,7 +234,7 @@ export function ManagementDashboard() {
                 <Area type="monotone" dataKey="leads" name="New Inquiries" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorLeads)" />
                 <Area type="monotone" dataKey="applications" name="Uni Applications" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorApps)" />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> : <div className="dashboard-empty-state">Trend data will appear after leads and applications are recorded.</div>}
           </div>
         </div>
 
@@ -283,6 +302,7 @@ export function ManagementDashboard() {
                 </span>
               </div>
             ))}
+            {TODAY_APPOINTMENTS.length === 0 && <div className="dashboard-empty-state">No counselling appointments scheduled for today.</div>}
           </div>
         </div>
       </div>
@@ -328,6 +348,7 @@ export function ManagementDashboard() {
                   </div>
                 </div>
               ))}
+              {DESTINATION_DATA.length === 0 && <div className="dashboard-empty-state">Destination preferences will appear after student intake records are added.</div>}
             </div>
           </div>
         </div>
@@ -403,6 +424,7 @@ export function ManagementDashboard() {
                 </div>
               </div>
             ))}
+            {RECENT_ACTIVITIES.length === 0 && <div className="dashboard-empty-state">No operational activity has been recorded yet.</div>}
           </div>
         </div>
       </div>

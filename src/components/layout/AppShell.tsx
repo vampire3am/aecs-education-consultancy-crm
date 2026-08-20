@@ -1,20 +1,14 @@
-import { AnimatePresence, motion } from "framer-motion";
 import {
   Award,
   BarChart3,
   Bell,
   BookOpen,
-  Briefcase,
-  Building,
   Calendar,
-  Check,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
   CreditCard,
   FileCheck2,
-  FileSpreadsheet,
   FileText,
   Folder,
   Globe,
@@ -28,15 +22,12 @@ import {
   Moon,
   PlaneTakeoff,
   Plus,
-  Receipt,
   Search,
   Settings,
   ShieldCheck,
-  Sparkles,
   Sun,
   TrendingUp,
   UserCheck,
-  UserPlus,
   Users,
   Wallet,
   X,
@@ -81,7 +72,7 @@ export function AppShell() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, permissions, signOut, switchDemoProfile } = useAuth();
+  const { profile, permissions, signOut } = useAuth();
 
   // Find page title from path
   const currentTitle = useMemo(() => {
@@ -109,7 +100,10 @@ export function AppShell() {
     );
   }, [query]);
 
-  useEffect(() => setMobileOpen(false), [location.pathname]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMobileOpen(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -146,6 +140,14 @@ export function AppShell() {
 
   return (
     <div className="app-layout">
+      {mobileOpen && (
+        <button
+          type="button"
+          className="sidebar-mobile-backdrop"
+          aria-label="Close navigation menu"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
       {/* Advanced Enterprise Sidebar Matching Image 4 */}
       <aside className={`app-sidebar ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="sidebar-brand">

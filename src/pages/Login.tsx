@@ -1,26 +1,13 @@
-import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  BookOpen,
-  Briefcase,
-  Building,
-  Check,
-  CreditCard,
   Eye,
   EyeOff,
   Globe,
-  GraduationCap,
-  HelpCircle,
-  KeyRound,
   Lock,
   Mail,
-  PlaneTakeoff,
   Shield,
   ShieldAlert,
   ShieldCheck,
-  Sparkles,
-  User,
-  UserCheck,
   Users,
 } from "lucide-react";
 import { type FormEvent, useState } from "react";
@@ -28,82 +15,13 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { isSupabaseConfigured } from "../lib/supabase";
 
-interface QuickRolePreset {
-  id: string;
-  name: string;
-  department: string;
-  email: string;
-  defaultPass: string;
-  icon: any;
-  tone: string;
-}
-
-const STAFF_ROLE_PRESETS: QuickRolePreset[] = [
-  {
-    id: "admin",
-    name: "Owner / Director",
-    department: "Executive Management",
-    email: "admin@abroad.edu.np",
-    defaultPass: "aecs2026",
-    icon: ShieldCheck,
-    tone: "#3B82F6",
-  },
-  {
-    id: "counsellor",
-    name: "Senior Counsellor",
-    department: "Admissions & UK/Aus Placements",
-    email: "counsellor@abroad.edu.np",
-    defaultPass: "counsellor2026",
-    icon: Globe,
-    tone: "#8B5CF6",
-  },
-  {
-    id: "visa",
-    name: "Visa Compliance Officer",
-    department: "Embassy Lodgement & VFS",
-    email: "visa@abroad.edu.np",
-    defaultPass: "aecs2026",
-    icon: PlaneTakeoff,
-    tone: "#10B981",
-  },
-  {
-    id: "faculty",
-    name: "Test Prep Faculty Lead",
-    department: "IELTS, PTE & Language Lab",
-    email: "faculty@abroad.edu.np",
-    defaultPass: "aecs2026",
-    icon: GraduationCap,
-    tone: "#F59E0B",
-  },
-  {
-    id: "accounts",
-    name: "Finance & Accounts",
-    department: "Ledger, Invoices & Commissions",
-    email: "accounts@abroad.edu.np",
-    defaultPass: "aecs2026",
-    icon: CreditCard,
-    tone: "#06B6D4",
-  },
-  {
-    id: "frontdesk",
-    name: "Front Desk & Intake",
-    department: "Reception & Walk-in Inquiries",
-    email: "frontdesk@abroad.edu.np",
-    defaultPass: "aecs2026",
-    icon: Users,
-    tone: "#EC4899",
-  },
-];
-
 export function Login() {
   const { session, signIn } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<string>("admin");
-  const [email, setEmail] = useState("admin@abroad.edu.np");
-  const [password, setPassword] = useState("aecs2026");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -111,13 +29,6 @@ export function Login() {
   if (session) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  const handleSelectPreset = (preset: QuickRolePreset) => {
-    setActiveTab(preset.id);
-    setEmail(preset.email);
-    setPassword(preset.defaultPass);
-    setError("");
-  };
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -201,7 +112,7 @@ export function Login() {
           <div>
             <div className="login-badge-seal">
               <Shield size={13} />
-              <span>Kathmandu Central Hub · 256-Bit Encrypted</span>
+              <span>Kathmandu Central Hub · Secure staff access</span>
             </div>
           </div>
         </div>
@@ -213,28 +124,15 @@ export function Login() {
           <div className="login-form-header">
             <span className="eyebrow-tag">Operational Portal</span>
             <h1>Staff Sign In</h1>
-            <p>Select your authorized department or enter your official credentials to access the CRM.</p>
+            <p>Enter the credentials issued to your authorized staff account.</p>
           </div>
 
-          {/* Quick Department Role Tabs */}
-          <div className="login-role-tabs">
-            {STAFF_ROLE_PRESETS.map(preset => {
-              const Icon = preset.icon;
-              const isActive = activeTab === preset.id;
-
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  className={`login-role-tab-btn ${isActive ? "active" : ""}`}
-                  onClick={() => handleSelectPreset(preset)}
-                >
-                  <Icon size={13} style={{ color: isActive ? preset.tone : "inherit" }} />
-                  <span>{preset.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          {!isSupabaseConfigured && (
+            <div className="login-error-banner" role="alert">
+              <ShieldAlert size={16} />
+              <span>This deployment is not connected to the AECS authentication service.</span>
+            </div>
+          )}
 
           <form onSubmit={submit} noValidate>
             {/* Email Field */}
@@ -261,7 +159,7 @@ export function Login() {
             <div className="login-field-group">
               <label className="login-field-label">
                 <span>Security Password</span>
-                <span style={{ fontSize: "11px", color: "#64748B" }}>Default: aecs2026</span>
+                <span style={{ fontSize: "11px", color: "#64748B" }}>Managed securely</span>
               </label>
               <div className="login-input-wrapper">
                 <Lock size={16} className="login-input-icon" />
@@ -285,18 +183,8 @@ export function Login() {
               </div>
             </div>
 
-            {/* Remember Me Checkbox */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", fontSize: "12px", color: "#94A3B8" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "7px", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  style={{ accentColor: "#3B82F6" }}
-                />
-                <span>Remember this terminal</span>
-              </label>
-              <span style={{ fontSize: "11.5px", color: "#64748B" }}>AECS Auth v2.4</span>
+            <div style={{ marginBottom: "18px", fontSize: "11.5px", color: "#64748B" }}>
+              Sessions are encrypted, automatically refreshed, and can be revoked by an administrator.
             </div>
 
             {/* Error Alert */}
@@ -308,7 +196,7 @@ export function Login() {
             )}
 
             {/* Submit Button */}
-            <button type="submit" className="login-submit-btn" disabled={busy}>
+            <button type="submit" className="login-submit-btn" disabled={busy || !isSupabaseConfigured}>
               {busy ? (
                 <>
                   <div style={{ width: "16px", height: "16px", border: "2px solid #FFFFFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />

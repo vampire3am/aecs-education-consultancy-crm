@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 const AppShell = lazy(() => import("../components/layout/AppShell").then(m => ({ default: m.AppShell })));
 const LoginArea = lazy(() => import("../features/auth/AuthRoutes").then(m => ({ default: m.LoginArea })));
@@ -16,6 +16,9 @@ const RegistrationForm = lazy(() =>
 const StudentDirectory = lazy(() =>
   import("../features/students/directory/StudentDirectory").then(m => ({ default: m.StudentDirectory }))
 );
+const StudentProfile = lazy(() =>
+  import("../features/students/profile/StudentProfile").then(m => ({ default: m.StudentProfile }))
+);
 const CounsellingDashboard = lazy(() =>
   import("../features/counselling/CounsellingDashboard").then(m => ({ default: m.CounsellingDashboard }))
 );
@@ -27,6 +30,12 @@ const DocumentDashboard = lazy(() =>
 );
 const ClassesWorkspace = lazy(() =>
   import("../features/classes/ClassesWorkspace").then(m => ({ default: m.ClassesWorkspace }))
+);
+const ClassEnquiries = lazy(() =>
+  import("../features/classes/ClassEnquiries").then(m => ({ default: m.ClassEnquiries }))
+);
+const ClassEnquiryProfile = lazy(() =>
+  import("../features/classes/ClassEnquiryProfile").then(m => ({ default: m.ClassEnquiryProfile }))
 );
 const MockTestsWorkspace = lazy(() =>
   import("../features/mocks/MockTestsWorkspace").then(m => ({ default: m.MockTestsWorkspace }))
@@ -63,6 +72,21 @@ const Loading = () => (
       <span style={{ fontSize: "12px", fontWeight: 600 }}>Loading AECS Workspace…</span>
     </div>
   </div>
+);
+
+const NotFound = () => (
+  <section className="page-container" style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}>
+    <div className="panel" style={{ maxWidth: "520px", textAlign: "center", padding: "40px" }}>
+      <p className="eyebrow">404 · Workspace not found</p>
+      <h1 style={{ margin: "8px 0", fontSize: "24px" }}>This CRM page does not exist</h1>
+      <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>
+        The address may be outdated or the module may not be available to your account.
+      </p>
+      <Link className="primary-button" style={{ display: "inline-flex", marginTop: "14px", textDecoration: "none" }} to="/dashboard">
+        Return to dashboard
+      </Link>
+    </div>
+  </section>
 );
 
 import { RoleRouteGuard } from "../features/auth/RoleRouteGuard";
@@ -105,6 +129,14 @@ export default function App() {
               element={
                 <RoleRouteGuard permission="students" workspaceName="Student Registration">
                   <RegistrationForm />
+                </RoleRouteGuard>
+              }
+            />
+            <Route
+              path="/students/:id"
+              element={
+                <RoleRouteGuard permission="students" workspaceName="Student Profile">
+                  <StudentProfile />
                 </RoleRouteGuard>
               }
             />
@@ -166,6 +198,22 @@ export default function App() {
                 </RoleRouteGuard>
               }
             />
+            <Route
+              path="/class-enquiries"
+              element={
+                <RoleRouteGuard permission="classes" workspaceName="Class Enquiries">
+                  <ClassEnquiries />
+                </RoleRouteGuard>
+              }
+            />
+            <Route
+              path="/class-enquiries/:id"
+              element={
+                <RoleRouteGuard permission="classes" workspaceName="Class Enquiry Profile">
+                  <ClassEnquiryProfile />
+                </RoleRouteGuard>
+              }
+            />
 
             {/* Mock Tests */}
             <Route
@@ -206,10 +254,24 @@ export default function App() {
             />
 
             {/* Team Messages (All 18 Staff Can Chat Privately) */}
-            <Route path="/messages" element={<MessagesWorkspace />} />
+            <Route
+              path="/messages"
+              element={
+                <RoleRouteGuard permission="messages" workspaceName="Team Messages">
+                  <MessagesWorkspace />
+                </RoleRouteGuard>
+              }
+            />
 
             {/* Email Automation & Drip Campaigns */}
-            <Route path="/email-automation" element={<EmailAutomationWorkspace />} />
+            <Route
+              path="/email-automation"
+              element={
+                <RoleRouteGuard permission="settings" workspaceName="Email Automation">
+                  <EmailAutomationWorkspace />
+                </RoleRouteGuard>
+              }
+            />
 
             {/* Reports & Analytics */}
             <Route
@@ -231,8 +293,7 @@ export default function App() {
               }
             />
 
-            {/* Catch-all fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
       </Routes>
