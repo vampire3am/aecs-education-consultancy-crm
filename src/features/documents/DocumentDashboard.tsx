@@ -2,47 +2,23 @@ import { useEffect, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
-  Award,
-  Building,
   Check,
-  CheckCircle2,
   Clock,
   Download,
   Eye,
-  FileCheck,
   FileCheck2,
   FileSpreadsheet,
   FileText,
-  Filter,
-  GraduationCap,
-  Paperclip,
-  PlaneTakeoff,
-  Plus,
   Search,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
-  Trash2,
   UploadCloud,
-  UserCheck,
-  Users,
   X,
   XCircle,
 } from "lucide-react";
 import { StudentService } from "../../services/studentService";
+import { DocumentService, type DocumentRecord } from "../../services/documentService";
 
-interface DocItem {
-  id: string;
-  studentCode: string;
-  studentName: string;
-  fileName: string;
-  category: string;
-  fileSize: string;
-  uploadedAt: string;
-  status: "VERIFIED" | "UNDER_REVIEW" | "ACTION_REQUIRED" | "REJECTED" | "EXPIRED";
-  verifiedBy?: string;
-  notes?: string;
-}
+type DocItem = DocumentRecord;
 
 const DOCUMENT_CATEGORIES = [
   "All Categories",
@@ -79,7 +55,11 @@ const STATUS_CONFIG: Record<DocItem["status"], { label: string; tone: string }> 
 
 export function DocumentDashboard() {
   const [docs, setDocs] = useState<DocItem[]>(INITIAL_DOCS);
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Array<{id:string;student_code:string;full_name:string}>>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [activeTab, setActiveTab] = useState<"files" | "checklist">("files");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
@@ -96,57 +76,41 @@ export function DocumentDashboard() {
     category: "Passport & Identity",
     fileSize: "1.2 MB",
     status: "UNDER_REVIEW" as DocItem["status"],
+    expiresOn: "",
+    notes: "",
   });
 
   useEffect(() => {
-    StudentService.getStudents().then(data => {
-      setStudents(data || []);
-      if (data && data.length > 0) {
+    Promise.all([StudentService.getStudents(), DocumentService.list()]).then(([studentRows,documents]) => {
+      setStudents(studentRows || []);
+      setDocs(documents);
+      if (studentRows && studentRows.length > 0) {
         setUploadForm(prev => ({
           ...prev,
-          studentCode: data[0].code,
-          studentName: data[0].fullName,
+          studentCode: studentRows[0].student_code,
+          studentName: studentRows[0].full_name,
         }));
       }
-    });
+    }).catch(error=>setErrorMessage(error instanceof Error?error.message:"Unable to load document vault.")).finally(()=>setLoading(false));
   }, []);
 
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadForm.fileName.trim()) return;
-
-    const newDoc: DocItem = {
-      id: `doc-${Date.now()}`,
-      studentCode: uploadForm.studentCode || "AECS-CANDIDATE",
-      studentName: uploadForm.studentName || "New Candidate",
-      fileName: uploadForm.fileName.endsWith(".pdf") ? uploadForm.fileName : `${uploadForm.fileName}.pdf`,
-      category: uploadForm.category,
-      fileSize: uploadForm.fileSize,
-      uploadedAt: "Just now",
-      status: uploadForm.status,
-      notes: "Uploaded via AECS Document Desk.",
-    };
-
-    setDocs([newDoc, ...docs]);
-    setShowUploadModal(false);
-    setUploadForm({
-      studentCode: students.length > 0 ? students[0].code : "",
-      studentName: students.length > 0 ? students[0].fullName : "",
+    if (!selectedFile||!uploadForm.fileName.trim()) return;
+    setSaving(true);setErrorMessage("");
+    try{await DocumentService.upload({studentCode:uploadForm.studentCode,category:uploadForm.category,title:uploadForm.fileName,file:selectedFile,expiresOn:uploadForm.expiresOn,notes:uploadForm.notes});setDocs(await DocumentService.list());setShowUploadModal(false);setSelectedFile(null);setUploadForm({
+      studentCode: students.length > 0 ? students[0].student_code : "",
+      studentName: students.length > 0 ? students[0].full_name : "",
       fileName: "",
       category: "Passport & Identity",
       fileSize: "1.2 MB",
       status: "UNDER_REVIEW",
-    });
+      expiresOn:"",notes:"",
+    });}catch(error){setErrorMessage(error instanceof Error?error.message:"Upload failed.")}finally{setSaving(false)}
   };
 
-  const handleUpdateStatus = (id: string, newStatus: DocItem["status"]) => {
-    const updated = docs.map(d =>
-      d.id === id ? { ...d, status: newStatus, verifiedBy: newStatus === "VERIFIED" ? "Binod Maharjan" : d.verifiedBy } : d
-    );
-    setDocs(updated);
-    if (inspectDoc && inspectDoc.id === id) {
-      setInspectDoc({ ...inspectDoc, status: newStatus, verifiedBy: newStatus === "VERIFIED" ? "Binod Maharjan" : inspectDoc.verifiedBy });
-    }
+  const handleUpdateStatus = async (id: string, newStatus: DocItem["status"]) => {
+    setSaving(true);setErrorMessage("");try{await DocumentService.review(id,newStatus);const updated=await DocumentService.list();setDocs(updated);setInspectDoc(updated.find(d=>d.id===id)??null)}catch(error){setErrorMessage(error instanceof Error?error.message:"Review failed.")}finally{setSaving(false)}
   };
 
   const exportCSV = () => {
@@ -206,6 +170,9 @@ export function DocumentDashboard() {
           </button>
         </div>
       </div>
+      {errorMessage&&<div className="phase2-alert phase2-alert-error" role="alert"><AlertCircle size={17}/>{errorMessage}<button type="button" onClick={()=>setErrorMessage("")}><X size={15}/></button></div>}
+      {loading&&<div className="phase2-loading" role="status">Loading private document vault…</div>}
+      {saving&&<div className="phase2-saving" role="status">Securing document…</div>}
 
       {/* Flagship Metric Strip */}
       <div className="metrics-grid-4">
@@ -422,9 +389,7 @@ export function DocumentDashboard() {
                             type="button"
                             className="table-btn"
                             title="Download File"
-                            onClick={() => {
-                              alert(`Downloading ${doc.fileName} from secure AECS storage.`);
-                            }}
+                            onClick={async () => { try{window.location.assign(await DocumentService.signedUrl(doc.storagePath,true))}catch(error){setErrorMessage(error instanceof Error?error.message:"Download failed.")} }}
                           >
                             <Download size={14} />
                           </button>
@@ -522,19 +487,13 @@ export function DocumentDashboard() {
                         }}
                       >
                         {students.map(s => (
-                          <option key={s.id} value={`${s.code}|${s.fullName}`}>
-                            {s.fullName} ({s.code})
+                          <option key={s.id} value={`${s.student_code}|${s.full_name}`}>
+                            {s.full_name} ({s.student_code})
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <input
-                        type="text"
-                        required
-                        value={uploadForm.studentName}
-                        onChange={e => setUploadForm({ ...uploadForm, studentName: e.target.value, studentCode: uploadForm.studentCode || "AECS-2026-00001" })}
-                        placeholder="Candidate Full Name (e.g. Ram Shrestha)"
-                      />
+                      <div className="phase3-task-empty">Register a student before uploading documents.</div>
                     )}
                   </div>
 
@@ -565,28 +524,18 @@ export function DocumentDashboard() {
                   />
                 </div>
 
+                <div className="form-group"><label>Select file * (PDF, JPG, PNG, DOCX · max 20 MB)</label><input type="file" required accept=".pdf,.jpg,.jpeg,.png,.docx" onChange={e=>{const file=e.target.files?.[0]??null;setSelectedFile(file);if(file&&!uploadForm.fileName)setUploadForm({...uploadForm,fileName:file.name})}}/></div>
+
                 <div className="form-row-2">
                   <div className="form-group">
-                    <label>File Size</label>
-                    <input
-                      type="text"
-                      value={uploadForm.fileSize}
-                      onChange={e => setUploadForm({ ...uploadForm, fileSize: e.target.value })}
-                      placeholder="e.g. 2.4 MB"
-                    />
+                    <label>Expiry date</label><input type="date" value={uploadForm.expiresOn} onChange={e=>setUploadForm({...uploadForm,expiresOn:e.target.value})}/>
                   </div>
 
                   <div className="form-group">
-                    <label>Initial Status</label>
-                    <select
-                      value={uploadForm.status}
-                      onChange={e => setUploadForm({ ...uploadForm, status: e.target.value as any })}
-                    >
-                      <option value="UNDER_REVIEW">Under Review</option>
-                      <option value="VERIFIED">Verified</option>
-                    </select>
+                      <label>Initial status</label><input value="Under Review" disabled/>
                   </div>
                 </div>
+                <div className="form-group"><label>Upload notes</label><textarea rows={2} maxLength={3000} value={uploadForm.notes} onChange={e=>setUploadForm({...uploadForm,notes:e.target.value})}/></div>
               </div>
 
               <div className="modal-footer-clean">
@@ -597,7 +546,7 @@ export function DocumentDashboard() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
+                <button type="submit" className="btn-primary" disabled={saving||!selectedFile||students.length===0}>
                   <UploadCloud size={15} />
                   <span>Upload & Save Document</span>
                 </button>
@@ -612,6 +561,10 @@ export function DocumentDashboard() {
         <div className="modal-backdrop-clean" onClick={() => setInspectDoc(null)}>
           <div className="modal-dialog-clean" style={{ maxWidth: "560px" }} onClick={e => e.stopPropagation()}>
             <div className="modal-header-clean">
+              <div>
+                <button type="button" className="btn-secondary" onClick={async()=>{try{window.open(await DocumentService.signedUrl(inspectDoc.storagePath),"_blank","noopener,noreferrer")}catch(error){setErrorMessage(error instanceof Error?error.message:"Preview failed.")}}}><Eye size={14}/>Secure preview (5 min)</button>
+              </div>
+
               <div>
                 <h3>Document Verification Audit</h3>
                 <p style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
@@ -644,7 +597,7 @@ export function DocumentDashboard() {
                   <div>
                     <strong style={{ fontSize: "13px", display: "block" }}>{inspectDoc.fileName}</strong>
                     <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                      {inspectDoc.category} · {inspectDoc.fileSize} · {inspectDoc.uploadedAt}
+                      {inspectDoc.category} · {inspectDoc.fileSize} · Version {inspectDoc.version}
                     </span>
                   </div>
                 </div>
@@ -659,6 +612,8 @@ export function DocumentDashboard() {
                   <span style={{ color: "var(--text-muted)" }}>{inspectDoc.notes}</span>
                 </div>
               )}
+              {inspectDoc.expiresOn&&<div className="phase2-form-note"><strong>Expiry:</strong> {new Date(inspectDoc.expiresOn).toLocaleDateString()}</div>}
+              <div><strong style={{fontSize:"13px"}}>Audit history</strong><div className="phase4-audit-list">{inspectDoc.activities.map((item,index)=><div key={`${item.createdAt}-${index}`}><b>{item.action.replaceAll("_"," ")}</b><small>{item.performedBy} · {new Date(item.createdAt).toLocaleString()}</small></div>)}</div></div>
 
               <div>
                 <label style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", display: "block", marginBottom: "8px" }}>
