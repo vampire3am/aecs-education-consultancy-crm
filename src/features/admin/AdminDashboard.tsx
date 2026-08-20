@@ -1,21 +1,518 @@
-import { FormEvent, useEffect, useState } from "react";
-import { KeyRound, Plus, ShieldCheck, UserPlus, Users, X } from "lucide-react";
-import { supabase } from "../../lib/supabase";
-import { useAuth } from "../auth/AuthProvider";
-const roles=["ADMIN","DIRECTOR","FRONT_DESK","COUNSELLOR","DOCUMENTATION","FINANCE","TEST_BOOKING"];
-type Staff={id:string;full_name:string;email:string;role:string;is_active:boolean};
-async function functionError(error:any){try{const body=await error?.context?.json();return body?.error||error.message}catch{return error?.message||"Request failed"}}
-export function AdminDashboard(){
-  const{profile}=useAuth();const[staff,setStaff]=useState<Staff[]>([]),[logs,setLogs]=useState<any[]>([]),[adding,setAdding]=useState(false),[passwordTarget,setPasswordTarget]=useState<Staff|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
-  const[form,setForm]=useState({full_name:"",email:"",password:"",role:"FRONT_DESK"});const[newPassword,setNewPassword]=useState("");
-  async function load(){const[{data:s},{data:l}]=await Promise.all([supabase.from("staff_profiles").select("*").order("full_name"),supabase.from("audit_logs").select("*,staff_profiles(full_name)").order("created_at",{ascending:false}).limit(50)]);setStaff((s||[]) as Staff[]);setLogs(l||[])}
-  useEffect(()=>{load()},[]);
-  if(!["ADMIN","DIRECTOR"].includes(profile?.role||""))return <article className="panel forbidden"><ShieldCheck/><h2>Administrator access required</h2></article>;
-  async function change(id:string,values:Partial<Staff>){await supabase.from("staff_profiles").update(values).eq("id",id);load()}
-  async function addStaff(event:FormEvent){event.preventDefault();setBusy(true);setMessage("");const{error}=await supabase.functions.invoke("invite-staff",{body:{action:"create",...form}});if(error)setMessage(await functionError(error));else{setMessage("Staff account created successfully.");setForm({full_name:"",email:"",password:"",role:"FRONT_DESK"});await load();setTimeout(()=>setAdding(false),900)}setBusy(false)}
-  async function setPassword(event:FormEvent){event.preventDefault();if(!passwordTarget)return;setBusy(true);setMessage("");const{error}=await supabase.functions.invoke("invite-staff",{body:{action:"set_password",user_id:passwordTarget.id,password:newPassword}});if(error)setMessage(await functionError(error));else{setMessage("Password updated successfully.");setNewPassword("");setTimeout(()=>setPasswordTarget(null),900);await load()}setBusy(false)}
-  return <><section className="page-heading"><div><p className="eyebrow">System administration</p><h2>Staff & permissions</h2><p>Manage staff access, passwords and system activity.</p></div><button className="primary-button" onClick={()=>{setAdding(true);setMessage("")}}><Plus size={16}/>Add staff</button></section><section className="admin-grid"><article className="panel"><div className="panel-head"><div><h3>Staff accounts</h3><p>{staff.length} authorized team members</p></div><Users/></div>{staff.map(s=><div className="staff-row staff-row-actions" key={s.id}><div><strong>{s.full_name}</strong><span>{s.email}</span></div><select value={s.role} onChange={e=>change(s.id,{role:e.target.value})}>{roles.map(role=><option key={role} value={role}>{role.replaceAll("_"," ")}</option>)}</select><label><input type="checkbox" checked={s.is_active} onChange={e=>change(s.id,{is_active:e.target.checked})}/> Active</label><button className="password-button" onClick={()=>{setPasswordTarget(s);setMessage("");setNewPassword("")}}><KeyRound size={14}/>Set password</button></div>)}</article><article className="panel"><div className="panel-head"><div><h3>Audit log</h3><p>Recent security-sensitive actions</p></div><ShieldCheck/></div>{logs.length?logs.map(l=><div className="audit-row" key={l.id}><strong>{l.action}</strong><span>{l.module} · {l.staff_profiles?.full_name||"System"}</span><time>{new Date(l.created_at).toLocaleString()}</time></div>):<p className="admin-empty">No recent administrative activity.</p>}</article></section>
-    {adding&&<div className="modal-backdrop" onMouseDown={()=>setAdding(false)}><form className="staff-modal" onSubmit={addStaff} onMouseDown={event=>event.stopPropagation()}><header><div><UserPlus size={20}/><div><h2>Add staff member</h2><p>Create a login with a temporary password.</p></div></div><button type="button" onClick={()=>setAdding(false)} aria-label="Close"><X/></button></header><div className="staff-form"><label>Full name<input required value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})}/></label><label>Email address<input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label><label>Temporary password<input required type="password" minLength={8} value={form.password} onChange={e=>setForm({...form,password:e.target.value})} autoComplete="new-password"/><small>Minimum 8 characters</small></label><label>Role<select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>{roles.map(role=><option key={role} value={role}>{role.replaceAll("_"," ")}</option>)}</select></label>{message&&<p className={message.includes("successfully")?"staff-success":"form-error"}>{message}</p>}</div><footer><button type="button" className="secondary-button" onClick={()=>setAdding(false)}>Cancel</button><button className="primary-button" disabled={busy}>{busy?"Creating…":"Create account"}</button></footer></form></div>}
-    {passwordTarget&&<div className="modal-backdrop" onMouseDown={()=>setPasswordTarget(null)}><form className="staff-modal password-modal" onSubmit={setPassword} onMouseDown={event=>event.stopPropagation()}><header><div><KeyRound size={20}/><div><h2>Set staff password</h2><p>{passwordTarget.full_name} · {passwordTarget.email}</p></div></div><button type="button" onClick={()=>setPasswordTarget(null)} aria-label="Close"><X/></button></header><div className="staff-form"><label>New password<input required type="password" minLength={8} value={newPassword} onChange={e=>setNewPassword(e.target.value)} autoFocus autoComplete="new-password"/><small>Minimum 8 characters. Share it securely with the staff member.</small></label>{message&&<p className={message.includes("successfully")?"staff-success":"form-error"}>{message}</p>}</div><footer><button type="button" className="secondary-button" onClick={()=>setPasswordTarget(null)}>Cancel</button><button className="primary-button" disabled={busy}>{busy?"Updating…":"Update password"}</button></footer></form></div>}
-  </>;
+import { useState } from "react";
+import {
+  AlertTriangle,
+  Building2,
+  Check,
+  CheckCircle2,
+  Copy,
+  CreditCard,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  Globe2,
+  KeyRound,
+  Layers,
+  Lock,
+  MapPin,
+  Plus,
+  Save,
+  Search,
+  Settings2,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import {
+  AECS_ACCOUNT_CATEGORIES,
+  AECS_CHART_OF_ACCOUNTS,
+} from "../../lib/chartOfAccountsData";
+import { BLUEPRINT_ROLES, MAKER_CHECKER_RULES, SENSITIVE_PERMISSIONS } from "../../lib/blueprintRolesData";
+import { BLUEPRINT_50_REPORTS } from "../../lib/blueprintReportsData";
+
+export function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<"org" | "branches" | "roles" | "security">("org");
+  const [roleSearch, setRoleSearch] = useState<string>("");
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Form State
+  const [orgForm, setOrgForm] = useState({
+    legalName: "Abroad Education Consultancy Services Pvt. Ltd.",
+    tagline: "Your Trusted Bridge to Global Universities",
+    regNo: "REG-293847/080/081",
+    panVat: "PAN 609823411 (VAT Registered)",
+    timezone: "Asia/Kathmandu (UTC+05:45)",
+    fiscalYear: "FY 2082/2083 (2026/2027)",
+    currency: "NPR (Nepalese Rupee · ₨)",
+    address: "Putalisadak / Bagbazar, Kathmandu, Nepal",
+    phone: "+977-1-4234567 / 9801234567",
+    email: "admissions@abroad.edu.np",
+  });
+
+  const handleSaveSettings = () => {
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const filteredRoles = BLUEPRINT_ROLES.filter(
+    r =>
+      r.name.toLowerCase().includes(roleSearch.toLowerCase()) ||
+      r.code.toLowerCase().includes(roleSearch.toLowerCase()) ||
+      r.coreAccess.toLowerCase().includes(roleSearch.toLowerCase())
+  );
+
+  return (
+    <div className="page-container">
+      {/* Header Row */}
+      <div className="page-header-row">
+        <div className="page-header-titles">
+          <span className="page-category-eyebrow">AECS Configuration & Governance Console</span>
+          <h2>System Settings & Enterprise Governance</h2>
+          <p>
+            Organization parameters, multi-branch setup, 18-role RBAC matrix, and maker-checker segregation rules.
+          </p>
+        </div>
+        <div className="page-header-actions">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleSaveSettings}
+          >
+            {savedSuccess ? <Check size={15} /> : <Save size={15} />}
+            <span>{savedSuccess ? "Configuration Saved!" : "Save Settings"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Flagship Metric Strip */}
+      <div className="metrics-grid-4">
+        <div className="metric-box">
+          <div className="metric-header">
+            <span className="metric-label">Operating Hubs</span>
+            <div className="metric-icon-wrap blue">
+              <Building2 size={17} />
+            </div>
+          </div>
+          <div className="metric-value">2 Branches</div>
+          <span className="metric-sub">Kathmandu Central & Pokhara</span>
+        </div>
+
+        <div className="metric-box">
+          <div className="metric-header">
+            <span className="metric-label">Configured RBAC Roles</span>
+            <div className="metric-icon-wrap purple">
+              <ShieldCheck size={17} />
+            </div>
+          </div>
+          <div className="metric-value">18 Roles</div>
+          <span className="metric-sub">Maker-Checker Segregation</span>
+        </div>
+
+        <div className="metric-box">
+          <div className="metric-header">
+            <span className="metric-label">Master Chart of Accounts</span>
+            <div className="metric-icon-wrap amber">
+              <CreditCard size={17} />
+            </div>
+          </div>
+          <div className="metric-value">454 Accounts</div>
+          <span className="metric-sub">1000–8000 Master Ledger</span>
+        </div>
+
+        <div className="metric-box">
+          <div className="metric-header">
+            <span className="metric-label">Governance & Audit</span>
+            <div className="metric-icon-wrap green">
+              <Lock size={17} />
+            </div>
+          </div>
+          <div className="metric-value">100% Compliant</div>
+          <span className="metric-sub">Nepal Tax & Data Privacy</span>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="document-tabs">
+        <button
+          className={activeTab === "org" ? "active" : ""}
+          onClick={() => setActiveTab("org")}
+        >
+          <Building2 size={16} />
+          <span>Organization & Legal Profile</span>
+        </button>
+        <button
+          className={activeTab === "branches" ? "active" : ""}
+          onClick={() => setActiveTab("branches")}
+        >
+          <Globe2 size={16} />
+          <span>Branches & Cost Centres</span>
+        </button>
+        <button
+          className={activeTab === "roles" ? "active" : ""}
+          onClick={() => setActiveTab("roles")}
+        >
+          <ShieldCheck size={16} />
+          <span>18 CRM Roles & Permissions Matrix</span>
+        </button>
+        <button
+          className={activeTab === "security" ? "active" : ""}
+          onClick={() => setActiveTab("security")}
+        >
+          <Lock size={16} />
+          <span>Maker-Checker & Audit Rules</span>
+        </button>
+      </div>
+
+      {/* TAB 1: ORGANIZATION & BRANDING */}
+      {activeTab === "org" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div className="crm-panel">
+            <div className="panel-header-bar">
+              <div>
+                <h3>Company Legal Entity & Statutory Profile</h3>
+                <p>Official registration parameters and tax identifiers in Nepal</p>
+              </div>
+              <span className="status-pill">Active Registration</span>
+            </div>
+
+            <div className="panel-body">
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Company Legal Name *</label>
+                  <input
+                    type="text"
+                    value={orgForm.legalName}
+                    onChange={e => setOrgForm({ ...orgForm, legalName: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Company Brand Tagline</label>
+                  <input
+                    type="text"
+                    value={orgForm.tagline}
+                    onChange={e => setOrgForm({ ...orgForm, tagline: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2" style={{ marginTop: "14px" }}>
+                <div className="form-group">
+                  <label>Company Registration No. (OCR Nepal) *</label>
+                  <input
+                    type="text"
+                    value={orgForm.regNo}
+                    onChange={e => setOrgForm({ ...orgForm, regNo: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Permanent Account Number (PAN / VAT) *</label>
+                  <input
+                    type="text"
+                    value={orgForm.panVat}
+                    onChange={e => setOrgForm({ ...orgForm, panVat: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2" style={{ marginTop: "14px" }}>
+                <div className="form-group">
+                  <label>Operating Jurisdiction & Timezone *</label>
+                  <input
+                    type="text"
+                    value={orgForm.timezone}
+                    onChange={e => setOrgForm({ ...orgForm, timezone: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Current Fiscal Year (Nepal Standard) *</label>
+                  <input
+                    type="text"
+                    value={orgForm.fiscalYear}
+                    onChange={e => setOrgForm({ ...orgForm, fiscalYear: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2" style={{ marginTop: "14px" }}>
+                <div className="form-group">
+                  <label>Base Operating Currency *</label>
+                  <input
+                    type="text"
+                    value={orgForm.currency}
+                    onChange={e => setOrgForm({ ...orgForm, currency: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Headquarters Address *</label>
+                  <input
+                    type="text"
+                    value={orgForm.address}
+                    onChange={e => setOrgForm({ ...orgForm, address: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Brand Design System Swatches */}
+          <div className="crm-panel">
+            <div className="panel-header-bar">
+              <div>
+                <h3>Brand Design System & Color Tokens</h3>
+                <p>Governing visual tokens for staff UI, invoices, and client documents</p>
+              </div>
+              <span className="status-pill">Standard v1.0</span>
+            </div>
+
+            <div className="panel-body">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
+                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ height: "36px", borderRadius: "4px", background: "#0B1E3B", marginBottom: "10px" }} />
+                  <strong style={{ fontSize: "12.5px", display: "block" }}>AECS Deep Navy</strong>
+                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#0B1E3B</span>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Primary brand anchor & sidebar</p>
+                </div>
+
+                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ height: "36px", borderRadius: "4px", background: "#2563EB", marginBottom: "10px" }} />
+                  <strong style={{ fontSize: "12.5px", display: "block" }}>AECS Accent Blue</strong>
+                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#2563EB</span>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Primary action buttons & links</p>
+                </div>
+
+                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ height: "36px", borderRadius: "4px", background: "#10B981", marginBottom: "10px" }} />
+                  <strong style={{ fontSize: "12.5px", display: "block" }}>Success Emerald</strong>
+                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#10B981</span>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Visa grants & paid invoices</p>
+                </div>
+
+                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
+                  <div style={{ height: "36px", borderRadius: "4px", background: "#F59E0B", marginBottom: "10px" }} />
+                  <strong style={{ fontSize: "12.5px", display: "block" }}>Warning Amber</strong>
+                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#F59E0B</span>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Pending follow-ups & reviews</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: BRANCHES & COST CENTRES */}
+      {activeTab === "branches" && (
+        <div className="crm-panel">
+          <div className="panel-header-bar">
+            <div>
+              <h3>AECS Multi-Branch Architecture</h3>
+              <p>Operating hubs, branch managers, and cost centre ledger assignments</p>
+            </div>
+            <span className="status-pill">2 Active Hubs</span>
+          </div>
+
+          <div style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div style={{ padding: "18px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                <span className="account-code-cell">BRANCH-KTM-01</span>
+                <span className="badge-status enrolled">Primary Main Hub</span>
+              </div>
+              <strong style={{ fontSize: "15px", color: "var(--text-main)", display: "block" }}>Kathmandu Central Headquarters</strong>
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", marginTop: "2px" }}>
+                Putalisadak / Bagbazar Commercial Block, Kathmandu
+              </span>
+
+              <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "14px", paddingTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Branch Manager:</span>
+                  <strong>Sita Adhikari</strong>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Active Staff:</span>
+                  <strong>18 Officers</strong>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Contact Desk:</span>
+                  <span>+977-1-4234567</span>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Cost Centre:</span>
+                  <span className="code-font">CC-100-KTM</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: "18px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                <span className="account-code-cell">BRANCH-PKR-02</span>
+                <span className="badge-status counselling">Western Hub</span>
+              </div>
+              <strong style={{ fontSize: "15px", color: "var(--text-main)", display: "block" }}>Pokhara Regional Office</strong>
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", marginTop: "2px" }}>
+                New Road, Pokhara, Gandaki Province
+              </span>
+
+              <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "14px", paddingTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Branch Manager:</span>
+                  <strong>Binod Maharjan</strong>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Active Staff:</span>
+                  <strong>8 Officers</strong>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Contact Desk:</span>
+                  <span>+977-61-534567</span>
+                </div>
+                <div>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Cost Centre:</span>
+                  <span className="code-font">CC-200-PKR</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: 18 CRM ROLES & PERMISSIONS */}
+      {activeTab === "roles" && (
+        <div className="crm-panel">
+          <div className="filter-toolbar">
+            <div className="search-input-wrap" style={{ width: "360px" }}>
+              <Search size={16} />
+              <input
+                type="text"
+                value={roleSearch}
+                onChange={e => setRoleSearch(e.target.value)}
+                placeholder="Search by role title, code, or permission scope…"
+              />
+            </div>
+            <span className="status-pill">18 Core Roles Defined</span>
+          </div>
+
+          <div className="table-wrapper">
+            <table className="crm-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "160px" }}>Role Code</th>
+                  <th>Designation / Title</th>
+                  <th>Default Scope</th>
+                  <th>Permission Scope & Authority Level</th>
+                  <th>Key Restriction</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRoles.map(role => (
+                  <tr key={role.code}>
+                    <td>
+                      <span className="account-code-cell">{role.code}</span>
+                    </td>
+                    <td>
+                      <strong style={{ fontSize: "13px", color: "var(--text-main)" }}>{role.name}</strong>
+                    </td>
+                    <td>
+                      <span className="badge-status application">{role.defaultScope}</span>
+                    </td>
+                    <td style={{ fontSize: "12px", color: "var(--text-main)" }}>
+                      {role.coreAccess}
+                    </td>
+                    <td style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
+                      {role.keyRestriction}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: MAKER-CHECKER & SECURITY POLICIES */}
+      {activeTab === "security" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div className="crm-panel">
+            <div className="panel-header-bar">
+              <div>
+                <h3>Maker-Checker Segregation of Duties</h3>
+                <p>Four-Eyes Principle governing high-risk financial and admissions actions</p>
+              </div>
+              <span className="status-pill">ISO 27001 Standard</span>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="crm-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "240px" }}>Workflow Action</th>
+                    <th>Four-Eyes Policy / Segregation Standard</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MAKER_CHECKER_RULES.map((rule, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <strong style={{ fontSize: "12.5px", color: "var(--text-main)" }}>{rule.action}</strong>
+                      </td>
+                      <td style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
+                        {rule.rule}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="crm-panel">
+            <div className="panel-header-bar">
+              <div>
+                <h3>Sensitive Access & Audit Logging</h3>
+                <p>Immutable event logging across authentication, payment deletions, and passport exports</p>
+              </div>
+              <span className="status-pill">Strict Audit</span>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="crm-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "200px" }}>Permission Key</th>
+                    <th>Governing Security Scope</th>
+                    <th>Risk Rating</th>
+                    <th>Mandatory Segregation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SENSITIVE_PERMISSIONS.map((perm, idx) => (
+                    <tr key={idx}>
+                      <td>
+                        <span className="account-code-cell">{perm.id}</span>
+                      </td>
+                      <td style={{ fontSize: "12.5px" }}>{perm.name}</td>
+                      <td>
+                        <span className={`badge-status ${perm.risk === "Critical" ? "visa" : perm.risk === "High" ? "new-lead" : "enrolled"}`}>
+                          {perm.risk}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: perm.requiresSegregation ? "var(--success-text)" : "var(--text-muted)" }}>
+                          {perm.requiresSegregation ? "Yes (Dual Auth)" : "Standard"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
+
+export default AdminDashboard;

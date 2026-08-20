@@ -1,10 +1,7 @@
-import { ArrowUpRight, CalendarDays, CircleCheck, FileCheck2, PlaneTakeoff, UserPlus, Users } from "lucide-react";
+import { ManagementDashboard } from "../features/dashboard/ManagementDashboard";
 
-const metrics = [
-  {label:"Today's registrations",value:"12",note:"3 since this morning",icon:UserPlus,tone:"blue"},
-  {label:"Pending counselling",value:"28",note:"8 need attention",icon:Users,tone:"amber"},
-  {label:"Active applications",value:"146",note:"Across 6 destinations",icon:FileCheck2,tone:"violet"},
-  {label:"Visa processing",value:"34",note:"5 decisions this week",icon:PlaneTakeoff,tone:"green"},
-];
-const activity=[['RS','Riya Sharma','New student registration','10:42 AM'],['AK','Aayush Karki','Counselling appointment scheduled','9:55 AM'],['SP','Sanjay Poudel','Application status updated','9:18 AM']];
-export function Dashboard(){return <><section className="page-heading"><div><p className="eyebrow">Friday, 7 August</p><h2>Good morning, AECS team</h2><p>Here’s a clear view of today’s student operations.</p></div><button className="primary-button"><UserPlus size={17}/>New registration</button></section><section className="metric-grid">{metrics.map(({label,value,note,icon:Icon,tone})=><article className="metric-card" key={label}><div className={`metric-icon ${tone}`}><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><p><ArrowUpRight size={14}/>{note}</p></article>)}</section><section className="dashboard-grid"><article className="panel"><div className="panel-head"><div><h3>Recent activity</h3><p>Latest updates across the workspace</p></div><button>View all</button></div><div className="activity-list">{activity.map(([initials,name,action,time])=><div className="activity-row" key={name}><span className="avatar">{initials}</span><div><strong>{name}</strong><p>{action}</p></div><time>{time}</time></div>)}</div></article><article className="panel schedule"><div className="panel-head"><div><h3>Today’s schedule</h3><p>Upcoming team commitments</p></div><CalendarDays size={19}/></div><div className="event"><time>11:00</time><i/><div><strong>Team intake review</strong><span>Meeting room · 30 min</span></div></div><div className="event"><time>14:30</time><i/><div><strong>Weekly counselling sync</strong><span>Conference room · 45 min</span></div></div><div className="quiet-state"><CircleCheck size={17}/><span>You’re on track for today</span></div></article></section></>}
+export function Dashboard() {
+  return <ManagementDashboard />;
+}
+
+export default Dashboard;

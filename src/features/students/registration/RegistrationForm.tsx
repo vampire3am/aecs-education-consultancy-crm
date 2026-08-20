@@ -1,14 +1,915 @@
-import{useState}from"react";import{ArrowLeft,ArrowRight,Check,UserPlus}from"lucide-react";import{registerStudent}from"../student.service";
-const steps=["Personal","Academic","Preferences","English Test","Passport","Additional"];
-const initial={full_name:"",gender:"",dob:"",whatsapp:"",email:"",current_address:"",highest_qualification:"",current_status:"",latest_result:"",study_gap:"",employment_status:"",preferred_country:"",second_country:"",preferred_intake:"",preferred_course:"",budget:"",test_taken:"false",test_type:"",score:"",has_passport:"false",lead_source:"",message:""};
-const field=(name:string,label:string,type="text",required=true,options?:string[])=>({name,label,type,required,options});
-const groups=[
- [field("full_name","Full name"),field("gender","Gender","select",true,["Male","Female","Other","Prefer not to say"]),field("dob","Date of birth","date"),field("whatsapp","WhatsApp number"),field("email","Email","email"),field("current_address","Current address","text",false)],
- [field("highest_qualification","Highest qualification"),field("current_status","Current status"),field("latest_result","Latest GPA / percentage", "text",false),field("study_gap","Study gap","text",false),field("employment_status","Employment status","text",false)],
- [field("preferred_country","Preferred country","select",true,["UK","Australia","Canada","USA","Japan","Korea"]),field("second_country","Second choice","select",false,["UK","Australia","Canada","USA","Japan","Korea"]),field("preferred_intake","Preferred intake"),field("preferred_course","Preferred course"),field("budget","Estimated budget (NPR)","number",false)],
- [field("test_taken","Have you taken an English test?","select",true,["true","false"]),field("test_type","Test type","select",false,["IELTS","PTE","Duolingo","TOEFL","GRE","SAT"]),field("score","Score","text",false)],
- [field("has_passport","Do you have a valid passport?","select",true,["true","false"])],
- [field("lead_source","Lead source","select",true,["Walk-in","Referral","Facebook","Instagram","Website","Education fair","Other"]),field("message","Optional message","textarea",false)]
+import { useState } from "react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Award,
+  BookOpen,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Copy,
+  ExternalLink,
+  FileCheck2,
+  FileText,
+  GraduationCap,
+  Globe,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
+  PlaneTakeoff,
+  RotateCcw,
+  Sparkles,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { StudentService } from "../../../services/studentService";
+import { PhoneInput } from "../../../components/ui/PhoneInput";
+import { CountrySelect } from "../../../components/ui/CountrySelect";
+import { IntakePicker } from "../../../components/ui/IntakePicker";
+import { AECS_AUTHORIZED_COUNTRIES } from "../../../lib/destinationsData";
+
+const REGISTRATION_STEPS = [
+  { step: 1, title: "Personal Details", sub: "Identity & Contact", icon: User },
+  { step: 2, title: "Academic Background", sub: "Qualifications & GPA", icon: GraduationCap },
+  { step: 3, title: "Study Preferences", sub: "Country, Course & Intake", icon: Globe },
+  { step: 4, title: "English Proficiency", sub: "IELTS / PTE / DET", icon: Award },
+  { step: 5, title: "Passport & Travel", sub: "Travel history & validity", icon: PlaneTakeoff },
+  { step: 6, title: "Review & Submit", sub: "Summary & Verification", icon: CheckCircle2 },
 ];
-export function RegistrationForm(){const[step,setStep]=useState(0);const[form,setForm]=useState(initial);const[error,setError]=useState("");const[busy,setBusy]=useState(false);const[success,setSuccess]=useState<{student_code:string}|null>(null);const visible=groups[step].filter(f=>!(step===3&&form.test_taken==="false"&&["test_type","score"].includes(f.name)));const valid=visible.every(f=>!f.required||form[f.name as keyof typeof form]);async function submit(){setBusy(true);setError("");try{const result=await registerStudent({...form,test_taken:form.test_taken==="true",has_passport:form.has_passport==="true"});setSuccess(result)}catch(e){setError(e instanceof Error?e.message:"Registration failed")}finally{setBusy(false)}}if(success)return <article className="success-card"><div><Check size={28}/></div><p className="eyebrow">Registration complete</p><h2>Student registered successfully</h2><p>Student ID</p><strong>{success.student_code}</strong><span className="status-badge new">New Lead</span></article>;
-return <><section className="page-heading"><div><p className="eyebrow">Front desk registration</p><h2>Register a new student</h2><p>Complete the six steps to create a verified AECS student record.</p></div></section><div className="stepper">{steps.map((s,i)=><div className={i===step?"step active":i<step?"step done":"step"} key={s}><span>{i<step?<Check size={14}/>:i+1}</span><small>{s}</small></div>)}</div><article className="panel registration-panel"><div className="form-section-head"><span>Step {step+1} of 6</span><h3>{steps[step]} information</h3></div><div className="form-grid">{visible.map(f=><label key={f.name} className={f.type==="textarea"?"wide":""}>{f.label}{f.required&&<b>*</b>}{f.options?<select value={form[f.name as keyof typeof form]} onChange={e=>setForm({...form,[f.name]:e.target.value})}><option value="">Select</option>{f.options.map(o=><option value={o} key={o}>{o==="true"?"Yes":o==="false"?"No":o}</option>)}</select>:f.type==="textarea"?<textarea value={form[f.name as keyof typeof form]} onChange={e=>setForm({...form,[f.name]:e.target.value})}/>:<input type={f.type} value={form[f.name as keyof typeof form]} onChange={e=>setForm({...form,[f.name]:e.target.value})}/>}</label>)}</div>{error&&<p className="form-error">{error}</p>}<div className="form-actions"><button className="secondary-button" disabled={step===0} onClick={()=>setStep(step-1)}><ArrowLeft size={16}/>Back</button>{step<5?<button className="primary-button" disabled={!valid} onClick={()=>setStep(step+1)}>Continue<ArrowRight size={16}/></button>:<button className="primary-button" disabled={!valid||busy} onClick={submit}><UserPlus size={16}/>{busy?"Registering…":"Register student"}</button>}</div></article></>}
+
+export function RegistrationForm() {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [createdStudent, setCreatedStudent] = useState<{ id: string; code: string; name: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    // Step 1: Personal
+    fullName: "",
+    gender: "Female" as "Male" | "Female" | "Other",
+    dob: "2003-05-15",
+    phone: "+977 98",
+    email: "",
+    address: "Kathmandu, Nepal",
+    guardianName: "",
+    guardianPhone: "",
+
+    // Step 2: Academic
+    highestQualification: "Bachelor's Degree",
+    institutionName: "Kathmandu University",
+    boardUniversity: "Kathmandu University (KU)",
+    passedYear: "2025",
+    gpaOrPercentage: "3.45 CGPA",
+    studyGapYears: "None",
+    gapExplanation: "",
+
+    // Step 3: Study Preferences
+    targetCountry: "UK",
+    secondCountry: "Australia",
+    targetDegree: "Master's Degree (Postgraduate)",
+    targetCourse: "MSc International Business Management",
+    targetIntake: "September 2026",
+    budgetNpr: "25-35 Lakhs NPR",
+    counsellor: "Sita Adhikari",
+
+    // Step 4: English Proficiency
+    testStatus: "Taken" as "Taken" | "Booked" | "Preparing" | "None",
+    testType: "IELTS Academic",
+    overallScore: "7.0",
+    listening: "7.5",
+    reading: "7.0",
+    writing: "6.5",
+    speaking: "7.0",
+    trfNumber: "",
+
+    // Step 5: Passport & Travel History
+    hasPassport: true,
+    passportNumber: "",
+    passportExpiry: "2032-10-15",
+    hasVisaRefusal: false,
+    refusalDetails: "",
+
+    // Step 6: Referral & Initial Note
+    leadSource: "Friend Referral",
+    counsellorNotes: "Student attended direct walk-in counselling at AECS Kathmandu Central Office.",
+  });
+
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNext = () => {
+    setErrorMessage("");
+    if (currentStep === 1) {
+      if (!formData.fullName.trim() || !formData.email.trim() || !formData.phone.trim()) {
+        setErrorMessage("Please fill in all required personal contact details (*)");
+        return;
+      }
+    }
+    if (currentStep < 6) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handleBack = () => {
+    setErrorMessage("");
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const created = await StudentService.createStudent({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        dob: formData.dob,
+        gender: formData.gender,
+        address: formData.address,
+        targetCountry: formData.targetCountry,
+        targetCourse: formData.targetCourse,
+        targetIntake: formData.targetIntake,
+        budget: formData.budgetNpr,
+        counsellor: formData.counsellor,
+        status: "NEW_LEAD",
+      });
+
+      setCreatedStudent({
+        id: created.id,
+        code: created.code,
+        name: created.fullName,
+      });
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to register student record.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (createdStudent?.code) {
+      navigator.clipboard.writeText(createdStudent.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // SUCCESS CONFIRMATION VIEW
+  if (createdStudent) {
+    return (
+      <div className="page-container" style={{ maxWidth: "680px", margin: "40px auto" }}>
+        <div className="crm-panel" style={{ textAlign: "center", padding: "40px 32px" }}>
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              background: "var(--success-soft)",
+              color: "var(--success)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+            }}
+          >
+            <CheckCircle2 size={36} />
+          </div>
+
+          <span className="page-category-eyebrow" style={{ color: "var(--success)" }}>
+            Registration Complete
+          </span>
+          <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "6px 0 10px" }}>
+            Student Registered Successfully
+          </h2>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", maxWidth: "480px", margin: "0 auto 24px" }}>
+            Official student dossier and multi-table records have been created in the AECS Kathmandu Central database.
+          </p>
+
+          <div
+            style={{
+              background: "var(--bg-card-subtle)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-md)",
+              padding: "20px",
+              maxWidth: "420px",
+              margin: "0 auto 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            <span style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: 700, color: "var(--text-muted)" }}>
+              Official Student Identifier
+            </span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+              <span className="code-font" style={{ fontSize: "20px", fontWeight: 800, color: "var(--accent-blue)" }}>
+                {createdStudent.code}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: "4px 8px", fontSize: "11px" }}
+                onClick={handleCopyCode}
+              >
+                {copied ? <Check size={13} style={{ color: "var(--success)" }} /> : <Copy size={13} />}
+                <span>{copied ? "Copied!" : "Copy"}</span>
+              </button>
+            </div>
+            <span style={{ fontSize: "12px", color: "var(--text-main)", fontWeight: 600 }}>
+              {createdStudent.name}
+            </span>
+            <span className="status-pill" style={{ alignSelf: "center", marginTop: "4px" }}>
+              Initial Stage: New Lead / In Counselling
+            </span>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setCreatedStudent(null);
+                setCurrentStep(1);
+              }}
+            >
+              <RotateCcw size={15} />
+              <span>Register Another Student</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => navigate("/students")}
+            >
+              <Users size={15} />
+              <span>Open Student Directory</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-container" style={{ maxWidth: "980px" }}>
+      {/* Header */}
+      <div className="page-header-row">
+        <div className="page-header-titles">
+          <span className="page-category-eyebrow">AECS Front Desk & Admissions</span>
+          <h2>6-Step Comprehensive Student Registration</h2>
+          <p>
+            Capture verified identity, academic credentials, test bands, study preferences, and visa compliance info.
+          </p>
+        </div>
+        <div className="page-header-actions">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => navigate("/students")}
+          >
+            <ArrowLeft size={15} />
+            <span>Cancel & Return</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Stepper Strip */}
+      <div
+        className="crm-panel"
+        style={{
+          padding: "16px 20px",
+          marginBottom: "20px",
+          display: "grid",
+          gridTemplateColumns: `repeat(${REGISTRATION_STEPS.length}, 1fr)`,
+          gap: "10px",
+          overflowX: "auto",
+        }}
+      >
+        {REGISTRATION_STEPS.map(s => {
+          const Icon = s.icon;
+          const isActive = s.step === currentStep;
+          const isDone = s.step < currentStep;
+
+          return (
+            <div
+              key={s.step}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "8px 12px",
+                borderRadius: "var(--radius-sm)",
+                background: isActive ? "var(--accent-blue-soft)" : "transparent",
+                border: isActive ? "1px solid var(--accent-blue)" : "1px solid transparent",
+                cursor: isDone ? "pointer" : "default",
+                opacity: !isActive && !isDone ? 0.6 : 1,
+              }}
+              onClick={() => {
+                if (isDone) setCurrentStep(s.step);
+              }}
+            >
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: isDone
+                    ? "var(--success)"
+                    : isActive
+                    ? "var(--accent-blue)"
+                    : "var(--bg-card-subtle)",
+                  color: isDone || isActive ? "#FFFFFF" : "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {isDone ? <Check size={14} /> : s.step}
+              </div>
+              <div style={{ overflow: "hidden" }}>
+                <strong
+                  style={{
+                    display: "block",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: isActive ? "var(--accent-blue)" : "var(--text-main)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {s.title}
+                </strong>
+                <span style={{ fontSize: "10px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                  {s.sub}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Main Step Body Card */}
+      <div className="crm-panel">
+        <div className="panel-header-bar">
+          <div>
+            <h3>
+              Step {currentStep} of 6: {REGISTRATION_STEPS[currentStep - 1].title}
+            </h3>
+            <p>{REGISTRATION_STEPS[currentStep - 1].sub}</p>
+          </div>
+          <span className="status-pill">
+            Progress: {Math.round((currentStep / 6) * 100)}% Complete
+          </span>
+        </div>
+
+        <div className="panel-body">
+          {/* STEP 1: PERSONAL & CONTACT */}
+          {currentStep === 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Full Legal Name (as per Passport) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.fullName}
+                    onChange={e => handleChange("fullName", e.target.value)}
+                    placeholder="e.g. Riya Sharma"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Gender *</label>
+                  <select
+                    value={formData.gender}
+                    onChange={e => handleChange("gender", e.target.value)}
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Date of Birth *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.dob}
+                    onChange={e => handleChange("dob", e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Official Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={e => handleChange("email", e.target.value)}
+                    placeholder="student@example.com"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>WhatsApp / Mobile Number *</label>
+                  <PhoneInput
+                    required
+                    value={formData.phone}
+                    onChange={val => handleChange("phone", val)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Current Residential Address</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={e => handleChange("address", e.target.value)}
+                    placeholder="e.g. New Baneshwor, Kathmandu"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Guardian / Parent Name</label>
+                  <input
+                    type="text"
+                    value={formData.guardianName}
+                    onChange={e => handleChange("guardianName", e.target.value)}
+                    placeholder="e.g. Hari Prasad Sharma"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Guardian Contact Number</label>
+                  <input
+                    type="tel"
+                    value={formData.guardianPhone}
+                    onChange={e => handleChange("guardianPhone", e.target.value)}
+                    placeholder="+977 98XXXXXXXX"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: ACADEMIC BACKGROUND */}
+          {currentStep === 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Highest Qualification Completed *</label>
+                  <select
+                    value={formData.highestQualification}
+                    onChange={e => handleChange("highestQualification", e.target.value)}
+                  >
+                    <option value="+2 / Higher Secondary (NEB)">+2 / Higher Secondary (NEB)</option>
+                    <option value="A-Levels (Cambridge)">A-Levels (Cambridge)</option>
+                    <option value="Bachelor's Degree">Bachelor's Degree</option>
+                    <option value="Master's Degree">Master's Degree</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Board / University Name *</label>
+                  <input
+                    type="text"
+                    value={formData.boardUniversity}
+                    onChange={e => handleChange("boardUniversity", e.target.value)}
+                    placeholder="e.g. Tribhuvan University, Kathmandu University, NEB"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>College / School Name</label>
+                  <input
+                    type="text"
+                    value={formData.institutionName}
+                    onChange={e => handleChange("institutionName", e.target.value)}
+                    placeholder="e.g. St. Xavier's College, Apex College"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Passing Year *</label>
+                  <input
+                    type="text"
+                    value={formData.passedYear}
+                    onChange={e => handleChange("passedYear", e.target.value)}
+                    placeholder="e.g. 2025"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Aggregate GPA / Percentage *</label>
+                  <input
+                    type="text"
+                    value={formData.gpaOrPercentage}
+                    onChange={e => handleChange("gpaOrPercentage", e.target.value)}
+                    placeholder="e.g. 3.45 CGPA or 76.5%"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Study Gap (if any)</label>
+                  <select
+                    value={formData.studyGapYears}
+                    onChange={e => handleChange("studyGapYears", e.target.value)}
+                  >
+                    <option value="None">No Gap (Fresher)</option>
+                    <option value="1 Year">1 Year</option>
+                    <option value="2 Years">2 Years</option>
+                    <option value="3+ Years">3+ Years</option>
+                  </select>
+                </div>
+              </div>
+
+              {formData.studyGapYears !== "None" && (
+                <div className="form-group">
+                  <label>Gap Justification / Work Experience</label>
+                  <textarea
+                    value={formData.gapExplanation}
+                    onChange={e => handleChange("gapExplanation", e.target.value)}
+                    placeholder="Briefly state work experience or internship during the gap period…"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 3: STUDY PREFERENCES */}
+          {currentStep === 3 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Primary Destination Country *</label>
+                  <CountrySelect
+                    required
+                    value={formData.targetCountry}
+                    onChange={country => handleChange("targetCountry", country)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Secondary Choice Destination</label>
+                  <CountrySelect
+                    value={formData.secondCountry}
+                    onChange={country => handleChange("secondCountry", country)}
+                    placeholder="Optional secondary country"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Target Degree Level *</label>
+                  <select
+                    value={formData.targetDegree}
+                    onChange={e => handleChange("targetDegree", e.target.value)}
+                  >
+                    <option value="Bachelor's Degree (Undergraduate)">Bachelor's Degree (Undergraduate)</option>
+                    <option value="Master's Degree (Postgraduate)">Master's Degree (Postgraduate)</option>
+                    <option value="Post Graduate Diploma / Diploma">Post Graduate Diploma / Diploma</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Target Intake Cycle *</label>
+                  <IntakePicker
+                    required
+                    value={formData.targetIntake}
+                    onChange={intake => handleChange("targetIntake", intake)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Preferred Course / Major *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.targetCourse}
+                    onChange={e => handleChange("targetCourse", e.target.value)}
+                    placeholder="e.g. Master of Science in Data Science"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Estimated Annual Budget *</label>
+                  <input
+                    type="text"
+                    value={formData.budgetNpr}
+                    onChange={e => handleChange("budgetNpr", e.target.value)}
+                    placeholder="e.g. NPR 25-35 Lakhs / year"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: ENGLISH PROFICIENCY */}
+          {currentStep === 4 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>English Language Proficiency Status *</label>
+                  <select
+                    value={formData.testStatus}
+                    onChange={e => handleChange("testStatus", e.target.value)}
+                  >
+                    <option value="Taken">Test Already Taken (Score Available)</option>
+                    <option value="Booked">Test Date Booked</option>
+                    <option value="Preparing">Preparing / Enrolled in AECS Batch</option>
+                    <option value="None">Not Taken Yet</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Test Type</label>
+                  <select
+                    value={formData.testType}
+                    onChange={e => handleChange("testType", e.target.value)}
+                  >
+                    <option value="IELTS Academic">IELTS Academic</option>
+                    <option value="PTE Academic">PTE Academic</option>
+                    <option value="Duolingo (DET)">Duolingo English Test (DET)</option>
+                    <option value="TOEFL iBT">TOEFL iBT</option>
+                    <option value="German Language (A1/A2)">German Language (A1/A2)</option>
+                  </select>
+                </div>
+              </div>
+
+              {formData.testStatus === "Taken" && (
+                <div>
+                  <div className="form-group" style={{ marginBottom: "14px" }}>
+                    <label>Overall Score *</label>
+                    <input
+                      type="text"
+                      value={formData.overallScore}
+                      onChange={e => handleChange("overallScore", e.target.value)}
+                      placeholder="e.g. 7.0 or 68"
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+                    <div className="form-group">
+                      <label>Listening</label>
+                      <input
+                        type="text"
+                        value={formData.listening}
+                        onChange={e => handleChange("listening", e.target.value)}
+                        placeholder="7.5"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Reading</label>
+                      <input
+                        type="text"
+                        value={formData.reading}
+                        onChange={e => handleChange("reading", e.target.value)}
+                        placeholder="7.0"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Writing</label>
+                      <input
+                        type="text"
+                        value={formData.writing}
+                        onChange={e => handleChange("writing", e.target.value)}
+                        placeholder="6.5"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Speaking</label>
+                      <input
+                        type="text"
+                        value={formData.speaking}
+                        onChange={e => handleChange("speaking", e.target.value)}
+                        placeholder="7.0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 5: PASSPORT & TRAVEL HISTORY */}
+          {currentStep === 5 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Do you have a valid passport? *</label>
+                  <select
+                    value={formData.hasPassport ? "yes" : "no"}
+                    onChange={e => handleChange("hasPassport", e.target.value === "yes")}
+                  >
+                    <option value="yes">Yes, I hold a valid passport</option>
+                    <option value="no">No, currently under application</option>
+                  </select>
+                </div>
+                {formData.hasPassport && (
+                  <div className="form-group">
+                    <label>Passport Number</label>
+                    <input
+                      type="text"
+                      value={formData.passportNumber}
+                      onChange={e => handleChange("passportNumber", e.target.value)}
+                      placeholder="e.g. 11987654"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Prior Visa Refusal (Any Country)? *</label>
+                  <select
+                    value={formData.hasVisaRefusal ? "yes" : "no"}
+                    onChange={e => handleChange("hasVisaRefusal", e.target.value === "yes")}
+                  >
+                    <option value="no">No, Clean Visa History</option>
+                    <option value="yes">Yes, Have Prior Refusal</option>
+                  </select>
+                </div>
+                {formData.hasVisaRefusal && (
+                  <div className="form-group">
+                    <label>Refusal Country & Reason</label>
+                    <input
+                      type="text"
+                      value={formData.refusalDetails}
+                      onChange={e => handleChange("refusalDetails", e.target.value)}
+                      placeholder="e.g. Australia 2024 - Financial documentation clause"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 6: REVIEW & VERIFICATION */}
+          {currentStep === 6 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div
+                style={{
+                  background: "var(--bg-card-subtle)",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "18px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "14px",
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
+                    Student Name
+                  </span>
+                  <strong>{formData.fullName || "—"}</strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
+                    Contact
+                  </span>
+                  <span>{formData.email} · {formData.phone}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
+                    Target Destination
+                  </span>
+                  <strong>{formData.targetCountry} ({formData.targetIntake})</strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
+                    Selected Course
+                  </span>
+                  <span>{formData.targetCourse}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
+                    Academic Qualification
+                  </span>
+                  <span>{formData.highestQualification} ({formData.gpaOrPercentage})</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
+                    English Test Score
+                  </span>
+                  <span>{formData.testType}: Overall {formData.overallScore}</span>
+                </div>
+              </div>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label>Lead / Referral Source *</label>
+                  <select
+                    value={formData.leadSource}
+                    onChange={e => handleChange("leadSource", e.target.value)}
+                  >
+                    <option value="Direct Walk-in">Direct Walk-in</option>
+                    <option value="Friend Referral">Friend / Alumni Referral</option>
+                    <option value="Meta Ads (Facebook/Instagram)">Meta Ads (Facebook/Instagram)</option>
+                    <option value="Education Fair">Education Fair / Seminar</option>
+                    <option value="Website Online Intake">Website Online Intake</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Assigned Lead Counsellor *</label>
+                  <select
+                    value={formData.counsellor}
+                    onChange={e => handleChange("counsellor", e.target.value)}
+                  >
+                    <option value="Sita Adhikari">Sita Adhikari (Senior Counsellor)</option>
+                    <option value="Binod Maharjan">Binod Maharjan (Visa Specialist)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Initial Counselling Note / Intake Remarks</label>
+                <textarea
+                  value={formData.counsellorNotes}
+                  onChange={e => handleChange("counsellorNotes", e.target.value)}
+                  placeholder="Enter initial counseling guidance remarks…"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Error Banner */}
+          {errorMessage && (
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "10px 14px",
+                background: "var(--danger-soft)",
+                color: "var(--danger-text)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <AlertCircle size={15} />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Navigation Bar */}
+        <div className="modal-footer-clean" style={{ justifyContent: "space-between" }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={currentStep === 1}
+            onClick={handleBack}
+          >
+            <ArrowLeft size={15} />
+            <span>Previous Step</span>
+          </button>
+
+          {currentStep < 6 ? (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleNext}
+            >
+              <span>Next: {REGISTRATION_STEPS[currentStep].title}</span>
+              <ArrowRight size={15} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={isSubmitting}
+              onClick={handleSubmit}
+            >
+              <UserPlus size={15} />
+              <span>{isSubmitting ? "Creating Student Dossier…" : "Complete & Register Student"}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default RegistrationForm;

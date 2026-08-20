@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+data/*.json
+!data/.gitkeep
+
+.env*
