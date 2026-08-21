@@ -1,0 +1,22 @@
+/* Keep the Leads workspace on the CRM's standard readable type scale. */
+.lead-directory-heading h3 { font-size: 16px; }
+.lead-directory-heading p,
+.lead-reset-button { font-size: 12.5px; }
+.lead-search input,
+.lead-filter-toolbar .crm-select,
+.lead-view-switcher button { font-size: 12.5px; }
+.lead-table { font-size: 12.5px; }
+.lead-table thead th { font-size: 11px; }
+.lead-avatar { font-size: 12px; }
+.lead-code-line .account-code-cell { font-size: 10.5px; }
+.lead-contact-cell > span,
+.lead-source-pill,
+.lead-study-cell strong,
+.lead-study-cell span,
+.lead-owner-cell span { font-size: 12.5px; }
+.lead-contact-cell small,
+.lead-study-cell small { font-size: 11px; }
+.lead-priority { font-size: 10.5px; }
+.lead-enrolled-action { font-size: 12px; }
+.lead-empty-state strong { font-size: 14px; }
+.lead-empty-state span { font-size: 12.5px; }

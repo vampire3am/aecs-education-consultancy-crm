@@ -528,7 +528,7 @@ export function LeadsWorkspace() {
                           <button
                             type="button"
                             className="btn-primary"
-                            style={{ padding: "4px 10px", fontSize: "11px", gap: "4px" }}
+                            style={{ padding: "6px 10px", fontSize: "12px", gap: "4px" }}
                             onClick={e => {
                               e.stopPropagation();
                               beginConversion(lead);
