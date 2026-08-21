@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { CrmSkeleton } from "../components/common/CrmSkeleton";
 
 const AppShell = lazy(() => import("../components/layout/AppShell").then(m => ({ default: m.AppShell })));
 const LoginArea = lazy(() => import("../features/auth/AuthRoutes").then(m => ({ default: m.LoginArea })));
@@ -65,15 +66,6 @@ const EmailAutomationWorkspace = lazy(() =>
   import("../features/email/EmailAutomationWorkspace").then(m => ({ default: m.EmailAutomationWorkspace }))
 );
 
-const Loading = () => (
-  <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--bg-app)", color: "var(--text-muted)" }}>
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-      <div style={{ width: "28px", height: "28px", border: "3px solid var(--border-subtle)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-      <span style={{ fontSize: "12px", fontWeight: 600 }}>Loading AECS Workspace…</span>
-    </div>
-  </div>
-);
-
 const NotFound = () => (
   <section className="page-container" style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}>
     <div className="panel" style={{ maxWidth: "520px", textAlign: "center", padding: "40px" }}>
@@ -93,7 +85,7 @@ import { RoleRouteGuard } from "../features/auth/RoleRouteGuard";
 
 export default function App() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<CrmSkeleton />}>
       <Routes>
         {/* Public & Login Routes */}
         <Route path="/login" element={<LoginArea />} />
