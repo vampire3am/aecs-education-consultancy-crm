@@ -12,7 +12,10 @@ export type StaffRole =
   | "FRONT_DESK"
   | "FACULTY"
   | "MARKETING"
-  | "IT_ADMIN";
+  | "IT_ADMIN"
+  | "DOCUMENTATION"
+  | "FINANCE"
+  | "TEST_BOOKING";
 
 export interface RolePermissions {
   dashboard: boolean;
@@ -67,6 +70,9 @@ export const ROLE_PERMISSIONS: Record<StaffRole, RolePermissions> = {
   FACULTY: permissions(["dashboard", "students", "classes", "mocks", "messages"]),
   MARKETING: permissions(["dashboard", "leads", "students", "b2b", "reports", "messages"]),
   IT_ADMIN: permissions(["dashboard", "documents", "hrms", "settings", "messages"]),
+  DOCUMENTATION: permissions(["dashboard", "students", "applications", "documents", "messages"]),
+  FINANCE: permissions(["dashboard", "students", "b2b", "finance", "reports", "messages"]),
+  TEST_BOOKING: permissions(["dashboard", "students", "classes", "mocks", "messages"]),
 };
 
 export interface StaffProfile {
@@ -80,6 +86,8 @@ export interface StaffProfile {
   phone?: string;
   department: string;
   avatarBg?: string;
+  desktop_modules?: Array<keyof RolePermissions> | null;
+  assigned_responsibilities?: string;
 }
 
 interface AuthContextValue {
@@ -138,7 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
           await supabase.auth.signOut();
         } else {
-          setProfile({ ...data, avatarBg: data.avatar_bg ?? undefined } as StaffProfile);
+          // Access customization was added after the core identity schema. Keep
+          // sign-in compatible while that migration is being rolled out.
+          const { data: access } = await supabase.from("staff_profiles")
+            .select("desktop_modules,assigned_responsibilities").eq("id", session.user.id).maybeSingle();
+          setProfile({ ...data, ...(access ?? {}), avatarBg: data.avatar_bg ?? undefined } as StaffProfile);
         }
         setLoading(false);
       });
@@ -147,7 +159,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   const rolePermissions = useMemo(
-    () => profile ? (ROLE_PERMISSIONS[profile.role] || NO_PERMISSIONS) : NO_PERMISSIONS,
+    () => profile
+      ? (profile.desktop_modules ? permissions(profile.desktop_modules) : (ROLE_PERMISSIONS[profile.role] || NO_PERMISSIONS))
+      : NO_PERMISSIONS,
     [profile]
   );
 

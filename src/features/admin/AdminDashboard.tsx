@@ -9,12 +9,15 @@ import {
   Save,
   Search,
   ShieldCheck,
+  UserPlus,
 } from "lucide-react";
 import { BLUEPRINT_ROLES, MAKER_CHECKER_RULES, SENSITIVE_PERMISSIONS } from "../../lib/blueprintRolesData";
 import { AdminService } from "../../services/adminService";
+import { StaffManagement } from "./StaffManagement";
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"org" | "branches" | "roles" | "security">("org");
+  const initialTab = new URLSearchParams(location.search).get("tab");
+  const [activeTab, setActiveTab] = useState<"org" | "branches" | "staff" | "roles" | "security">(initialTab === "roles" ? "roles" : initialTab === "staff" ? "staff" : "org");
   const [roleSearch, setRoleSearch] = useState<string>("");
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -135,6 +138,13 @@ export function AdminDashboard() {
           <span>Branches & Cost Centres</span>
         </button>
         <button
+          className={activeTab === "staff" ? "active" : ""}
+          onClick={() => setActiveTab("staff")}
+        >
+          <UserPlus size={16} />
+          <span>Staff Accounts & Access</span>
+        </button>
+        <button
           className={activeTab === "roles" ? "active" : ""}
           onClick={() => setActiveTab("roles")}
         >
@@ -149,6 +159,8 @@ export function AdminDashboard() {
           <span>Maker-Checker & Audit Rules</span>
         </button>
       </div>
+
+      {activeTab === "staff" && <StaffManagement />}
 
       {/* TAB 1: ORGANIZATION & BRANDING */}
       {activeTab === "org" && (
