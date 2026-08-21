@@ -17,6 +17,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { PhoneInput } from "../../components/ui/PhoneInput";
 import { HrmsService } from "../../services/hrmsService";
 import { AttendanceService } from "../../services/attendanceService";
 
@@ -80,9 +81,6 @@ interface PayrollRecord {
 
 const INITIAL_STAFF: StaffMember[] = [];
 
-<<<<<<< HEAD
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [];
-=======
 const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   { id: "att-2", empCode: "AECS-EMP-002", fullName: "Sita Adhikari", date: "Today", checkIn: "09:58 AM", checkOut: "In Office", status: "PRESENT" },
   { id: "att-3", empCode: "AECS-EMP-003", fullName: "Binod Maharjan", date: "Today", checkIn: "10:24 AM", checkOut: "In Office", status: "LATE", lateMinutes: 9 },
@@ -90,7 +88,6 @@ const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   { id: "att-5", empCode: "AECS-EMP-005", fullName: "Pradeep Joshi", date: "Today", checkIn: "09:52 AM", checkOut: "In Office", status: "PRESENT" },
   { id: "att-6", empCode: "AECS-EMP-006", fullName: "Pooja Gurung", date: "Today", checkIn: "10:02 AM", checkOut: "In Office", status: "PRESENT" },
 ];
->>>>>>> e220a1c (feat: mandatory staff attendance check-in/out on main dashboard with 10 to 6 shift and late calculation past 10:15 AM)
 
 const INITIAL_LEAVES: LeaveRequest[] = [];
 
