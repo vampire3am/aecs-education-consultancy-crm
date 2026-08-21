@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -10,7 +10,6 @@ import {
   YAxis,
 } from "recharts";
 import {
-  ArrowUpRight,
   AlertTriangle,
   BookOpen,
   CheckCircle2,
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 
 // Trend series for 30-day analytics
 const INTAKE_TREND_DATA: Array<{ day: string; leads: number; applications: number }> = [];
@@ -53,30 +53,73 @@ interface DashboardActivity {
 const TODAY_APPOINTMENTS: DashboardAppointment[] = [];
 const RECENT_ACTIVITIES: DashboardActivity[] = [];
 
+type DashboardMetrics = { students: number; counselling: number; offers: number; visaRatio: number; revenue: number };
+const DASHBOARD_SNAPSHOT_KEY = "aecs_dashboard_kpi_snapshot_v1";
+
+function storedDashboardMetrics(): DashboardMetrics | null {
+  try {
+    const value = localStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
+    return value ? JSON.parse(value) as DashboardMetrics : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ManagementDashboard() {
   const navigate = useNavigate();
   const [totalStudents, setTotalStudents] = useState(0);
   const [summary, setSummary] = useState({ counselling: 0, offers: 0, visaRatio: 0, revenue: 0 });
+  const [previousMetrics, setPreviousMetrics] = useState<DashboardMetrics | null>(null);
   const [dashboardError, setDashboardError] = useState("");
+  const currentMetricsRef = useRef<DashboardMetrics | null>(null);
 
   useEffect(() => {
     let active = true;
-    void supabase.rpc("management_dashboard_summary").then(({data,error}) => {
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const loadSummary = async () => {
+      const { data, error } = await supabase.rpc("management_dashboard_summary");
       if (!active) return;
       if (error) {
         setDashboardError("Live dashboard data could not be loaded. Check your connection or ask an administrator to verify your permissions.");
         return;
       }
       const live=data as{students?:number;counselling?:number;offers?:number;visa_ratio?:number;month_revenue?:number};
-      setTotalStudents(live.students || 0);
-      setSummary({
+      const nextMetrics: DashboardMetrics = {
+        students: live.students || 0,
         counselling: live.counselling || 0,
         offers: live.offers || 0,
         visaRatio: live.visa_ratio || 0,
         revenue: live.month_revenue || 0,
+      };
+      setPreviousMetrics(currentMetricsRef.current ?? storedDashboardMetrics());
+      currentMetricsRef.current = nextMetrics;
+      try { localStorage.setItem(DASHBOARD_SNAPSHOT_KEY, JSON.stringify(nextMetrics)); } catch { /* Storage may be unavailable in privacy mode. */ }
+      setTotalStudents(nextMetrics.students);
+      setSummary({
+        counselling: nextMetrics.counselling,
+        offers: nextMetrics.offers,
+        visaRatio: nextMetrics.visaRatio,
+        revenue: nextMetrics.revenue,
       });
-    });
-    return () => { active = false; };
+      setDashboardError("");
+    };
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => void loadSummary(), 250);
+    };
+
+    void loadSummary();
+    const channel = ["students", "counselling_records", "university_applications", "visa_tracking", "finance_receipts"]
+      .reduce((subscription, table) => subscription.on("postgres_changes", { event: "*", schema: "public", table }, scheduleRefresh), supabase.channel("management-dashboard-live"))
+      .subscribe();
+
+    return () => {
+      active = false;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
@@ -134,10 +177,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{totalStudents}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--success-text)", fontWeight: 600 }}>
-            <ArrowUpRight size={13} />
-            <span>Live registered records</span>
-          </div>
+          <KpiTrendIndicator value={totalStudents} previousValue={previousMetrics?.students} label="Live registered records" />
         </div>
 
         <div className="metric-box">
@@ -148,7 +188,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{summary.counselling}</div>
-          <span className="metric-sub">Recorded counselling sessions</span>
+          <KpiTrendIndicator value={summary.counselling} previousValue={previousMetrics?.counselling} label="Recorded counselling sessions" />
         </div>
 
         <div className="metric-box">
@@ -159,7 +199,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{summary.offers}</div>
-          <span className="metric-sub">Offer and post-offer stages</span>
+          <KpiTrendIndicator value={summary.offers} previousValue={previousMetrics?.offers} label="Offer and post-offer stages" />
         </div>
 
         <div className="metric-box">
@@ -170,7 +210,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{summary.visaRatio.toFixed(1)}%</div>
-          <span className="metric-sub">Based on recorded decisions</span>
+          <KpiTrendIndicator value={summary.visaRatio} previousValue={previousMetrics?.visaRatio} label="Based on recorded decisions" />
         </div>
 
         <div className="metric-box">
@@ -181,7 +221,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">₨ {summary.revenue.toLocaleString("en-NP")}</div>
-          <span className="metric-sub">Paid invoices this month</span>
+          <KpiTrendIndicator value={summary.revenue} previousValue={previousMetrics?.revenue} label="Paid invoices this month" />
         </div>
       </div>
 
