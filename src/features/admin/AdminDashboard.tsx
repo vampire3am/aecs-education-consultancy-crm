@@ -261,9 +261,9 @@ export function AdminDashboard() {
                 </div>
 
                 <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
-                  <div style={{ height: "36px", borderRadius: "4px", background: "#2563EB", marginBottom: "10px" }} />
+                  <div style={{ height: "36px", borderRadius: "4px", background: "#F97316", marginBottom: "10px" }} />
                   <strong style={{ fontSize: "12.5px", display: "block" }}>AECS Accent Blue</strong>
-                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#2563EB</span>
+                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#F97316</span>
                   <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Primary action buttons & links</p>
                 </div>
 

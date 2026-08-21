@@ -812,7 +812,7 @@ export function ClassesWorkspace() {
                         width: "22px",
                         height: "22px",
                         borderRadius: "4px",
-                        background: "rgba(37, 99, 235, 0.1)",
+                        background: "rgba(249, 115, 22, 0.1)",
                         color: "var(--accent-blue)",
                         display: "flex",
                         alignItems: "center",

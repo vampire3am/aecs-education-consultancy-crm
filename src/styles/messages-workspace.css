@@ -86,7 +86,7 @@
 }
 
 .messenger-search-input:focus {
-  border-color: #0084FF;
+  border-color: #F97316;
   background: var(--bg-card);
   box-shadow: 0 0 0 2px rgba(0, 132, 255, 0.15);
 }
@@ -127,7 +127,7 @@
 
 .messenger-filter-chip.active {
   background: rgba(0, 132, 255, 0.12);
-  color: #0084FF;
+  color: #F97316;
   font-weight: 700;
 }
 
@@ -217,7 +217,7 @@
 }
 
 .messenger-chat-item.active .messenger-chat-name {
-  color: #0084FF;
+  color: #F97316;
   font-weight: 700;
 }
 
@@ -246,7 +246,7 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #0084FF;
+  background: #F97316;
   flex-shrink: 0;
 }
 
@@ -388,7 +388,7 @@
 
 /* Outgoing Bubble (Messenger Gradient Blue) */
 .messenger-msg-row.outgoing .messenger-bubble {
-  background: linear-gradient(135deg, #0084FF 0%, #0070FF 100%);
+  background: linear-gradient(135deg, #F97316 0%, #0B1E3B 100%);
   color: #FFFFFF;
   border-radius: 18px 18px 4px 18px;
 }
@@ -461,7 +461,7 @@
   border-radius: 50%;
   background: transparent;
   border: none;
-  color: #0084FF;
+  color: #F97316;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,7 +487,7 @@
 
 .messenger-input-wrap:focus-within {
   background: var(--bg-card);
-  border-color: #0084FF;
+  border-color: #F97316;
   box-shadow: 0 0 0 2px rgba(0, 132, 255, 0.15);
 }
 
@@ -509,7 +509,7 @@
   border-radius: 50%;
   background: transparent;
   border: none;
-  color: #0084FF;
+  color: #F97316;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -79,12 +79,12 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
     name: "Welcome Pack & Country Guide",
     category: "ONBOARDING",
     badge: "Instant Auto-Responder",
-    headerColor: "#2563EB",
+    headerColor: "#F97316",
     subject: "Welcome to AECS Kathmandu, {{student_name}}! Your {{destination_country}} Study Guide",
     preheader: "Official Study Abroad Handbook, Scholarship Checklist & Next Steps",
     bodyHtml: `<p>Dear <strong>{{student_name}}</strong>,</p>
 <p>Thank you for registering with <strong>AECS Education Consultancy</strong>, Kathmandu! We are thrilled to guide you on your international education journey to <strong>{{destination_country}}</strong>.</p>
-<div style="background:#F1F5F9; border-left:4px solid #2563EB; padding:12px 16px; margin:16px 0; border-radius:6px;">
+<div style="background:#F1F5F9; border-left:4px solid #F97316; padding:12px 16px; margin:16px 0; border-radius:6px;">
   <strong>📌 Your Profile Summary:</strong><br/>
   • Target Destination: <strong>{{destination_country}}</strong><br/>
   • Preferred Intake: <strong>{{intake_season}}</strong><br/>

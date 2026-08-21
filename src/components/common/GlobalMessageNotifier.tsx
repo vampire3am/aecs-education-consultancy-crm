@@ -118,7 +118,7 @@ export function GlobalMessageNotifier() {
           id: latestMsg.id,
           senderName: latestMsg.senderName,
           senderRole: latestMsg.senderRole,
-          senderAvatarBg: latestMsg.senderAvatarBg || "#2563EB",
+          senderAvatarBg: latestMsg.senderAvatarBg || "#F97316",
           content: latestMsg.content || "Sent an attachment",
           channelId: latestMsg.channelId,
           recipientId: latestMsg.recipientId,
@@ -188,9 +188,9 @@ export function GlobalMessageNotifier() {
               width: "360px",
               background: "rgba(17, 24, 39, 0.95)",
               backdropFilter: "blur(14px)",
-              border: "1px solid rgba(59, 130, 246, 0.35)",
+              border: "1px solid rgba(251, 146, 60, 0.35)",
               borderRadius: "12px",
-              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(37, 99, 235, 0.2)",
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(249, 115, 22, 0.2)",
               padding: "12px 14px",
               display: "flex",
               flexDirection: "column",
@@ -225,7 +225,7 @@ export function GlobalMessageNotifier() {
                       {toast.senderRole.split("·")[0]}
                     </span>
                   </div>
-                  <span style={{ fontSize: "10.5px", color: "#60A5FA", display: "flex", alignItems: "center", gap: "3px" }}>
+                  <span style={{ fontSize: "10.5px", color: "#FDBA74", display: "flex", alignItems: "center", gap: "3px" }}>
                     <MessageSquare size={10} />
                     {toast.channelId ? "Channel Message" : "Direct Message"} · {toast.timestamp}
                   </span>
@@ -246,7 +246,7 @@ export function GlobalMessageNotifier() {
                   onClick={() => setSoundEnabled(v => !v)}
                   title={soundEnabled ? "Mute alert chime" : "Unmute alert chime"}
                 >
-                  {soundEnabled ? <Volume2 size={13} style={{ color: "#3B82F6" }} /> : <VolumeX size={13} />}
+                  {soundEnabled ? <Volume2 size={13} style={{ color: "#FB923C" }} /> : <VolumeX size={13} />}
                 </button>
 
                 <button
@@ -287,7 +287,7 @@ export function GlobalMessageNotifier() {
             {/* Action Bar */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", color: "#94A3B8", paddingTop: "2px" }}>
               <span>Click notification to reply</span>
-              <span style={{ color: "#60A5FA", fontWeight: 600 }}>Open Chat →</span>
+              <span style={{ color: "#FDBA74", fontWeight: 600 }}>Open Chat →</span>
             </div>
           </motion.div>
         ))}

@@ -51,14 +51,14 @@
 }
 
 .email-tab-btn:hover {
-  color: var(--accent-blue, #2563EB);
-  background: rgba(37, 99, 235, 0.05);
+  color: var(--accent-blue, #F97316);
+  background: rgba(249, 115, 22, 0.05);
 }
 
 .email-tab-btn.active {
-  color: var(--accent-blue, #2563EB);
+  color: var(--accent-blue, #F97316);
   font-weight: 700;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(249, 115, 22, 0.08);
 }
 
 .email-tab-btn.active::after {
@@ -68,7 +68,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--accent-blue, #2563EB);
+  background: var(--accent-blue, #F97316);
   border-radius: 3px 3px 0 0;
 }
 
@@ -118,8 +118,8 @@
 }
 
 .automation-rule-card.active {
-  border-color: rgba(37, 99, 235, 0.4);
-  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.05);
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.05);
 }
 
 .automation-rule-card::before {
@@ -129,7 +129,7 @@
   left: 0;
   width: 5px;
   height: 100%;
-  background: var(--rule-color, #2563EB);
+  background: var(--rule-color, #F97316);
 }
 
 /* Templates Grid */
@@ -151,7 +151,7 @@
 }
 
 .email-template-card:hover {
-  border-color: var(--accent-blue, #2563EB);
+  border-color: var(--accent-blue, #F97316);
   transform: translateY(-3px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
@@ -190,17 +190,17 @@
   padding: 4px 10px;
   font-size: 11.5px;
   font-family: monospace;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  background: rgba(249, 115, 22, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.2);
   border-radius: 6px;
-  color: var(--accent-blue, #2563EB);
+  color: var(--accent-blue, #F97316);
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
 }
 
 .merge-tag-pill:hover {
-  background: var(--accent-blue, #2563EB);
+  background: var(--accent-blue, #F97316);
   color: #FFFFFF;
 }
 
@@ -237,7 +237,7 @@
 }
 
 .email-table tr:hover td {
-  background: rgba(37, 99, 235, 0.02);
+  background: rgba(249, 115, 22, 0.02);
 }
 
 /* Status Badges */
@@ -258,7 +258,7 @@
 
 .email-status-badge.opened {
   background: #DBEAFE;
-  color: #1D4ED8;
+  color: #EA580C;
 }
 
 .email-status-badge.clicked {

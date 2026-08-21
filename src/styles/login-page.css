@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.08) 0%, rgba(15, 23, 42, 0.95) 90%), #0A0F1D;
+  background: radial-gradient(circle at 10% 20%, rgba(249, 115, 22, 0.08) 0%, rgba(15, 23, 42, 0.95) 90%), #0A0F1D;
   padding: 24px;
   position: relative;
   overflow: hidden;
@@ -22,7 +22,7 @@
   width: 450px;
   height: 450px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.25), transparent 70%);
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.25), transparent 70%);
   filter: blur(60px);
   pointer-events: none;
 }
@@ -135,9 +135,9 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(37, 99, 235, 0.15);
-  border: 1px solid rgba(37, 99, 235, 0.3);
-  color: #60A5FA;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: #FDBA74;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -187,7 +187,7 @@
 .login-form-header .eyebrow-tag {
   font-size: 11px;
   font-weight: 700;
-  color: #60A5FA;
+  color: #FDBA74;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   display: block;
@@ -241,9 +241,9 @@
 }
 
 .login-role-tab-btn.active {
-  background: rgba(37, 99, 235, 0.2);
-  border-color: #3B82F6;
-  color: #60A5FA;
+  background: rgba(249, 115, 22, 0.2);
+  border-color: #FB923C;
+  color: #FDBA74;
 }
 
 /* Input Fields */
@@ -289,9 +289,9 @@
 }
 
 .login-text-input:focus {
-  border-color: #3B82F6;
+  border-color: #FB923C;
   background: rgba(15, 23, 42, 0.9);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.2);
 }
 
 .login-toggle-eye-btn {
@@ -326,7 +326,7 @@
 .login-submit-btn {
   width: 100%;
   height: 44px;
-  background: #2563EB;
+  background: #F97316;
   border: none;
   border-radius: 8px;
   color: #FFFFFF;
@@ -338,14 +338,14 @@
   gap: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
   margin-top: 6px;
 }
 
 .login-submit-btn:hover {
-  background: #1D4ED8;
+  background: #EA580C;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
 }
 
 .login-submit-btn:disabled {
@@ -366,7 +366,7 @@
 }
 
 .login-footer-links a {
-  color: #60A5FA;
+  color: #FDBA74;
   text-decoration: none;
   font-weight: 600;
 }

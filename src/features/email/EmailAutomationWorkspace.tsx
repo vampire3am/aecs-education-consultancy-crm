@@ -201,7 +201,7 @@ export function EmailAutomationWorkspace() {
       <div className="email-header-section">
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-            <span style={{ padding: "6px", background: "rgba(37,99,235,0.1)", borderRadius: "8px", color: "#2563EB" }}>
+            <span style={{ padding: "6px", background: "rgba(249, 115, 22,0.1)", borderRadius: "8px", color: "#F97316" }}>
               <Mail size={20} />
             </span>
             <h1 style={{ fontSize: "20px", fontWeight: 800, margin: 0 }}>
@@ -256,7 +256,7 @@ export function EmailAutomationWorkspace() {
         >
           <Zap size={16} />
           <span>Automation Rules</span>
-          <span style={{ fontSize: "11px", background: "rgba(37,99,235,0.15)", padding: "1px 6px", borderRadius: "10px" }}>
+          <span style={{ fontSize: "11px", background: "rgba(249, 115, 22,0.15)", padding: "1px 6px", borderRadius: "10px" }}>
             {automations.filter(a => a.isActive).length}
           </span>
         </button>
@@ -267,7 +267,7 @@ export function EmailAutomationWorkspace() {
         >
           <Layers size={16} />
           <span>Template Library</span>
-          <span style={{ fontSize: "11px", background: "rgba(37,99,235,0.15)", padding: "1px 6px", borderRadius: "10px" }}>
+          <span style={{ fontSize: "11px", background: "rgba(249, 115, 22,0.15)", padding: "1px 6px", borderRadius: "10px" }}>
             {templates.length}
           </span>
         </button>
@@ -286,7 +286,7 @@ export function EmailAutomationWorkspace() {
         >
           <Clock size={16} />
           <span>Activity & Logs</span>
-          <span style={{ fontSize: "11px", background: "rgba(37,99,235,0.15)", padding: "1px 6px", borderRadius: "10px" }}>
+          <span style={{ fontSize: "11px", background: "rgba(249, 115, 22,0.15)", padding: "1px 6px", borderRadius: "10px" }}>
             {logs.length}
           </span>
         </button>
@@ -321,7 +321,7 @@ export function EmailAutomationWorkspace() {
 
             <div className="email-metric-card">
               <span style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", fontWeight: 600 }}>Open Rate (OR)</span>
-              <strong style={{ fontSize: "26px", fontWeight: 800, color: "#2563EB" }}>{metrics.openRate}%</strong>
+              <strong style={{ fontSize: "26px", fontWeight: 800, color: "#F97316" }}>{metrics.openRate}%</strong>
               <span style={{ fontSize: "11.5px", color: "#10B981", fontWeight: 600 }}>Industry avg: 34.0%</span>
             </div>
 
@@ -442,7 +442,7 @@ export function EmailAutomationWorkspace() {
                 <div key={rule.id} className={`automation-rule-card ${rule.isActive ? "active" : ""}`}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#2563EB", background: "rgba(37,99,235,0.1)", padding: "3px 8px", borderRadius: "6px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#F97316", background: "rgba(249, 115, 22,0.1)", padding: "3px 8px", borderRadius: "6px" }}>
                         ⚡ {rule.triggerEvent}
                       </span>
                       <label className="automation-switch" title={rule.isActive ? "Pause Rule" : "Activate Rule"}>
@@ -544,7 +544,7 @@ export function EmailAutomationWorkspace() {
 
                 <div className="template-card-body">
                   <strong style={{ fontSize: "15px", display: "block" }}>{tpl.name}</strong>
-                  <div style={{ fontSize: "12.5px", color: "#2563EB", fontWeight: 600 }}>
+                  <div style={{ fontSize: "12.5px", color: "#F97316", fontWeight: 600 }}>
                     Subject: {tpl.subject}
                   </div>
                   <p style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", margin: 0, fontStyle: "italic" }}>
@@ -635,8 +635,8 @@ export function EmailAutomationWorkspace() {
               </div>
             </div>
 
-            <div style={{ background: "rgba(37,99,235,0.06)", border: "1px solid rgba(37,99,235,0.2)", borderRadius: "10px", padding: "14px", marginBottom: "20px" }}>
-              <strong style={{ fontSize: "13px", color: "#2563EB", display: "block", marginBottom: "4px" }}>
+            <div style={{ background: "rgba(249, 115, 22,0.06)", border: "1px solid rgba(249, 115, 22,0.2)", borderRadius: "10px", padding: "14px", marginBottom: "20px" }}>
+              <strong style={{ fontSize: "13px", color: "#F97316", display: "block", marginBottom: "4px" }}>
                 👥 Audience Estimator:
               </strong>
               <span style={{ fontSize: "12.5px", color: "#475569" }}>
@@ -702,7 +702,7 @@ export function EmailAutomationWorkspace() {
                         )}
                       </td>
                       <td>
-                        <span style={{ fontSize: "12px", background: "rgba(37,99,235,0.08)", padding: "3px 8px", borderRadius: "6px", color: "#2563EB", fontWeight: 600 }}>
+                        <span style={{ fontSize: "12px", background: "rgba(249, 115, 22,0.08)", padding: "3px 8px", borderRadius: "6px", color: "#F97316", fontWeight: 600 }}>
                           {log.triggerEvent}
                         </span>
                       </td>
@@ -744,9 +744,9 @@ export function EmailAutomationWorkspace() {
       {activeTab === "SETTINGS" && settings && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "850px" }}>
           {/* Important Alert Callout */}
-          <div style={{ background: "rgba(37, 99, 235, 0.08)", border: "1px solid rgba(37, 99, 235, 0.25)", borderRadius: "14px", padding: "18px 20px" }}>
+          <div style={{ background: "rgba(249, 115, 22, 0.08)", border: "1px solid rgba(249, 115, 22, 0.25)", borderRadius: "14px", padding: "18px 20px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-              <span style={{ color: "#2563EB", padding: "4px", background: "rgba(37, 99, 235, 0.15)", borderRadius: "8px", marginTop: "2px" }}>
+              <span style={{ color: "#F97316", padding: "4px", background: "rgba(249, 115, 22, 0.15)", borderRadius: "8px", marginTop: "2px" }}>
                 <Sparkles size={20} />
               </span>
               <div>
@@ -913,11 +913,11 @@ export function EmailAutomationWorkspace() {
 
               {/* 1-Minute Gmail App Password Guide */}
               <div style={{ background: "var(--bg-app, #F8FAFC)", border: "1px solid var(--border-subtle, #E2E8F0)", borderRadius: "10px", padding: "14px 16px", marginTop: "4px" }}>
-                <strong style={{ fontSize: "12.5px", color: "#2563EB", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                <strong style={{ fontSize: "12.5px", color: "#F97316", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
                   <Info size={14} /> 1-Minute Guide to Create a Gmail App Password:
                 </strong>
                 <ol style={{ fontSize: "12px", color: "#475569", margin: "0 0 0 16px", padding: 0, lineHeight: 1.6 }}>
-                  <li>Open your Google Account: <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" style={{ color: "#2563EB", textDecoration: "underline", fontWeight: 600 }}>Google App Passwords</a> (ensure 2-Step Verification is turned on).</li>
+                  <li>Open your Google Account: <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" style={{ color: "#F97316", textDecoration: "underline", fontWeight: 600 }}>Google App Passwords</a> (ensure 2-Step Verification is turned on).</li>
                   <li>Type App Name: <strong>AECS CRM</strong> and click <strong>Create</strong>.</li>
                   <li>Copy the 16-character generated password (e.g. <code>abcd efgh ijkl mnop</code>).</li>
                   <li>Paste it into the <strong>SMTP Password</strong> box above and click <strong>Save Settings</strong>!</li>

@@ -198,7 +198,7 @@ export function ApplicationWorkspace() {
           <button
             type="button"
             className="btn-primary"
-            style={{ background: "#2563EB", borderColor: "#2563EB", color: "#FFFFFF" }}
+            style={{ background: "#F97316", borderColor: "#F97316", color: "#FFFFFF" }}
             onClick={() => setShowSubmitModal(true)}
           >
             <Plus size={15} />
@@ -379,8 +379,8 @@ export function ApplicationWorkspace() {
                 borderRadius: "20px",
                 fontSize: "12px",
                 fontWeight: 600,
-                border: isSelected ? "1px solid #2563EB" : "1px solid var(--border-subtle)",
-                background: isSelected ? "#2563EB" : "var(--bg-card)",
+                border: isSelected ? "1px solid #F97316" : "1px solid var(--border-subtle)",
+                background: isSelected ? "#F97316" : "var(--bg-card)",
                 color: isSelected ? "#FFFFFF" : "var(--text-muted)",
                 cursor: "pointer",
                 display: "flex",
@@ -448,14 +448,14 @@ export function ApplicationWorkspace() {
 
                     // Status stage styling
                     let stageBadgeStyle = {
-                      background: "rgba(37, 99, 235, 0.12)",
-                      color: "#2563EB",
-                      border: "1px solid rgba(37, 99, 235, 0.25)",
+                      background: "rgba(249, 115, 22, 0.12)",
+                      color: "#F97316",
+                      border: "1px solid rgba(249, 115, 22, 0.25)",
                     };
                     let stageLabel = "Under Review";
 
                     if (app.stage === "CONDITIONAL_OFFER") {
-                      stageBadgeStyle = { background: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "1px solid rgba(59, 130, 246, 0.3)" };
+                      stageBadgeStyle = { background: "rgba(251, 146, 60, 0.15)", color: "#FB923C", border: "1px solid rgba(251, 146, 60, 0.3)" };
                       stageLabel = "Conditional Offer";
                     } else if (app.stage === "UNCONDITIONAL_OFFER") {
                       stageBadgeStyle = { background: "rgba(16, 185, 129, 0.15)", color: "#10B981", border: "1px solid rgba(16, 185, 129, 0.3)" };
@@ -897,7 +897,7 @@ export function ApplicationWorkspace() {
                   <button
                     type="submit"
                     className="btn-primary"
-                    style={{ background: "#2563EB", borderColor: "#2563EB" }}
+                    style={{ background: "#F97316", borderColor: "#F97316" }}
                   >
                     <PlaneTakeoff size={15} />
                     <span>Submit Application</span>
@@ -956,8 +956,8 @@ export function ApplicationWorkspace() {
                           justifyContent: "space-between",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-sm)",
-                          border: isCurrent ? "2px solid #2563EB" : "1px solid var(--border-subtle)",
-                          background: isCurrent ? "rgba(37, 99, 235, 0.08)" : "var(--bg-card)",
+                          border: isCurrent ? "2px solid #F97316" : "1px solid var(--border-subtle)",
+                          background: isCurrent ? "rgba(249, 115, 22, 0.08)" : "var(--bg-card)",
                           cursor: "pointer",
                           textAlign: "left",
                         }}
@@ -968,7 +968,7 @@ export function ApplicationWorkspace() {
                             {st.label}
                           </span>
                         </div>
-                        {isCurrent && <Check size={16} style={{ color: "#2563EB" }} />}
+                        {isCurrent && <Check size={16} style={{ color: "#F97316" }} />}
                       </button>
                     );
                   })}
@@ -1103,7 +1103,7 @@ export function ApplicationWorkspace() {
                   <button
                     type="button"
                     className="btn-primary"
-                    style={{ flex: 1, background: "#2563EB", borderColor: "#2563EB" }}
+                    style={{ flex: 1, background: "#F97316", borderColor: "#F97316" }}
                     onClick={() => {
                       setStageChangeApp(activeDossier);
                     }}

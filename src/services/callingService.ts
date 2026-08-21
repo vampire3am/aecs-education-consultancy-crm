@@ -499,7 +499,7 @@ export class CallingService {
       callerId: caller.id,
       callerName: caller.fullName,
       callerRole: caller.role,
-      callerAvatarBg: caller.avatarBg || "#2563EB",
+      callerAvatarBg: caller.avatarBg || "#F97316",
       recipientId: recipient.id,
       recipientName: recipient.fullName,
       recipientRole: recipient.role,

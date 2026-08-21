@@ -100,13 +100,13 @@ export function MessagesWorkspace() {
   // Active logged in staff member
   const currentStaff = useMemo(() => {
     if (!profile) {
-      return {id:"pending-session",fullName:"Staff",email:"",role:"Staff",department:"IT & Operations" as const,presence:"OFFLINE" as const,avatarBg:"#2563EB"};
+      return {id:"pending-session",fullName:"Staff",email:"",role:"Staff",department:"IT & Operations" as const,presence:"OFFLINE" as const,avatarBg:"#F97316"};
     }
     const profileEmail = profile.email?.trim().toLowerCase() || "";
     const match = staffUsers.find(
       s => (profileEmail !== "" && s.email.toLowerCase() === profileEmail) || s.id === profile.id
     );
-    return match || {id:profile.id,fullName:profile.full_name?.trim()||"Staff member",email:profile.email?.trim()||"",role:profile.role?.trim()||"Staff",department:"IT & Operations" as const,presence:"ONLINE" as const,avatarBg:profile.avatarBg||"#2563EB"};
+    return match || {id:profile.id,fullName:profile.full_name?.trim()||"Staff member",email:profile.email?.trim()||"",role:profile.role?.trim()||"Staff",department:"IT & Operations" as const,presence:"ONLINE" as const,avatarBg:profile.avatarBg||"#F97316"};
   }, [profile, staffUsers]);
 
   const currentUserId = currentStaff.id;
@@ -316,7 +316,7 @@ export function MessagesWorkspace() {
       senderId: currentUserId,
       senderName: currentStaff.fullName,
       senderRole: currentStaff.role,
-      senderAvatarBg: currentStaff.avatarBg || "#0084FF",
+      senderAvatarBg: currentStaff.avatarBg || "#F97316",
       channelId: activeChannelId || undefined,
       recipientId: activeRecipientId || undefined,
       content: textToSend.trim(),
@@ -426,7 +426,7 @@ export function MessagesWorkspace() {
                     <div className="messenger-avatar-wrap">
                       <div
                         className="messenger-avatar-circle"
-                        style={{ background: ch.category === "Broadcast" ? "#F59E0B" : "#0084FF" }}
+                        style={{ background: ch.category === "Broadcast" ? "#F59E0B" : "#F97316" }}
                       >
                         {ch.category === "Broadcast" ? <Megaphone size={18} /> : <Hash size={18} />}
                       </div>
@@ -511,7 +511,7 @@ export function MessagesWorkspace() {
                   <div className="messenger-avatar-wrap">
                     <div
                       className="messenger-avatar-circle"
-                      style={{ width: "40px", height: "40px", background: currentRecipient?.avatarBg || "#0084FF" }}
+                      style={{ width: "40px", height: "40px", background: currentRecipient?.avatarBg || "#F97316" }}
                     >
                       {currentRecipient?.fullName.substring(0, 2).toUpperCase()}
                     </div>
@@ -531,7 +531,7 @@ export function MessagesWorkspace() {
               ) : (
                 <>
                   <div className="messenger-avatar-wrap">
-                    <div className="messenger-avatar-circle" style={{ width: "40px", height: "40px", background: "#0084FF" }}>
+                    <div className="messenger-avatar-circle" style={{ width: "40px", height: "40px", background: "#F97316" }}>
                       <Hash size={18} />
                     </div>
                   </div>
@@ -550,7 +550,7 @@ export function MessagesWorkspace() {
                 onClick={handleStartVoiceCall}
                 title="Start Encrypted Voice Call"
               >
-                <Phone size={17} style={{ color: "#0084FF" }} />
+                <Phone size={17} style={{ color: "#F97316" }} />
               </button>
 
               <button
@@ -559,7 +559,7 @@ export function MessagesWorkspace() {
                 onClick={handleStartVideoCall}
                 title="Start HD Video Conference"
               >
-                <Video size={18} style={{ color: "#0084FF" }} />
+                <Video size={18} style={{ color: "#F97316" }} />
               </button>
 
               <button
@@ -568,7 +568,7 @@ export function MessagesWorkspace() {
                 onClick={() => setShowInfoSidebar(v => !v)}
                 title="Conversation Information"
               >
-                <Info size={18} style={{ color: showInfoSidebar ? "#0084FF" : "inherit" }} />
+                <Info size={18} style={{ color: showInfoSidebar ? "#F97316" : "inherit" }} />
               </button>
             </div>
           </div>
@@ -580,7 +580,7 @@ export function MessagesWorkspace() {
               <div className="messenger-welcome-card">
                 <div
                   className="messenger-welcome-avatar"
-                  style={{ background: currentRecipient?.avatarBg || "#0084FF" }}
+                  style={{ background: currentRecipient?.avatarBg || "#F97316" }}
                 >
                   {currentRecipient?.fullName.substring(0, 2).toUpperCase()}
                 </div>
@@ -608,7 +608,7 @@ export function MessagesWorkspace() {
                   {!isOutgoing && (
                     <div
                       className="messenger-bubble-avatar"
-                      style={{ background: msg.senderAvatarBg || "#0084FF" }}
+                      style={{ background: msg.senderAvatarBg || "#F97316" }}
                     >
                       {msg.senderName.substring(0, 2).toUpperCase()}
                     </div>
@@ -726,7 +726,7 @@ export function MessagesWorkspace() {
                     borderRadius: "14px",
                     padding: "3px 10px",
                     fontSize: "11.5px",
-                    color: "#0084FF",
+                    color: "#F97316",
                     fontWeight: 600,
                   }}
                 >
@@ -750,7 +750,7 @@ export function MessagesWorkspace() {
                     fontSize: "11.5px",
                   }}
                 >
-                  <FileText size={11} style={{ color: "#0084FF" }} />
+                  <FileText size={11} style={{ color: "#F97316" }} />
                   <span>{att.name}</span>
                   <X
                     size={12}
@@ -849,7 +849,7 @@ export function MessagesWorkspace() {
               <div className="messenger-info-profile-card">
                 <div
                   className="messenger-info-avatar-large"
-                  style={{ background: currentRecipient?.avatarBg || "#0084FF" }}
+                  style={{ background: currentRecipient?.avatarBg || "#F97316" }}
                 >
                   {currentRecipient?.fullName.substring(0, 2).toUpperCase()}
                 </div>
@@ -881,7 +881,7 @@ export function MessagesWorkspace() {
                     style={{ width: "100%", justifyContent: "center", fontSize: "12px" }}
                     onClick={() => navigate("/students")}
                   >
-                    <Users size={13} style={{ color: "#0084FF" }} />
+                    <Users size={13} style={{ color: "#F97316" }} />
                     <span>Open Student Directory</span>
                   </button>
                   <button
@@ -898,7 +898,7 @@ export function MessagesWorkspace() {
             ) : (
               <div style={{ textAlign: "left" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                  <div className="messenger-avatar-circle" style={{ width: "44px", height: "44px", background: "#0084FF" }}>
+                  <div className="messenger-avatar-circle" style={{ width: "44px", height: "44px", background: "#F97316" }}>
                     <Hash size={20} />
                   </div>
                   <div>

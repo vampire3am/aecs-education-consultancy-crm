@@ -202,8 +202,8 @@ export function ManagementDashboard() {
               <AreaChart data={INTAKE_TREND_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#F97316" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10B981" stopOpacity={0.25} />
@@ -223,7 +223,7 @@ export function ManagementDashboard() {
                   }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: "11.5px", paddingTop: "10px" }} />
-                <Area type="monotone" dataKey="leads" name="New Inquiries" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorLeads)" />
+                <Area type="monotone" dataKey="leads" name="New Inquiries" stroke="#F97316" strokeWidth={2.5} fillOpacity={1} fill="url(#colorLeads)" />
                 <Area type="monotone" dataKey="applications" name="Uni Applications" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorApps)" />
               </AreaChart>
             </ResponsiveContainer> : <div className="dashboard-empty-state">Trend data will appear after leads and applications are recorded.</div>}

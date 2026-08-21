@@ -8,9 +8,9 @@
   --primary-navy: #0B1E3B;
   --primary-navy-dark: #071326;
   --primary-navy-light: #16325C;
-  --accent-blue: #2563EB;
-  --accent-blue-hover: #1D4ED8;
-  --accent-blue-soft: #EFF6FF;
+  --accent-blue: #F97316;
+  --accent-blue-hover: #EA580C;
+  --accent-blue-soft: #FFF7ED;
 
   /* State & Semantic Tokens */
   --success: #10B981;
@@ -63,9 +63,9 @@
   --primary-navy: #0F172A;
   --primary-navy-dark: #090D16;
   --primary-navy-light: #1E293B;
-  --accent-blue: #3B82F6;
-  --accent-blue-hover: #60A5FA;
-  --accent-blue-soft: #172554;
+  --accent-blue: #FB923C;
+  --accent-blue-hover: #FDBA74;
+  --accent-blue-soft: #431407;
 
   --success-soft: #064E3B;
   --success-text: #A7F3D0;
@@ -261,7 +261,7 @@ a {
   background: var(--accent-blue);
   color: #FFFFFF;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
 }
 
 .sidebar-collapsible-btn {
@@ -320,7 +320,7 @@ a {
 
 .sidebar-sublink.active {
   color: #FFFFFF;
-  background: rgba(37, 99, 235, 0.4);
+  background: rgba(249, 115, 22, 0.4);
   font-weight: 600;
 }
 
@@ -465,7 +465,7 @@ a {
   font-size: 12.5px;
   font-weight: 600;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.25);
 }
 
 .quick-action-primary-btn:hover {

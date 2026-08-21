@@ -51,7 +51,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
         role: "Staff Member",
         department: "Operations",
         presence: "ONLINE",
-        avatarBg: "#2563EB",
+        avatarBg: "#F97316",
         phone: "+977 9801980000",
         email: "staff@abroad.edu.np",
       };
@@ -238,7 +238,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
           right: "24px",
           width: "290px",
           background: "#0F172A",
-          border: "2px solid #3B82F6",
+          border: "2px solid #FB923C",
           borderRadius: "14px",
           padding: "12px 14px",
           boxShadow: "0 10px 30px rgba(0, 0, 0, 0.6)",
@@ -269,7 +269,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
           </div>
           <div>
             <strong style={{ fontSize: "13px", display: "block" }}>{otherStaff.fullName}</strong>
-            <span style={{ fontSize: "11px", color: "#60A5FA", fontFamily: "monospace" }}>
+            <span style={{ fontSize: "11px", color: "#FDBA74", fontFamily: "monospace" }}>
               {callStatus === "RINGING" ? "Ringing…" : `Live Call · ${formatTimer(duration)}`}
             </span>
           </div>
@@ -347,7 +347,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                 setShowChatDrawer(false);
               }}
               title="Staff Profile Info"
-              style={{ color: showProfileDrawer ? "#3B82F6" : "#94A3B8" }}
+              style={{ color: showProfileDrawer ? "#FB923C" : "#94A3B8" }}
             >
               <Info size={16} />
             </button>
@@ -455,7 +455,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                         className="audio-wave-bar"
                         style={{
                           height: `${barHeight}px`,
-                          background: isMuted ? "#64748B" : "#3B82F6",
+                          background: isMuted ? "#64748B" : "#FB923C",
                           opacity: audioLevel > 5 ? 1 : 0.45,
                           transition: "height 0.08s ease",
                         }}
@@ -476,7 +476,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                     height: "120px",
                     borderRadius: "12px",
                     overflow: "hidden",
-                    border: "2px solid rgba(59, 130, 246, 0.5)",
+                    border: "2px solid rgba(251, 146, 60, 0.5)",
                     background: "#1E293B",
                     boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
                     zIndex: 10,
@@ -518,7 +518,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                 width: "290px",
                 background: "rgba(15, 23, 42, 0.96)",
                 backdropFilter: "blur(14px)",
-                border: "1px solid rgba(59, 130, 246, 0.35)",
+                border: "1px solid rgba(251, 146, 60, 0.35)",
                 borderRadius: "14px",
                 padding: "16px",
                 boxShadow: "0 15px 35px rgba(0,0,0,0.7)",
@@ -527,7 +527,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                <strong style={{ fontSize: "13px", color: "#60A5FA" }}>Staff Working Profile</strong>
+                <strong style={{ fontSize: "13px", color: "#FDBA74" }}>Staff Working Profile</strong>
                 <button
                   type="button"
                   style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}
@@ -580,7 +580,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                 height: "400px",
                 background: "rgba(15, 23, 42, 0.96)",
                 backdropFilter: "blur(14px)",
-                border: "1px solid rgba(59, 130, 246, 0.35)",
+                border: "1px solid rgba(251, 146, 60, 0.35)",
                 borderRadius: "14px",
                 display: "flex",
                 flexDirection: "column",
@@ -591,7 +591,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
               }}
             >
               <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <strong style={{ fontSize: "13px", color: "#60A5FA" }}>In-Meeting Chat</strong>
+                <strong style={{ fontSize: "13px", color: "#FDBA74" }}>In-Meeting Chat</strong>
                 <button
                   type="button"
                   style={{ background: "none", border: "none", color: "#94A3B8", cursor: "pointer" }}
@@ -631,7 +631,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                 <button
                   type="button"
                   onClick={handleSendInCallMessage}
-                  style={{ background: "#2563EB", border: "none", borderRadius: "6px", color: "#FFF", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  style={{ background: "#F97316", border: "none", borderRadius: "6px", color: "#FFF", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                 >
                   <Send size={13} />
                 </button>

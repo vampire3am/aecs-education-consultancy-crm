@@ -101,7 +101,7 @@ export function IncomingCallToast() {
                   width: "48px",
                   height: "48px",
                   borderRadius: "50%",
-                  background: incomingCall.callerAvatarBg || "#3B82F6",
+                  background: incomingCall.callerAvatarBg || "#FB923C",
                   color: "#FFFFFF",
                   display: "flex",
                   alignItems: "center",
@@ -109,7 +109,7 @@ export function IncomingCallToast() {
                   fontWeight: 800,
                   fontSize: "18px",
                   flexShrink: 0,
-                  boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
+                  boxShadow: "0 0 15px rgba(251, 146, 60, 0.5)",
                 }}
               >
                 {incomingCall.callerName.substring(0, 2).toUpperCase()}
@@ -122,7 +122,7 @@ export function IncomingCallToast() {
                 <span style={{ fontSize: "11px", color: "#94A3B8", display: "block" }}>
                   {incomingCall.callerRole}
                 </span>
-                <span style={{ fontSize: "11.5px", color: "#60A5FA", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
+                <span style={{ fontSize: "11.5px", color: "#FDBA74", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
                   {incomingCall.callType === "audio" ? <PhoneCall size={12} /> : <Video size={12} />}
                   Incoming {incomingCall.callType === "audio" ? "Voice Call…" : "HD Video Call…"}
                 </span>

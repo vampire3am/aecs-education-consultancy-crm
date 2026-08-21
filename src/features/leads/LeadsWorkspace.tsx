@@ -494,7 +494,7 @@ export function LeadsWorkspace() {
                               width: "30px",
                               height: "30px",
                               borderRadius: "50%",
-                              background: lead.priority === "HIGH" ? "rgba(239, 68, 68, 0.2)" : "rgba(37, 99, 235, 0.2)",
+                              background: lead.priority === "HIGH" ? "rgba(239, 68, 68, 0.2)" : "rgba(249, 115, 22, 0.2)",
                               color: lead.priority === "HIGH" ? "var(--danger)" : "var(--accent-blue)",
                               display: "flex",
                               alignItems: "center",

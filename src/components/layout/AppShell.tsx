@@ -198,7 +198,7 @@ export function AppShell() {
                   <Users size={16} />
                   <span>Students</span>
                 </div>
-                <span className="nav-badge" style={{ background: "rgba(37, 99, 235, 0.85)" }}>0</span>
+                <span className="nav-badge" style={{ background: "rgba(249, 115, 22, 0.85)" }}>0</span>
               </NavLink>
             )}
 
@@ -249,7 +249,7 @@ export function AppShell() {
                   <BookOpen size={16} />
                   <span>Classes</span>
                 </div>
-                <span className="nav-badge" style={{ background: "rgba(37, 99, 235, 0.85)" }}>0</span>
+                <span className="nav-badge" style={{ background: "rgba(249, 115, 22, 0.85)" }}>0</span>
               </NavLink>
             )}
 
@@ -592,7 +592,7 @@ export function AppShell() {
                     <strong style={{ fontSize: "13.5px", color: "var(--text-main)", display: "block" }}>{profile?.full_name}</strong>
                     <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>{profile?.email}</span>
                     <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
-                      <span style={{ fontSize: "9.5px", padding: "2px 6px", borderRadius: "4px", background: "rgba(37, 99, 235, 0.12)", color: "var(--accent-blue)", fontWeight: 700 }}>
+                      <span style={{ fontSize: "9.5px", padding: "2px 6px", borderRadius: "4px", background: "rgba(249, 115, 22, 0.12)", color: "var(--accent-blue)", fontWeight: 700 }}>
                         {profile?.role}
                       </span>
                       <span style={{ fontSize: "9.5px", padding: "2px 6px", borderRadius: "4px", background: "var(--bg-card-subtle)", color: "var(--text-muted)" }}>

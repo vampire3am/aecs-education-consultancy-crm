@@ -302,9 +302,9 @@ export function AnalyticsDashboard() {
 
           <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
             {[
-              { stage: "Stage 1", label: "Initial Lead / Desk Inquiry", count: "1,200 leads", pct: 100, barClass: "#2563EB", note: "Walk-ins, social ads & education fair leads" },
-              { stage: "Stage 2", label: "Desk Counselling Completed", count: "822 Consultations", pct: 68.5, barClass: "#3B82F6", note: "1-on-1 career guidance & destination shortlisting" },
-              { stage: "Stage 3", label: "Test Prep & Documents Verified", count: "612 Student Files", pct: 51.0, barClass: "#60A5FA", note: "IELTS/PTE batch enrollment & 10-point checklist" },
+              { stage: "Stage 1", label: "Initial Lead / Desk Inquiry", count: "1,200 leads", pct: 100, barClass: "#F97316", note: "Walk-ins, social ads & education fair leads" },
+              { stage: "Stage 2", label: "Desk Counselling Completed", count: "822 Consultations", pct: 68.5, barClass: "#FB923C", note: "1-on-1 career guidance & destination shortlisting" },
+              { stage: "Stage 3", label: "Test Prep & Documents Verified", count: "612 Student Files", pct: 51.0, barClass: "#FDBA74", note: "IELTS/PTE batch enrollment & 10-point checklist" },
               { stage: "Stage 4", label: "University Application Submitted", count: "530 Applications", pct: 44.2, barClass: "#10B981", note: "Submitted to UK, Aus, Canada, US institutions" },
               { stage: "Stage 5", label: "Offer Letter & CAS / I-20 Received", count: "462 Confirmed Offers", pct: 38.5, barClass: "#059669", note: "Unconditional offers & financial deposit confirmed" },
               { stage: "Stage 6", label: "Visa Lodged & Approved", count: "418 Final Enrolments", pct: 34.8, barClass: "#047857", note: "Full visa grants with 96.2% statutory success" },

@@ -1063,7 +1063,7 @@ export function HrmsWorkspace() {
                 </div>
                 <div>
                   <span style={{ color: "#64748B", display: "block" }}>Employee Code / ID</span>
-                  <span className="code-font" style={{ fontWeight: 700, color: "#2563EB" }}>{activePayslip.empCode}</span>
+                  <span className="code-font" style={{ fontWeight: 700, color: "#F97316" }}>{activePayslip.empCode}</span>
                 </div>
                 <div>
                   <span style={{ color: "#64748B", display: "block" }}>Designation</span>
