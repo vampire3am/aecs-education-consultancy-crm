@@ -12,11 +12,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/AuthProvider";
-import {
-  AECS_STAFF_18,
-  type ChatMessage,
-  MessagingService,
-} from "../../services/messagingService";
+import { type ChatMessage, MessagingService } from "../../services/messagingService";
 
 // Professional Web Audio Synthesizer for instant crystal-clear chime
 export function playChimeNotification() {
@@ -82,11 +78,7 @@ export function GlobalMessageNotifier() {
   const isFirstLoad = useRef(true);
 
   // Current logged in staff ID
-  const currentStaffId = profile
-    ? AECS_STAFF_18.find(
-        s => s.email.toLowerCase() === profile.email.toLowerCase() || s.id === profile.id
-      )?.id || "staff-1"
-    : "staff-1";
+  const currentStaffId = profile?.id ?? "pending-session";
 
   const checkForNewMessages = async () => {
     try {

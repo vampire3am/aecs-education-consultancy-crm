@@ -28,7 +28,7 @@ import "./styles/email-workspace.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 // Total purge of previous sample dataset keys on initial load
-const PURGE_FLAG = "aecs_crm_cleared_v5";
+const PURGE_FLAG = "aecs_crm_cleared_v6";
 if (!localStorage.getItem(PURGE_FLAG)) {
   const keysToPurge = [
     "aecs_persistent_students",
@@ -46,6 +46,10 @@ if (!localStorage.getItem(PURGE_FLAG)) {
     "aecs_documents_v2",
     "aecs_course_batches_v2",
     "aecs_persistent_batches",
+    "aecs_destinations_catalog_v2",
+    "aecs_partner_universities_v2",
+    "aecs_active_chat_channel",
+    "aecs_active_chat_recipient",
   ];
   keysToPurge.forEach(k => localStorage.removeItem(k));
   localStorage.setItem(PURGE_FLAG, "true");

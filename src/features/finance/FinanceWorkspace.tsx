@@ -985,14 +985,14 @@ export function FinanceWorkspace() {
                 <div style={{ borderTop: "1px solid #000000", width: "180px", paddingTop: "6px", marginBottom: "4px" }}>
                   <strong>Prepared By:</strong>
                 </div>
-                <span>Ramesh Shrestha (Finance Lead)</span><br />
+                <span>Not assigned</span><br />
                 <span>Date: {new Date().toLocaleDateString()}</span>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ borderTop: "1px solid #000000", width: "180px", paddingTop: "6px", marginBottom: "4px", marginLeft: "auto" }}>
                   <strong>Approved By:</strong>
                 </div>
-                <span>Arun Sharma (Managing Director)</span><br />
+                <span>Not assigned</span><br />
                 <span>Date: {new Date().toLocaleDateString()}</span>
               </div>
             </div>
@@ -1726,7 +1726,7 @@ export function FinanceWorkspace() {
                 <div style={{ border: "1.5px solid #000000", borderRadius: "8px", padding: "28px 14px 10px 14px", textAlign: "center", fontSize: "12px" }}>
                   <div style={{ borderTop: "1px solid #000000", width: "160px", margin: "0 auto 4px auto" }} />
                   <strong>Approved by</strong><br />
-                  <span style={{ fontSize: "11px", color: "#475569" }}>Arun Sharma (Managing Director)</span>
+                  <span style={{ fontSize: "11px", color: "#475569" }}>Not assigned</span>
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { AECS_STAFF_18, type StaffUser } from "./messagingService";
+import { type StaffUser } from "./messagingService";
 import { getGuitarNokiaRingtoneAudio } from "../utils/guitarNokiaRingtone";
 
 export type CallType = "audio" | "video";

@@ -80,7 +80,7 @@ export function RegistrationForm() {
     targetCourse: "MSc International Business Management",
     targetIntake: "September 2026",
     budgetNpr: "25-35 Lakhs NPR",
-    counsellor: "Sita Adhikari",
+    counsellor: "Unassigned",
 
     // Step 4: English Proficiency
     testStatus: "Taken" as "Taken" | "Booked" | "Preparing" | "None",
@@ -836,8 +836,7 @@ export function RegistrationForm() {
                     value={formData.counsellor}
                     onChange={e => handleChange("counsellor", e.target.value)}
                   >
-                    <option value="Sita Adhikari">Sita Adhikari (Senior Counsellor)</option>
-                    <option value="Binod Maharjan">Binod Maharjan (Visa Specialist)</option>
+                    <option value="Unassigned">Unassigned</option>
                   </select>
                 </div>
               </div>

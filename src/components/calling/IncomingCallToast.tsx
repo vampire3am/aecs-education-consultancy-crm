@@ -7,7 +7,6 @@ import {
   CallingService,
   ringtones,
 } from "../../services/callingService";
-import { AECS_STAFF_18 } from "../../services/messagingService";
 import { CallModal } from "./CallModal";
 
 export function IncomingCallToast() {
@@ -15,11 +14,7 @@ export function IncomingCallToast() {
   const [incomingCall, setIncomingCall] = useState<ActiveCallSession | null>(null);
   const [activeSession, setActiveSession] = useState<ActiveCallSession | null>(null);
 
-  const currentStaffId = profile
-    ? AECS_STAFF_18.find(
-        s => s.email.toLowerCase() === profile.email.toLowerCase() || s.id === profile.id
-      )?.id || "staff-1"
-    : "staff-1";
+  const currentStaffId = profile?.id ?? "pending-session";
 
   // Check for incoming call signals on server
   const checkCalls = async () => {

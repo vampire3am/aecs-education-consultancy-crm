@@ -141,7 +141,7 @@ export function EmailAutomationWorkspace() {
       variables: {
         student_name: "Aarav Sharma",
         destination_country: "Australia",
-        counsellor_name: "Binod Maharjan",
+        counsellor_name: "Assigned counsellor",
         intake_season: "February 2027",
         application_id: "AECS-2026-8891",
         university_name: "University of Sydney",
@@ -1099,7 +1099,7 @@ export function EmailAutomationWorkspace() {
                     __html: EmailAutomationService.interpolate(previewTemplate.bodyHtml, {
                       student_name: "Aarav Sharma",
                       destination_country: "Australia",
-                      counsellor_name: "Binod Maharjan",
+                      counsellor_name: "Assigned counsellor",
                       intake_season: "February 2027",
                       application_id: "AECS-2026-8891",
                       university_name: "University of Sydney",

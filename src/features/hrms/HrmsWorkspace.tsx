@@ -78,215 +78,13 @@ interface PayrollRecord {
   paymentDate: string;
 }
 
-const INITIAL_STAFF: StaffMember[] = [
-  {
-    id: "emp-1",
-    empCode: "AECS-EMP-001",
-    fullName: "Arun Sharma",
-    role: "Managing Director / Owner",
-    department: "Management",
-    branch: "Kathmandu Central",
-    email: "admin@abroad.edu.np",
-    phone: "+977 9801234560",
-    joinDate: "01 Jan 2022",
-    baseSalary: 120000,
-    status: "ACTIVE",
-    bankAccount: "Nabil Bank · 019283746501",
-    panNumber: "102938475",
-  },
-  {
-    id: "emp-2",
-    empCode: "AECS-EMP-002",
-    fullName: "Sita Adhikari",
-    role: "Senior Education Counsellor",
-    department: "Counselling",
-    branch: "Kathmandu Central",
-    email: "counsellor@abroad.edu.np",
-    phone: "+977 9841234567",
-    joinDate: "15 Mar 2023",
-    baseSalary: 65000,
-    status: "ACTIVE",
-    bankAccount: "NIC Asia Bank · 998877665544",
-    panNumber: "203948576",
-  },
-  {
-    id: "emp-3",
-    empCode: "AECS-EMP-003",
-    fullName: "Binod Maharjan",
-    role: "Visa & Compliance Specialist",
-    department: "Admissions",
-    branch: "Kathmandu Central",
-    email: "visa@abroad.edu.np",
-    phone: "+977 9801987654",
-    joinDate: "01 Jul 2023",
-    baseSalary: 60000,
-    status: "ACTIVE",
-    bankAccount: "Global IME Bank · 112233445566",
-    panNumber: "304958671",
-  },
-  {
-    id: "emp-4",
-    empCode: "AECS-EMP-004",
-    fullName: "Ramesh Shrestha",
-    role: "Chief Accountant & Finance Lead",
-    department: "Finance",
-    branch: "Kathmandu Central",
-    email: "accounts@abroad.edu.np",
-    phone: "+977 9851122334",
-    joinDate: "10 Feb 2024",
-    baseSalary: 55000,
-    status: "ACTIVE",
-    bankAccount: "Nabil Bank · 554433221100",
-    panNumber: "405968712",
-  },
-  {
-    id: "emp-5",
-    empCode: "AECS-EMP-005",
-    fullName: "Pradeep Joshi",
-    role: "IELTS / PTE Master Instructor",
-    department: "Academic",
-    branch: "Kathmandu Central",
-    email: "pradeep.j@abroad.edu.np",
-    phone: "+977 9860112233",
-    joinDate: "01 Aug 2024",
-    baseSalary: 50000,
-    status: "ACTIVE",
-    bankAccount: "Sanima Bank · 776655443322",
-    panNumber: "506978823",
-  },
-  {
-    id: "emp-6",
-    empCode: "AECS-EMP-006",
-    fullName: "Pooja Gurung",
-    role: "Branch Coordinator & Counsellor",
-    department: "Counselling",
-    branch: "Pokhara Regional",
-    email: "pooja.g@abroad.edu.np",
-    phone: "+977 9803445566",
-    joinDate: "15 Nov 2024",
-    baseSalary: 45000,
-    status: "ACTIVE",
-    bankAccount: "Everest Bank · 889900112233",
-    panNumber: "607989934",
-  },
-];
+const INITIAL_STAFF: StaffMember[] = [];
 
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  { id: "att-1", empCode: "AECS-EMP-001", fullName: "Arun Sharma", date: "Today (17 Aug)", checkIn: "09:15 AM", checkOut: "In Office", status: "PRESENT" },
-  { id: "att-2", empCode: "AECS-EMP-002", fullName: "Sita Adhikari", date: "Today (17 Aug)", checkIn: "09:28 AM", checkOut: "In Office", status: "PRESENT" },
-  { id: "att-3", empCode: "AECS-EMP-003", fullName: "Binod Maharjan", date: "Today (17 Aug)", checkIn: "09:42 AM", checkOut: "In Office", status: "LATE", lateMinutes: 12 },
-  { id: "att-4", empCode: "AECS-EMP-004", fullName: "Ramesh Shrestha", date: "Today (17 Aug)", checkIn: "09:20 AM", checkOut: "In Office", status: "PRESENT" },
-  { id: "att-5", empCode: "AECS-EMP-005", fullName: "Pradeep Joshi", date: "Today (17 Aug)", checkIn: "06:50 AM", checkOut: "In Office", status: "PRESENT" },
-  { id: "att-6", empCode: "AECS-EMP-006", fullName: "Pooja Gurung", date: "Today (17 Aug)", checkIn: "—", checkOut: "—", status: "ON_LEAVE" },
-];
+const INITIAL_ATTENDANCE: AttendanceRecord[] = [];
 
-const INITIAL_LEAVES: LeaveRequest[] = [
-  {
-    id: "lv-1",
-    empCode: "AECS-EMP-006",
-    fullName: "Pooja Gurung",
-    leaveType: "Festival Leave",
-    fromDate: "2026-08-17",
-    toDate: "2026-08-18",
-    days: 2,
-    reason: "Janai Purnima / Raksha Bandhan family observance in Pokhara.",
-    status: "APPROVED",
-    approvedBy: "Arun Sharma",
-  },
-  {
-    id: "lv-2",
-    empCode: "AECS-EMP-003",
-    fullName: "Binod Maharjan",
-    leaveType: "Casual Leave",
-    fromDate: "2026-08-25",
-    toDate: "2026-08-26",
-    days: 2,
-    reason: "Personal family documentation and municipal registration.",
-    status: "PENDING",
-  },
-  {
-    id: "lv-3",
-    empCode: "AECS-EMP-002",
-    fullName: "Sita Adhikari",
-    leaveType: "Sick / Medical",
-    fromDate: "2026-08-30",
-    toDate: "2026-08-30",
-    days: 1,
-    reason: "Routine medical checkup at Teaching Hospital.",
-    status: "PENDING",
-  },
-];
+const INITIAL_LEAVES: LeaveRequest[] = [];
 
-const INITIAL_PAYROLL: PayrollRecord[] = [
-  {
-    id: "pay-1",
-    empCode: "AECS-EMP-001",
-    fullName: "Arun Sharma",
-    role: "Managing Director",
-    month: "Shrawan 2083 (July/Aug 2026)",
-    basicSalary: 120000,
-    allowance: 25000,
-    commission: 45000,
-    grossSalary: 190000,
-    ssfDeduction: 13200,
-    citDeduction: 10000,
-    tdsTax: 1900,
-    netSalary: 164900,
-    status: "PAID",
-    paymentDate: "05 Aug 2026",
-  },
-  {
-    id: "pay-2",
-    empCode: "AECS-EMP-002",
-    fullName: "Sita Adhikari",
-    role: "Senior Counsellor",
-    month: "Shrawan 2083 (July/Aug 2026)",
-    basicSalary: 65000,
-    allowance: 12000,
-    commission: 30000,
-    grossSalary: 107000,
-    ssfDeduction: 7150,
-    citDeduction: 5000,
-    tdsTax: 1070,
-    netSalary: 93780,
-    status: "PAID",
-    paymentDate: "05 Aug 2026",
-  },
-  {
-    id: "pay-3",
-    empCode: "AECS-EMP-003",
-    fullName: "Binod Maharjan",
-    role: "Visa Specialist",
-    month: "Shrawan 2083 (July/Aug 2026)",
-    basicSalary: 60000,
-    allowance: 10000,
-    commission: 25000,
-    grossSalary: 95000,
-    ssfDeduction: 6600,
-    citDeduction: 5000,
-    tdsTax: 950,
-    netSalary: 82450,
-    status: "PAID",
-    paymentDate: "05 Aug 2026",
-  },
-  {
-    id: "pay-4",
-    empCode: "AECS-EMP-004",
-    fullName: "Ramesh Shrestha",
-    role: "Chief Accountant",
-    month: "Shrawan 2083 (July/Aug 2026)",
-    basicSalary: 55000,
-    allowance: 8000,
-    commission: 10000,
-    grossSalary: 73000,
-    ssfDeduction: 6050,
-    citDeduction: 4000,
-    tdsTax: 730,
-    netSalary: 62220,
-    status: "PAID",
-    paymentDate: "05 Aug 2026",
-  },
-];
+const INITIAL_PAYROLL: PayrollRecord[] = [];
 
 export function HrmsWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -358,12 +156,12 @@ export function HrmsWorkspace() {
 
   // New Leave Form
   const [leaveForm, setLeaveForm] = useState({
-    empCode: "AECS-EMP-002",
-    fullName: "Sita Adhikari",
+    empCode: "",
+    fullName: "",
     leaveType: "Casual Leave" as LeaveRequest["leaveType"],
-    fromDate: "2026-08-25",
-    toDate: "2026-08-26",
-    days: 2,
+    fromDate: new Date().toISOString().slice(0, 10),
+    toDate: new Date().toISOString().slice(0, 10),
+    days: 1,
     reason: "",
   });
 
@@ -916,11 +714,11 @@ export function HrmsWorkspace() {
                 <span className="account-code-cell">COUNSELLING LEADERSHIP</span>
                 <span className="badge-status enrolled">94% Target SLA</span>
               </div>
-              <strong style={{ fontSize: "14px", display: "block" }}>Sita Adhikari (Senior Counsellor)</strong>
+              <strong style={{ fontSize: "14px", display: "block" }}>No performance records</strong>
               <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", fontSize: "12px" }}>
-                <div><span style={{ color: "var(--text-muted)" }}>Assigned Leads:</span> <strong>48</strong></div>
-                <div><span style={{ color: "var(--text-muted)" }}>Enrolled Offers:</span> <strong>32</strong></div>
-                <div><span style={{ color: "var(--text-muted)" }}>Conversion:</span> <strong style={{ color: "var(--success-text)" }}>66.7%</strong></div>
+                <div><span style={{ color: "var(--text-muted)" }}>Assigned Leads:</span> <strong>0</strong></div>
+                <div><span style={{ color: "var(--text-muted)" }}>Enrolled Offers:</span> <strong>0</strong></div>
+                <div><span style={{ color: "var(--text-muted)" }}>Conversion:</span> <strong>—</strong></div>
               </div>
             </div>
 
@@ -929,11 +727,11 @@ export function HrmsWorkspace() {
                 <span className="account-code-cell">VISA SCRUTINY ACCURACY</span>
                 <span className="badge-status enrolled">98% Success</span>
               </div>
-              <strong style={{ fontSize: "14px", display: "block" }}>Binod Maharjan (Visa Specialist)</strong>
+              <strong style={{ fontSize: "14px", display: "block" }}>No visa performance records</strong>
               <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", fontSize: "12px" }}>
-                <div><span style={{ color: "var(--text-muted)" }}>Files Lodged:</span> <strong>28</strong></div>
-                <div><span style={{ color: "var(--text-muted)" }}>Visas Granted:</span> <strong>27</strong></div>
-                <div><span style={{ color: "var(--text-muted)" }}>Grant Rate:</span> <strong style={{ color: "var(--success-text)" }}>96.4%</strong></div>
+                <div><span style={{ color: "var(--text-muted)" }}>Files Lodged:</span> <strong>0</strong></div>
+                <div><span style={{ color: "var(--text-muted)" }}>Visas Granted:</span> <strong>0</strong></div>
+                <div><span style={{ color: "var(--text-muted)" }}>Grant Rate:</span> <strong>—</strong></div>
               </div>
             </div>
           </div>
@@ -948,7 +746,7 @@ export function HrmsWorkspace() {
               <h3>Employee Statutory Documents & Contracts</h3>
               <p>Employment agreements, citizenship copies, academic certificates, and PAN / SSF records</p>
             </div>
-            <span className="status-pill">6 Staff Verified</span>
+            <span className="status-pill">0 Staff Verified</span>
           </div>
 
           <div className="table-wrapper">
@@ -1010,7 +808,7 @@ export function HrmsWorkspace() {
                       required
                       value={newStaff.fullName}
                       onChange={e => setNewStaff({ ...newStaff, fullName: e.target.value })}
-                      placeholder="e.g. Manisha Rai"
+                      placeholder="Employee name"
                     />
                   </div>
                   <div className="form-group">

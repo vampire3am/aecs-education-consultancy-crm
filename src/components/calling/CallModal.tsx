@@ -31,7 +31,7 @@ import {
   CallingService,
   ringtones,
 } from "../../services/callingService";
-import { AECS_STAFF_18, type StaffUser } from "../../services/messagingService";
+import { type StaffUser } from "../../services/messagingService";
 
 interface CallModalProps {
   session: ActiveCallSession;
@@ -45,8 +45,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
 
   // Active logged-in staff member
   const currentStaff = useMemo(() => {
-    return (
-      AECS_STAFF_18.find(s => s.id === currentUserId) || {
+    return {
         id: currentUserId,
         fullName: "AECS Staff",
         role: "Staff Member",
@@ -55,14 +54,12 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
         avatarBg: "#2563EB",
         phone: "+977 9801980000",
         email: "staff@abroad.edu.np",
-      }
-    );
+      };
   }, [currentUserId]);
 
   // Working profile of the other staff member
   const otherStaff: StaffUser = useMemo(() => {
-    return (
-      AECS_STAFF_18.find(s => s.id === otherPartyId) || {
+    return {
         id: otherPartyId,
         fullName: isCaller ? session.recipientName : session.callerName,
         role: isCaller ? session.recipientRole : session.callerRole,
@@ -71,8 +68,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
         avatarBg: isCaller ? session.recipientAvatarBg : session.callerAvatarBg,
         phone: "+977 9841230000",
         email: "staff@abroad.edu.np",
-      }
-    );
+      };
   }, [otherPartyId, isCaller, session]);
 
   const [callStatus, setCallStatus] = useState<CallStatus>(session.status);

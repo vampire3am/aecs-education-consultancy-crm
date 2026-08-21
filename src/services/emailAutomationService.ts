@@ -138,7 +138,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   • Application ID: <strong>{{application_id}}</strong><br/>
   • Acceptance Deadline: <strong>Within 14 Days</strong>
 </div>
-<p>Our compliance officer <strong>Binod Maharjan</strong> is preparing your GTE/GS financial documentation and Confirmation of Enrolment (CoE / CAS / I-20) package.</p>`,
+<p>Our compliance team is preparing your GTE/GS financial documentation and Confirmation of Enrolment (CoE / CAS / I-20) package.</p>`,
     ctaText: "Accept Offer in Portal",
     ctaUrl: "https://abroad.edu.np/portal/applications",
     updatedAt: "2026-08-20T10:00:00Z",
@@ -459,7 +459,7 @@ export class EmailAutomationService {
           const vars = {
             student_name: params.toName || "Student",
             destination_country: "Australia",
-            counsellor_name: "Binod Maharjan",
+            counsellor_name: "Assigned counsellor",
             intake_season: "February 2027",
             application_id: "AECS-2026-8891",
             university_name: "University of Sydney",
@@ -522,7 +522,7 @@ export class EmailAutomationService {
           variables: {
             student_name: context.studentName,
             destination_country: context.destinationCountry || "Australia",
-            counsellor_name: context.counsellorName || "Binod Maharjan",
+            counsellor_name: context.counsellorName || "Assigned counsellor",
             intake_season: context.intakeSeason || "February 2027",
             application_id: context.applicationId || "AECS-KTM-7821",
             mock_score: context.mockScore || "Band 7.5",

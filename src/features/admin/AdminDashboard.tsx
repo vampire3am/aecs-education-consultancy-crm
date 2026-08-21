@@ -294,7 +294,7 @@ export function AdminDashboard() {
               <h3>AECS Multi-Branch Architecture</h3>
               <p>Operating hubs, branch managers, and cost centre ledger assignments</p>
             </div>
-            <span className="status-pill">2 Active Hubs</span>
+            <span className="status-pill">0 Active Hubs</span>
           </div>
 
           <div style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -311,11 +311,11 @@ export function AdminDashboard() {
               <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "14px", paddingTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Branch Manager:</span>
-                  <strong>Sita Adhikari</strong>
+                  <strong>Not assigned</strong>
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Active Staff:</span>
-                  <strong>18 Officers</strong>
+                  <strong>0 Officers</strong>
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Contact Desk:</span>
@@ -341,11 +341,11 @@ export function AdminDashboard() {
               <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "14px", paddingTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Branch Manager:</span>
-                  <strong>Binod Maharjan</strong>
+                  <strong>Not assigned</strong>
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Active Staff:</span>
-                  <strong>8 Officers</strong>
+                  <strong>0 Officers</strong>
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Contact Desk:</span>

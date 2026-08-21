@@ -20,11 +20,6 @@ interface BatchItem {
 const INITIAL_BATCHES: BatchItem[] = [];
 
 const TEACHERS_LIST = [
-  "Pradeep Joshi (Senior Master Trainer)",
-  "Manisha Rai (Pearson Certified Trainer)",
-  "Sushil Sharma (Goethe Certified)",
-  "Bikash Thapa (JLPT Sensei)",
-  "Ramesh Adhikari (TOEFL / SAT Faculty)",
   "Unassigned",
 ];
 
@@ -63,7 +58,7 @@ export function ClassesWorkspace() {
 
     // C. First Class Enrolment
     enrolledClass: "IELTS Preparation" as ClassStudent["enrolledClass"],
-    teacher: "Pradeep Joshi (Senior Master Trainer)",
+    teacher: "Unassigned",
     startDate: new Date().toISOString().split("T")[0],
     expectedCompletion: "",
     batchName: "IELTS Morning A",
@@ -79,7 +74,7 @@ export function ClassesWorkspace() {
     batchCode: "",
     courseName: "IELTS Preparation" as BatchItem["courseName"],
     timing: "07:00 AM – 08:30 AM (Sun–Fri)",
-    instructor: "Pradeep Joshi (Senior Master Trainer)",
+    instructor: "Unassigned",
     maxCapacity: 20,
     room: "Lab 01 · Central Audio Hub",
     startDate: new Date().toISOString().split("T")[0],
@@ -141,7 +136,7 @@ export function ClassesWorkspace() {
       recordStatus: "Active",
       notes: "",
       enrolledClass: "IELTS Preparation",
-      teacher: "Pradeep Joshi (Senior Master Trainer)",
+      teacher: "Unassigned",
       startDate: new Date().toISOString().split("T")[0],
       expectedCompletion: "",
       batchName: "IELTS Morning A",
@@ -165,7 +160,7 @@ export function ClassesWorkspace() {
       batchCode: "",
       courseName: "IELTS Preparation",
       timing: "07:00 AM – 08:30 AM (Sun–Fri)",
-      instructor: "Pradeep Joshi (Senior Master Trainer)",
+      instructor: "Unassigned",
       maxCapacity: 20,
       room: "Lab 01 · Central Audio Hub",
       startDate: new Date().toISOString().split("T")[0],

@@ -118,7 +118,7 @@ export function StudentDirectory() {
     gender: "Female" as "Male" | "Female" | "Other",
     targetCountry: "UK",
     targetCourse: "",
-    counsellor: "Sita Adhikari",
+    counsellor: "Unassigned",
   });
 
   useEffect(() => {
@@ -165,7 +165,7 @@ export function StudentDirectory() {
       gender: "Female",
       targetCountry: "UK",
       targetCourse: "",
-      counsellor: "Sita Adhikari",
+      counsellor: "Unassigned",
     });
   };
 
@@ -1016,8 +1016,7 @@ export function StudentDirectory() {
                       value={newLeadForm.counsellor}
                       onChange={e => setNewLeadForm({ ...newLeadForm, counsellor: e.target.value })}
                     >
-                      <option value="Sita Adhikari">Sita Adhikari (Senior Counsellor)</option>
-                      <option value="Binod Maharjan">Binod Maharjan (Visa Specialist)</option>
+                      <option value="Unassigned">Unassigned</option>
                     </select>
                   </div>
                 </div>

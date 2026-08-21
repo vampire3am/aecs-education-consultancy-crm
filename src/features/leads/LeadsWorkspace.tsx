@@ -61,7 +61,7 @@ export function LeadsWorkspace() {
     targetCourse: "",
     targetIntake: "September 2026",
     budgetEstimate: "£15,000 / year",
-    assignedCounsellor: "Sita Adhikari",
+    assignedCounsellor: "Unassigned",
     stage: "NEW_INQUIRY" as LeadRecord["stage"],
     priority: "HIGH" as LeadRecord["priority"],
   });
@@ -115,7 +115,7 @@ export function LeadsWorkspace() {
       targetCourse: "",
       targetIntake: "September 2026",
       budgetEstimate: "£15,000 / year",
-      assignedCounsellor: "Sita Adhikari",
+      assignedCounsellor: "Unassigned",
       stage: "NEW_INQUIRY",
       priority: "HIGH",
       });
@@ -830,9 +830,7 @@ export function LeadsWorkspace() {
                     value={form.assignedCounsellor}
                     onChange={e => setForm({ ...form, assignedCounsellor: e.target.value })}
                   >
-                    <option value="Sita Adhikari">Sita Adhikari (Senior Counsellor)</option>
-                    <option value="Binod Maharjan">Binod Maharjan (Visa Specialist)</option>
-                    <option value="Pooja Gurung">Pooja Gurung (Pokhara Branch)</option>
+                    <option value="Unassigned">Unassigned</option>
                   </select>
                 </div>
               </div>

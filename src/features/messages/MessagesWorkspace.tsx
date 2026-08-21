@@ -71,7 +71,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AECS_CHANNELS,
-  AECS_STAFF_18,
   type ChatAttachment,
   type ChatChannel,
   type ChatMessage,
@@ -98,7 +97,9 @@ export function MessagesWorkspace() {
 
   // Active logged in staff member
   const currentStaff = useMemo(() => {
-    if (!profile) return AECS_STAFF_18[0];
+    if (!profile) {
+      return {id:"pending-session",fullName:"Staff",email:"",role:"Staff",department:"IT & Operations" as const,presence:"OFFLINE" as const,avatarBg:"#2563EB"};
+    }
     const match = staffUsers.find(
       s => s.email.toLowerCase() === profile.email.toLowerCase() || s.id === profile.id
     );
