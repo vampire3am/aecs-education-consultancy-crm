@@ -240,49 +240,6 @@ export function AdminDashboard() {
               </div>
             </div>
           </div>
-
-          {/* Brand Design System Swatches */}
-          <div className="crm-panel">
-            <div className="panel-header-bar">
-              <div>
-                <h3>Brand Design System & Color Tokens</h3>
-                <p>Governing visual tokens for staff UI, invoices, and client documents</p>
-              </div>
-              <span className="status-pill">Standard v1.0</span>
-            </div>
-
-            <div className="panel-body">
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
-                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
-                  <div style={{ height: "36px", borderRadius: "4px", background: "#0B1E3B", marginBottom: "10px" }} />
-                  <strong style={{ fontSize: "12.5px", display: "block" }}>AECS Deep Navy</strong>
-                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#0B1E3B</span>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Primary brand anchor & sidebar</p>
-                </div>
-
-                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
-                  <div style={{ height: "36px", borderRadius: "4px", background: "#F97316", marginBottom: "10px" }} />
-                  <strong style={{ fontSize: "12.5px", display: "block" }}>AECS Accent Blue</strong>
-                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#F97316</span>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Primary action buttons & links</p>
-                </div>
-
-                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
-                  <div style={{ height: "36px", borderRadius: "4px", background: "#10B981", marginBottom: "10px" }} />
-                  <strong style={{ fontSize: "12.5px", display: "block" }}>Success Emerald</strong>
-                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#10B981</span>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Visa grants & paid invoices</p>
-                </div>
-
-                <div style={{ padding: "14px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
-                  <div style={{ height: "36px", borderRadius: "4px", background: "#F59E0B", marginBottom: "10px" }} />
-                  <strong style={{ fontSize: "12.5px", display: "block" }}>Warning Amber</strong>
-                  <span className="code-font" style={{ fontSize: "11px", color: "var(--text-muted)" }}>#F59E0B</span>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Pending follow-ups & reviews</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
