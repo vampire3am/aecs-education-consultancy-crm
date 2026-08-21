@@ -220,7 +220,7 @@ export function ClassesWorkspace() {
             onClick={() => setShowAddStudentModal(true)}
           >
             <Plus size={16} />
-            <span>+ Add class student</span>
+            <span>Add class student</span>
           </button>
 
           <button
@@ -229,7 +229,7 @@ export function ClassesWorkspace() {
             onClick={() => setShowAddBatchModal(true)}
           >
             <BookOpen size={15} />
-            <span>+ Create Batch</span>
+            <span>Create Batch</span>
           </button>
 
           <button
@@ -391,7 +391,7 @@ export function ClassesWorkspace() {
                 onClick={() => setShowAddStudentModal(true)}
               >
                 <Plus size={14} />
-                <span>+ Add student</span>
+                <span>Add student</span>
               </button>
             </div>
           </div>

@@ -254,7 +254,7 @@ export function LeadsWorkspace() {
             onClick={() => setShowCaptureModal(true)}
           >
             <Zap size={16} />
-            <span>+ Capture New Lead</span>
+            <span>Capture New Lead</span>
           </button>
         </div>
       </div>

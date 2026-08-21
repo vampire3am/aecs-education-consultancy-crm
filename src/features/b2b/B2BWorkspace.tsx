@@ -261,7 +261,7 @@ export function B2BWorkspace() {
             onClick={() => setShowAddPartnerModal(true)}
           >
             <Plus size={15} />
-            <span>+ Add partner</span>
+            <span>Add partner</span>
           </button>
         </div>
       </div>

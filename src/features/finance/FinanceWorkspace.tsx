@@ -284,7 +284,7 @@ export function FinanceWorkspace() {
             onClick={() => setShowCreateModal(true)}
           >
             <Plus size={16} />
-            <span>+ Generate Student Invoice</span>
+            <span>Generate Student Invoice</span>
           </button>
         </div>
       </div>

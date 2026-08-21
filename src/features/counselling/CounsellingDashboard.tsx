@@ -352,7 +352,7 @@ export function CounsellingDashboard() {
             onClick={() => setShowAddUniModal(true)}
           >
             <Building2 size={15} />
-            <span>+ Add University</span>
+            <span>Add University</span>
           </button>
         </div>
       </div>
@@ -719,7 +719,7 @@ export function CounsellingDashboard() {
                 onClick={() => setShowAddUniModal(true)}
               >
                 <Building2 size={14} />
-                <span>+ Add University</span>
+                <span>Add University</span>
               </button>
             </div>
           </div>

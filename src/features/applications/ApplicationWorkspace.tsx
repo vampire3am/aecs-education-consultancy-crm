@@ -194,7 +194,7 @@ export function ApplicationWorkspace() {
             <span>Export CSV</span>
           </button>
 
-          {/* + Submit New Application Button (Blue button matching screenshot) */}
+          {/* Submit New Application action */}
           <button
             type="button"
             className="btn-primary"
@@ -202,7 +202,7 @@ export function ApplicationWorkspace() {
             onClick={() => setShowSubmitModal(true)}
           >
             <Plus size={15} />
-            <span>+ Submit New Application</span>
+            <span>Submit New Application</span>
           </button>
         </div>
       </div>

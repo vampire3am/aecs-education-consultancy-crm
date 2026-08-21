@@ -214,7 +214,7 @@ export function MockTestsWorkspace() {
             onClick={() => setShowAddResultModal(true)}
           >
             <Plus size={15} />
-            <span>+ Log Mock Test Scores</span>
+            <span>Log Mock Test Scores</span>
           </button>
 
           <button
@@ -223,7 +223,7 @@ export function MockTestsWorkspace() {
             onClick={() => setShowAddSlotModal(true)}
           >
             <Calendar size={15} />
-            <span>+ Schedule Mock Slot</span>
+            <span>Schedule Mock Slot</span>
           </button>
 
           <button
@@ -361,7 +361,7 @@ export function MockTestsWorkspace() {
                 onClick={() => setShowAddResultModal(true)}
               >
                 <Plus size={14} />
-                <span>+ Log Score</span>
+                <span>Log Score</span>
               </button>
             </div>
           </div>

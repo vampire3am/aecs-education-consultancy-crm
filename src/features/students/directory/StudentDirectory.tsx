@@ -243,7 +243,7 @@ export function StudentDirectory() {
             onClick={() => navigate("/students/register")}
           >
             <UserPlus size={16} />
-            <span>+ Register New Student</span>
+            <span>Register New Student</span>
           </button>
         </div>
       </div>
