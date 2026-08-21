@@ -94,6 +94,8 @@ export function MessagesWorkspace() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
   const [channels, setChannels] = useState<ChatChannel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Active logged in staff member
   const currentStaff = useMemo(() => {
@@ -166,27 +168,43 @@ export function MessagesWorkspace() {
 
   // Load chat messages
   const loadMessages = async () => {
-    const [msgs,staff,availableChannels] = await Promise.all([MessagingService.getMessages(),MessagingService.getStaff(),MessagingService.getChannels()]);
-    setMessages(msgs);
-    setStaffUsers(staff);
-    setChannels(availableChannels);
-    const studs = await StudentService.getStudents();
-    setRegisteredStudents(studs || []);
+    try {
+      setLoadError("");
+      const [msgs,staff,availableChannels] = await Promise.all([MessagingService.getMessages(),MessagingService.getStaff(),MessagingService.getChannels()]);
+      setMessages(msgs);
+      setStaffUsers(staff);
+      setChannels(availableChannels);
+      const studs = await StudentService.getStudents();
+      setRegisteredStudents(studs || []);
 
-    // If no explicit recipient saved in this session, auto-select the latest active conversation
-    const savedRec = localStorage.getItem("aecs_active_chat_recipient");
-    const savedCh = localStorage.getItem("aecs_active_chat_channel");
-    if (!savedRec && !savedCh && msgs.length > 0) {
-      const myLatest = [...msgs].reverse().find(
-        m => (m.senderId === currentUserId && m.recipientId) || (m.recipientId === currentUserId)
-      );
-      if (myLatest) {
-        const otherId = myLatest.senderId === currentUserId ? myLatest.recipientId : myLatest.senderId;
-        if (otherId && otherId !== currentUserId) {
-          setActiveRecipientId(otherId);
-          localStorage.setItem("aecs_active_chat_recipient", otherId);
+      // Discard a selection that no longer exists after staff/data cleanup.
+      const savedRec = localStorage.getItem("aecs_active_chat_recipient");
+      const savedCh = localStorage.getItem("aecs_active_chat_channel");
+      if (savedRec && !staff.some(member => member.id === savedRec)) {
+        localStorage.removeItem("aecs_active_chat_recipient");
+        setActiveRecipientId(null);
+      }
+      if (savedCh && !availableChannels.some(channel => channel.id === savedCh)) {
+        localStorage.removeItem("aecs_active_chat_channel");
+        setActiveChannelId(null);
+      }
+
+      if (!savedRec && !savedCh && msgs.length > 0) {
+        const myLatest = [...msgs].reverse().find(
+          m => (m.senderId === currentUserId && m.recipientId) || (m.recipientId === currentUserId)
+        );
+        if (myLatest) {
+          const otherId = myLatest.senderId === currentUserId ? myLatest.recipientId : myLatest.senderId;
+          if (otherId && otherId !== currentUserId && staff.some(member => member.id === otherId)) {
+            setActiveRecipientId(otherId);
+            localStorage.setItem("aecs_active_chat_recipient", otherId);
+          }
         }
       }
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Communications could not be loaded.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -317,26 +335,23 @@ export function MessagesWorkspace() {
     handleSendMessage("👍");
   };
 
-  // Attach mock document
-  const handleAttachDocument = (type: "pdf" | "image" | "doc") => {
-    const sample: ChatAttachment = {
-      name:
-        type === "pdf"
-          ? "Academic_Transcript_Verified.pdf"
-          : type === "doc"
-          ? "SOP_Statement_Of_Purpose.docx"
-          : "VFS_Biometrics_Confirmation.png",
-      size: type === "pdf" ? "1.8 MB" : "420 KB",
-      type,
-    };
-    setStagedAttachments([...stagedAttachments, sample]);
-  };
-
   // Toggle Reaction
   const handleReaction = async (messageId: string, emoji: string) => {
     const updated = await MessagingService.toggleReaction(messageId, emoji, currentStaff.fullName);
     setMessages(updated);
   };
+
+  if (isLoading) {
+    return <div className="page-container"><div className="empty-state"><h3>Loading communications…</h3></div></div>;
+  }
+
+  if (loadError) {
+    return <div className="page-container"><div className="empty-state"><AlertCircle size={28}/><h3>Communications unavailable</h3><p>{loadError}</p><button type="button" className="btn-primary" onClick={() => void loadMessages()}>Try again</button></div></div>;
+  }
+
+  if (sortedStaffList.length === 0 && channels.length === 0) {
+    return <div className="page-container"><div className="empty-state"><MessageSquare size={32}/><h3>No conversations yet</h3><p>Add another authenticated staff account to start secure internal messaging.</p></div></div>;
+  }
 
   return (
     <div className="page-container" style={{ padding: "16px 24px" }}>
@@ -763,8 +778,8 @@ export function MessagesWorkspace() {
               <button
                 type="button"
                 className="messenger-action-icon-btn"
-                onClick={() => handleAttachDocument("pdf")}
-                title="Attach PDF / File"
+                disabled
+                title="File attachments will be available after storage is configured"
               >
                 <Paperclip size={18} />
               </button>
@@ -773,8 +788,8 @@ export function MessagesWorkspace() {
               <button
                 type="button"
                 className="messenger-action-icon-btn"
-                onClick={() => handleAttachDocument("image")}
-                title="Attach Image"
+                disabled
+                title="Image attachments will be available after storage is configured"
               >
                 <ImageIcon size={18} />
               </button>
