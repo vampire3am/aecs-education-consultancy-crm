@@ -307,34 +307,34 @@ export function EmailAutomationWorkspace() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {/* Key Metrics Cards */}
           <div className="email-metrics-grid">
-            <div className="email-metric-card">
-              <span style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", fontWeight: 600 }}>Total Dispatched</span>
-              <strong style={{ fontSize: "26px", fontWeight: 800 }}>{metrics.totalSent}</strong>
-              <span style={{ fontSize: "11.5px", color: "#10B981", fontWeight: 600 }}>↑ +14.2% this month</span>
+            <div className="email-metric-card metric-box">
+              <div className="metric-header"><span className="metric-label">Total Dispatched</span><div className="metric-icon-wrap blue"><Send size={17} /></div></div>
+              <div className="metric-value">{metrics.totalSent}</div>
+              <span className="metric-sub metric-signal positive">↗ Live campaign volume</span>
             </div>
 
-            <div className="email-metric-card">
-              <span style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", fontWeight: 600 }}>Delivery Rate</span>
-              <strong style={{ fontSize: "26px", fontWeight: 800, color: "#10B981" }}>{metrics.deliveryRate}%</strong>
-              <span style={{ fontSize: "11.5px", color: "#64748B" }}>99.8% SMTP reputation</span>
+            <div className="email-metric-card metric-box">
+              <div className="metric-header"><span className="metric-label">Delivery Rate</span><div className="metric-icon-wrap green"><CheckCircle2 size={17} /></div></div>
+              <div className="metric-value">{metrics.deliveryRate}%</div>
+              <span className="metric-sub">SMTP delivery performance</span>
             </div>
 
-            <div className="email-metric-card">
-              <span style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", fontWeight: 600 }}>Open Rate (OR)</span>
-              <strong style={{ fontSize: "26px", fontWeight: 800, color: "#F97316" }}>{metrics.openRate}%</strong>
-              <span style={{ fontSize: "11.5px", color: "#10B981", fontWeight: 600 }}>Industry avg: 34.0%</span>
+            <div className="email-metric-card metric-box">
+              <div className="metric-header"><span className="metric-label">Open Rate (OR)</span><div className="metric-icon-wrap amber"><Eye size={17} /></div></div>
+              <div className="metric-value">{metrics.openRate}%</div>
+              <span className="metric-sub metric-signal positive">↗ Recipient engagement</span>
             </div>
 
-            <div className="email-metric-card">
-              <span style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", fontWeight: 600 }}>Click-Through (CTR)</span>
-              <strong style={{ fontSize: "26px", fontWeight: 800, color: "#7C3AED" }}>{metrics.clickRate}%</strong>
-              <span style={{ fontSize: "11.5px", color: "#64748B" }}>CTA engagement</span>
+            <div className="email-metric-card metric-box">
+              <div className="metric-header"><span className="metric-label">Click-Through (CTR)</span><div className="metric-icon-wrap purple"><MousePointer size={17} /></div></div>
+              <div className="metric-value">{metrics.clickRate}%</div>
+              <span className="metric-sub">CTA engagement rate</span>
             </div>
 
-            <div className="email-metric-card">
-              <span style={{ fontSize: "12px", color: "var(--text-muted, #64748B)", fontWeight: 600 }}>Active Auto Triggers</span>
-              <strong style={{ fontSize: "26px", fontWeight: 800, color: "#D97706" }}>{metrics.activeRulesCount} Rules</strong>
-              <span style={{ fontSize: "11.5px", color: "#10B981", fontWeight: 600 }}>● All active</span>
+            <div className="email-metric-card metric-box">
+              <div className="metric-header"><span className="metric-label">Active Auto Triggers</span><div className="metric-icon-wrap amber"><Zap size={17} /></div></div>
+              <div className="metric-value">{metrics.activeRulesCount} Rules</div>
+              <span className="metric-sub metric-signal positive">● Automation health</span>
             </div>
           </div>
 

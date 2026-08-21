@@ -96,6 +96,16 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 
+.email-metric-card.metric-box {
+  display: block;
+  min-width: 0;
+}
+
+.metric-signal.positive {
+  color: var(--success-text, #047857);
+  font-weight: 700;
+}
+
 /* Automation Workflow Rules Grid */
 .automations-grid {
   display: grid;
