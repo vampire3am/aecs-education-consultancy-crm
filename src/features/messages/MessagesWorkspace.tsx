@@ -102,10 +102,11 @@ export function MessagesWorkspace() {
     if (!profile) {
       return {id:"pending-session",fullName:"Staff",email:"",role:"Staff",department:"IT & Operations" as const,presence:"OFFLINE" as const,avatarBg:"#2563EB"};
     }
+    const profileEmail = profile.email?.trim().toLowerCase() || "";
     const match = staffUsers.find(
-      s => s.email.toLowerCase() === profile.email.toLowerCase() || s.id === profile.id
+      s => (profileEmail !== "" && s.email.toLowerCase() === profileEmail) || s.id === profile.id
     );
-    return match || {id:profile.id,fullName:profile.full_name,email:profile.email,role:profile.role,department:"IT & Operations" as const,presence:"ONLINE" as const,avatarBg:profile.avatarBg||"#2563EB"};
+    return match || {id:profile.id,fullName:profile.full_name?.trim()||"Staff member",email:profile.email?.trim()||"",role:profile.role?.trim()||"Staff",department:"IT & Operations" as const,presence:"ONLINE" as const,avatarBg:profile.avatarBg||"#2563EB"};
   }, [profile, staffUsers]);
 
   const currentUserId = currentStaff.id;
@@ -396,7 +397,7 @@ export function MessagesWorkspace() {
               className={`messenger-filter-chip ${sidebarFilter === "all" ? "active" : ""}`}
               onClick={() => setSidebarFilter("all")}
             >
-              All ({staffUsers.length - 1})
+              All ({Math.max(0, staffUsers.filter(user => user.id !== currentUserId).length)})
             </button>
             <button
               type="button"
