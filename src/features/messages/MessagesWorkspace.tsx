@@ -92,15 +92,18 @@ const QUICK_REACTION_EMOJIS = ["👍", "❤️", "😆", "😮", "😢", "🔥"]
 export function MessagesWorkspace() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
+  const [channels, setChannels] = useState<ChatChannel[]>([]);
 
   // Active logged in staff member
   const currentStaff = useMemo(() => {
     if (!profile) return AECS_STAFF_18[0];
-    const match = AECS_STAFF_18.find(
+    const match = staffUsers.find(
       s => s.email.toLowerCase() === profile.email.toLowerCase() || s.id === profile.id
     );
-    return match || AECS_STAFF_18[0];
-  }, [profile]);
+    return match || {id:profile.id,fullName:profile.full_name,email:profile.email,role:profile.role,department:"IT & Operations" as const,presence:"ONLINE" as const,avatarBg:profile.avatarBg||"#2563EB"};
+  }, [profile, staffUsers]);
 
   const currentUserId = currentStaff.id;
 
@@ -110,7 +113,7 @@ export function MessagesWorkspace() {
     if (savedChannel) return null;
     const savedRecipient = localStorage.getItem("aecs_active_chat_recipient");
     if (savedRecipient && savedRecipient !== currentUserId) return savedRecipient;
-    return currentUserId === "staff-1" ? "staff-3" : "staff-1";
+    return null;
   });
   const [activeChannelId, setActiveChannelId] = useState<string | null>(() => {
     return localStorage.getItem("aecs_active_chat_channel");
@@ -120,9 +123,6 @@ export function MessagesWorkspace() {
   const [sidebarFilter, setSidebarFilter] = useState<"all" | "unread" | "channels">("all");
 
   // Data state
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [staffUsers, setStaffUsers] = useState<StaffUser[]>(AECS_STAFF_18);
-  const [channels, setChannels] = useState<ChatChannel[]>(AECS_CHANNELS);
   const [registeredStudents, setRegisteredStudents] = useState<any[]>([]);
 
   // Composer state
@@ -165,8 +165,10 @@ export function MessagesWorkspace() {
 
   // Load chat messages
   const loadMessages = async () => {
-    const msgs = await MessagingService.getMessages();
+    const [msgs,staff,availableChannels] = await Promise.all([MessagingService.getMessages(),MessagingService.getStaff(),MessagingService.getChannels()]);
     setMessages(msgs);
+    setStaffUsers(staff);
+    setChannels(availableChannels);
     const studs = await StudentService.getStudents();
     setRegisteredStudents(studs || []);
 
@@ -190,10 +192,8 @@ export function MessagesWorkspace() {
   useEffect(() => {
     loadMessages();
     const unsubscribe = MessagingService.subscribeToSyncEvents(loadMessages);
-    const interval = setInterval(loadMessages, 2500);
     return () => {
       unsubscribe();
-      clearInterval(interval);
     };
   }, []);
 

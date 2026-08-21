@@ -1,3 +1,5 @@
+import { supabase } from "../lib/supabase";
+
 export interface StaffUser {
   id: string;
   fullName: string;
@@ -318,154 +320,30 @@ export const AECS_CHANNELS: ChatChannel[] = [
   },
 ];
 
-const STORAGE_MESSAGES_KEY = "aecs_persistent_chat_messages_v1";
-
 export const MessagingService = {
+  getStaff: async ():Promise<StaffUser[]> => {const{data,error}=await supabase.from("staff_profiles").select("id,full_name,email,role,department,phone,avatar_bg").eq("is_active",true).order("full_name");if(error)throw error;return(data??[]).map(s=>({id:s.id,fullName:s.full_name,email:s.email,role:s.role,department:(s.department||"IT & Operations")as StaffUser["department"],presence:"ONLINE",avatarBg:s.avatar_bg||"#2563EB",phone:s.phone??undefined}))},
+  getChannels: async ():Promise<ChatChannel[]> => {const{data,error}=await supabase.from("communication_channels").select("id,name,description,category,is_private,communication_channel_members(count)").order("name");if(error)throw error;return(data??[]).map(c=>({id:c.id,name:c.name,description:c.description??"",topic:c.description??"",category:c.category==="BROADCAST"?"Broadcast":c.category==="CASE"?"Admissions":"Department",iconName:c.category==="BROADCAST"?"Megaphone":"Users",isPrivate:c.is_private,memberCount:c.communication_channel_members?.[0]?.count??0,unreadCount:0}))},
   getMessages: async (): Promise<ChatMessage[]> => {
-    try {
-      const res = await fetch("/api/sync/messages");
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(data));
-        return data;
-      }
-    } catch {
-      // fallback to local storage
-    }
-
-    const saved = localStorage.getItem(STORAGE_MESSAGES_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return [];
+    const{data,error}=await supabase.from("communication_messages").select("*,sender:staff_profiles!communication_messages_sender_id_fkey(full_name,role,avatar_bg),students(student_code,full_name),communication_reactions(emoji,staff_profiles(full_name))").order("created_at");if(error)throw error;return(data??[]).map(m=>{const grouped=new Map<string,string[]>();for(const r of m.communication_reactions??[]){grouped.set(r.emoji,[...(grouped.get(r.emoji)??[]),r.staff_profiles?.full_name??"Staff"])}return{id:m.id,senderId:m.sender_id,senderName:m.sender?.full_name??"Staff",senderRole:m.sender?.role??"Staff",senderAvatarBg:m.sender?.avatar_bg??"#2563EB",channelId:m.channel_id??undefined,recipientId:m.recipient_id??undefined,content:m.content,timestamp:new Date(m.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),taggedStudentCode:m.students?.student_code,taggedStudentName:m.students?.full_name,attachments:m.attachments as ChatAttachment[],reactions:[...grouped].map(([emoji,users])=>({emoji,count:users.length,users})),isPinned:m.is_pinned}});
   },
 
   sendMessage: async (messagePayload: Omit<ChatMessage, "id" | "timestamp">): Promise<ChatMessage> => {
-    const newMessage: ChatMessage = {
-      ...messagePayload,
-      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      reactions: [],
-    };
-
-    try {
-      await fetch("/api/sync/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMessage),
-      });
-    } catch {}
-
-    const current = await MessagingService.getMessages();
-    const exists = current.some(m => m.id === newMessage.id);
-    const updated = exists ? current : [...current, newMessage];
-    localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(updated));
-    return newMessage;
+    const{data,error}=await supabase.rpc("send_internal_message",{payload:{recipient_id:messagePayload.recipientId??"",channel_id:messagePayload.channelId??"",content:messagePayload.content,attachments:messagePayload.attachments??[]}});if(error)throw error;const current=await MessagingService.getMessages();const created=current.find(m=>m.id===data);if(!created)throw new Error("Message was created but could not be reloaded");return created;
   },
 
   toggleReaction: async (messageId: string, emoji: string, currentUserName: string): Promise<ChatMessage[]> => {
-    try {
-      const res = await fetch("/api/sync/messages/reaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId, emoji, userName: currentUserName }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.messages) {
-          localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(data.messages));
-          return data.messages;
-        }
-      }
-    } catch {}
-
-    const current = await MessagingService.getMessages();
-    const updated = current.map(msg => {
-      if (msg.id !== messageId) return msg;
-
-      const reactions = msg.reactions || [];
-      const existingReactionIndex = reactions.findIndex(r => r.emoji === emoji);
-
-      if (existingReactionIndex > -1) {
-        const reaction = reactions[existingReactionIndex];
-        const userIndex = reaction.users.indexOf(currentUserName);
-
-        if (userIndex > -1) {
-          reaction.users.splice(userIndex, 1);
-          reaction.count -= 1;
-          if (reaction.count <= 0) reactions.splice(existingReactionIndex, 1);
-        } else {
-          reaction.users.push(currentUserName);
-          reaction.count += 1;
-        }
-      } else {
-        reactions.push({ emoji, count: 1, users: [currentUserName] });
-      }
-
-      return { ...msg, reactions };
-    });
-
-    localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(updated));
-    return updated;
+    void currentUserName;const{error}=await supabase.rpc("toggle_message_reaction",{message_uuid:messageId,reaction_emoji:emoji});if(error)throw error;return MessagingService.getMessages();
   },
 
   togglePinMessage: async (messageId: string): Promise<ChatMessage[]> => {
-    try {
-      const res = await fetch("/api/sync/messages/pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.messages) {
-          localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(data.messages));
-          return data.messages;
-        }
-      }
-    } catch {}
-
-    const current = await MessagingService.getMessages();
-    const updated = current.map(msg => (msg.id === messageId ? { ...msg, isPinned: !msg.isPinned } : msg));
-    localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(updated));
-    return updated;
+    const{data:current,error:readError}=await supabase.from("communication_messages").select("is_pinned").eq("id",messageId).single();if(readError)throw readError;const{error}=await supabase.from("communication_messages").update({is_pinned:!current.is_pinned}).eq("id",messageId);if(error)throw error;return MessagingService.getMessages();
   },
 
   deleteMessage: async (messageId: string): Promise<ChatMessage[]> => {
-    try {
-      const res = await fetch("/api/sync/messages/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.messages) {
-          localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(data.messages));
-          return data.messages;
-        }
-      }
-    } catch {}
-
-    const current = await MessagingService.getMessages();
-    const updated = current.filter(m => m.id !== messageId);
-    localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(updated));
-    return updated;
+    const{error}=await supabase.from("communication_messages").update({deleted_at:new Date().toISOString()}).eq("id",messageId);if(error)throw error;return MessagingService.getMessages();
   },
 
   subscribeToSyncEvents: (onUpdate: () => void) => {
-    try {
-      const es = new EventSource("/api/sync/events");
-      es.addEventListener("new_message", () => onUpdate());
-      es.addEventListener("messages_updated", () => onUpdate());
-      es.addEventListener("presence_updated", () => onUpdate());
-      return () => {
-        es.close();
-      };
-    } catch {
-      return () => {};
-    }
+    const channel=supabase.channel("crm-communications").on("postgres_changes",{event:"*",schema:"public",table:"communication_messages"},onUpdate).on("postgres_changes",{event:"*",schema:"public",table:"communication_reactions"},onUpdate).subscribe();return()=>{void supabase.removeChannel(channel)};
   },
 };

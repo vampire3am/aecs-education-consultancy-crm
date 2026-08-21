@@ -1,3 +1,5 @@
+import { supabase } from "../lib/supabase";
+
 // =========================================================================
 // AECS EMAIL AUTOMATION & DRIP CAMPAIGN SERVICE
 // Enterprise Trigger Rules Engine, Merge Tag Interpolation & Delivery Sync
@@ -366,14 +368,7 @@ export class EmailAutomationService {
 
   // 5. Fetch Activity Logs
   static async getLogs(): Promise<EmailLog[]> {
-    try {
-      const res = await fetch("/api/sync/email/logs");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
-      }
-    } catch {}
-    return [];
+    const{data,error}=await supabase.from("email_delivery_logs").select("*").order("queued_at",{ascending:false});if(error)throw error;return(data??[]).map(l=>({id:l.id,to:l.recipient_email,toName:l.recipient_name,subject:l.subject,templateId:l.template_id??"",automationId:l.automation_id,triggerEvent:l.trigger_event,studentId:l.student_id,status:l.status,deliveredAt:l.delivered_at??l.queued_at,openedAt:l.opened_at,clickedAt:l.clicked_at,previewSnippet:l.error_message??"Queued for delivery"}))as EmailLog[];
   }
 
   // 6. Fetch SMTP Settings
@@ -482,26 +477,8 @@ export class EmailAutomationService {
         }
       }
 
-      const res = await fetch("/api/sync/email/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: params.to,
-          toName: params.toName,
-          subject: finalSubject,
-          bodyHtml: finalHtml,
-          templateId: params.templateId,
-          automationId: params.automationId,
-          triggerEvent: params.triggerEvent || "Manual Send",
-          studentId: params.studentId,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        return { success: true, log: data.log };
-      }
-      return { success: false, error: "Server rejected email dispatch" };
+      void finalHtml;
+      const{data,error}=await supabase.rpc("queue_email",{payload:{to:params.to,to_name:params.toName||"Student",subject:finalSubject,template_id:params.templateId&&/^[0-9a-f-]{36}$/i.test(params.templateId)?params.templateId:"",automation_id:params.automationId&&/^[0-9a-f-]{36}$/i.test(params.automationId)?params.automationId:"",student_id:params.studentId||"",trigger_event:params.triggerEvent||"Manual Send"}});if(error)throw error;const logs=await this.getLogs();return{success:true,log:logs.find(log=>log.id===data)};
     } catch (err: any) {
       return { success: false, error: err.message };
     }
