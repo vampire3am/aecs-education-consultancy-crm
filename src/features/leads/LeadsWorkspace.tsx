@@ -797,13 +797,13 @@ export function LeadsWorkspace() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.2 }}
-              className="modal-dialog-clean"
+              className="modal-dialog-clean lead-dossier-drawer"
               style={{
                 position: "fixed",
                 right: 0,
                 top: 0,
                 bottom: 0,
-                width: "480px",
+                width: "560px",
                 maxWidth: "100%",
                 borderRadius: 0,
                 margin: 0,
@@ -813,7 +813,7 @@ export function LeadsWorkspace() {
               onClick={e => e.stopPropagation()}
             >
               {/* Drawer Header */}
-              <div style={{ padding: "20px", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div className="lead-dossier-header">
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                     <span className="account-code-cell">{activeLead.leadCode}</span>
@@ -833,7 +833,7 @@ export function LeadsWorkspace() {
               </div>
 
               {/* Drawer Body */}
-              <div style={{ padding: "20px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "18px" }}>
+              <div className="lead-dossier-body">
                 {/* Big Action Conversion Button */}
                 {activeLead.stage !== "CONVERTED" ? (
                   <div style={{ padding: "16px", background: "var(--accent-blue-soft)", borderRadius: "var(--radius-sm)", border: "1px solid var(--accent-blue)" }}>
@@ -863,7 +863,7 @@ export function LeadsWorkspace() {
                 )}
 
                 {/* Lead Summary */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
+                <div className="lead-dossier-summary">
                   <div>
                     <span style={{ color: "var(--text-muted)", display: "block" }}>Phone / WhatsApp</span>
                     <strong style={{ fontFamily: "var(--font-mono)" }}>{activeLead.phone}</strong>
@@ -893,7 +893,7 @@ export function LeadsWorkspace() {
                 {/* Counsellor Notes Feed */}
                 <div className="phase2-followups">
                   <strong>Follow-ups</strong>
-                  <form onSubmit={e=>handleScheduleFollowUp(e,activeLead.id)}>
+                  <form className="lead-followup-form" onSubmit={e=>handleScheduleFollowUp(e,activeLead.id)}>
                     <input type="datetime-local" required value={followUp.dueAt} onChange={e=>setFollowUp({...followUp,dueAt:e.target.value})}/>
                     <input required maxLength={1000} value={followUp.note} onChange={e=>setFollowUp({...followUp,note:e.target.value})} placeholder="Purpose of the follow-up"/>
                     <button type="submit" className="btn-secondary" disabled={isSaving}>Schedule</button>
