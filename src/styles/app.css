@@ -1697,3 +1697,4 @@ a {
   }
 }
 
+.skip-link{position:fixed;left:12px;top:-60px;z-index:9999;padding:10px 14px;border-radius:8px;background:#fff;color:#102f63;font-weight:700;box-shadow:0 8px 24px #0003}.skip-link:focus{top:12px}

@@ -140,6 +140,7 @@ export function AppShell() {
 
   return (
     <div className="app-layout">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       {mobileOpen && (
         <button
           type="button"
@@ -710,7 +711,7 @@ export function AppShell() {
         <IncomingCallToast />
 
         {/* Dynamic Route Content */}
-        <main className="app-content" style={{ flex: 1 }}>
+        <main id="main-content" className="app-content" style={{ flex: 1 }} tabIndex={-1}>
           <Outlet />
         </main>
       </div>
