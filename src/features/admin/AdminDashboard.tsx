@@ -12,8 +12,9 @@ import {
   UserPlus,
 } from "lucide-react";
 import { BLUEPRINT_ROLES, MAKER_CHECKER_RULES, SENSITIVE_PERMISSIONS } from "../../lib/blueprintRolesData";
-import { AdminService } from "../../services/adminService";
+import { AdminService, type OrganizationForm } from "../../services/adminService";
 import { StaffManagement } from "./StaffManagement";
+import { AECS_ORGANIZATION } from "../../config/organization";
 
 export function AdminDashboard() {
   const initialTab = new URLSearchParams(location.search).get("tab");
@@ -24,17 +25,17 @@ export function AdminDashboard() {
   const [liveCounts, setLiveCounts] = useState({branches:0,roles:0,audits:0});
 
   // Form State
-  const [orgForm, setOrgForm] = useState({
-    legalName: "Abroad Education Consultancy Services Pvt. Ltd.",
-    tagline: "Your Trusted Bridge to Global Universities",
-    regNo: "REG-293847/080/081",
-    panVat: "PAN 609823411 (VAT Registered)",
+  const [orgForm, setOrgForm] = useState<OrganizationForm>({
+    legalName: AECS_ORGANIZATION.legalName,
+    tagline: AECS_ORGANIZATION.tagline,
+    regNo: "",
+    panVat: "",
     timezone: "Asia/Kathmandu (UTC+05:45)",
     fiscalYear: "FY 2082/2083 (2026/2027)",
     currency: "NPR (Nepalese Rupee · ₨)",
-    address: "Putalisadak / Bagbazar, Kathmandu, Nepal",
-    phone: "+977-1-4234567 / 9801234567",
-    email: "admissions@abroad.edu.np",
+    address: AECS_ORGANIZATION.address,
+    phone: "",
+    email: "",
   });
 
   useEffect(()=>{Promise.all([AdminService.getOrganization(),AdminService.getCounts()]).then(([organization,counts])=>{if(organization)setOrgForm(organization);setLiveCounts(counts)}).catch(error=>setSaveError(error instanceof Error?error.message:"Administration data could not be loaded"))},[]);
@@ -272,9 +273,9 @@ export function AdminDashboard() {
                 <span className="account-code-cell">BRANCH-KTM-01</span>
                 <span className="badge-status enrolled">Primary Main Hub</span>
               </div>
-              <strong style={{ fontSize: "15px", color: "var(--text-main)", display: "block" }}>Kathmandu Central Headquarters</strong>
+              <strong style={{ fontSize: "15px", color: "var(--text-main)", display: "block" }}>{AECS_ORGANIZATION.officeName}</strong>
               <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", marginTop: "2px" }}>
-                Putalisadak / Bagbazar Commercial Block, Kathmandu
+                {AECS_ORGANIZATION.address}
               </span>
 
               <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "14px", paddingTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
@@ -288,7 +289,7 @@ export function AdminDashboard() {
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Contact Desk:</span>
-                  <span>+977-1-4234567</span>
+                  <span>Configure in Organization Profile</span>
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Cost Centre:</span>
@@ -299,30 +300,30 @@ export function AdminDashboard() {
 
             <div style={{ padding: "18px", borderRadius: "var(--radius-sm)", background: "var(--bg-card-subtle)", border: "1px solid var(--border-subtle)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                <span className="account-code-cell">BRANCH-PKR-02</span>
-                <span className="badge-status counselling">Western Hub</span>
+                <span className="account-code-cell">OFFICIAL-PROFILE</span>
+                <span className="badge-status counselling">Verified AECS Details</span>
               </div>
-              <strong style={{ fontSize: "15px", color: "var(--text-main)", display: "block" }}>Pokhara Regional Office</strong>
+              <strong style={{ fontSize: "15px", color: "var(--text-main)", display: "block" }}>Global Education & Test Preparation</strong>
               <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", marginTop: "2px" }}>
-                New Road, Pokhara, Gandaki Province
+                IELTS · PTE Academic · Duolingo · Study Abroad
               </span>
 
               <div style={{ borderTop: "1px solid var(--border-subtle)", marginTop: "14px", paddingTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "12px" }}>
                 <div>
-                  <span style={{ color: "var(--text-muted)", display: "block" }}>Branch Manager:</span>
-                  <strong>Not assigned</strong>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Visa Success:</span>
+                  <strong>{AECS_ORGANIZATION.achievements.visaSuccessRate}</strong>
                 </div>
                 <div>
-                  <span style={{ color: "var(--text-muted)", display: "block" }}>Active Staff:</span>
-                  <strong>0 Officers</strong>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Students Guided:</span>
+                  <strong>{AECS_ORGANIZATION.achievements.studentsGuided}</strong>
                 </div>
                 <div>
-                  <span style={{ color: "var(--text-muted)", display: "block" }}>Contact Desk:</span>
-                  <span>+977-61-534567</span>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Partner Universities:</span>
+                  <strong>{AECS_ORGANIZATION.achievements.partnerUniversities}</strong>
                 </div>
                 <div>
-                  <span style={{ color: "var(--text-muted)", display: "block" }}>Cost Centre:</span>
-                  <span className="code-font">CC-200-PKR</span>
+                  <span style={{ color: "var(--text-muted)", display: "block" }}>Recognition:</span>
+                  <span>Pearson Top Achiever · 3 Years</span>
                 </div>
               </div>
             </div>

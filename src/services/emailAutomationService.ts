@@ -80,7 +80,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
     category: "ONBOARDING",
     badge: "Instant Auto-Responder",
     headerColor: "#F97316",
-    subject: "Welcome to AECS Kathmandu, {{student_name}}! Your {{destination_country}} Study Guide",
+    subject: "Welcome to AECS Bagbazar, {{student_name}}! Your {{destination_country}} Study Guide",
     preheader: "Official Study Abroad Handbook, Scholarship Checklist & Next Steps",
     bodyHtml: `<p>Dear <strong>{{student_name}}</strong>,</p>
 <p>Thank you for registering with <strong>AECS Education Consultancy</strong>, Kathmandu! We are thrilled to guide you on your international education journey to <strong>{{destination_country}}</strong>.</p>
@@ -89,12 +89,12 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
   • Target Destination: <strong>{{destination_country}}</strong><br/>
   • Preferred Intake: <strong>{{intake_season}}</strong><br/>
   • Dedicated Counsellor: <strong>{{counsellor_name}}</strong><br/>
-  • Central Office: Putalisadak, Kathmandu (Opposite Star Mall)
+  • Main Office: Adwait Marga, Purano Buspark, Bagbazar, Kathmandu
 </div>
 <p>Our senior counseling team is reviewing your academic records to match you with verified university scholarships up to 50% tuition reduction.</p>
 <p>Feel free to visit our central office or reply directly to this email to fast-track your document appraisal.</p>`,
     ctaText: "Download {{destination_country}} Guide PDF",
-    ctaUrl: "https://abroad.edu.np/downloads/guide",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -111,13 +111,13 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
 <div style="background:#EEF2FF; border:1px solid #C7D2FE; padding:14px; margin:16px 0; border-radius:8px;">
   <strong>📅 Appointment Overview:</strong><br/>
   • Counsellor: <strong>{{counsellor_name}} (Senior Desk Officer)</strong><br/>
-  • Location: <strong>AECS Kathmandu Hub (Executive Suite 3B) / Google Meet</strong><br/>
+  • Location: <strong>AECS, Adwait Marga, Purano Buspark, Bagbazar / Google Meet</strong><br/>
   • Time: <strong>{{appointment_time}}</strong><br/>
   • Direct Helpline: <strong>+977 9801980003</strong>
 </div>
 <p><strong>Please have ready:</strong> Academic Transcripts (+2 / Bachelor's), English Test score (if available), and valid Passport copy.</p>`,
     ctaText: "View / Reschedule Appointment",
-    ctaUrl: "https://abroad.edu.np/portal/appointments",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -140,7 +140,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
 </div>
 <p>Our compliance team is preparing your GTE/GS financial documentation and Confirmation of Enrolment (CoE / CAS / I-20) package.</p>`,
     ctaText: "Accept Offer in Portal",
-    ctaUrl: "https://abroad.edu.np/portal/applications",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -163,7 +163,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
 </div>
 <p>Please bring your passport copy to collect your official Visa Grant Letter and AECS Student Departure Kit.</p>`,
     ctaText: "Download Pre-Departure Pack",
-    ctaUrl: "https://abroad.edu.np/portal/visa-grant",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -186,7 +186,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
 </div>
 <p>Book a free 15-minute speaking critique session with our Cambridge-certified instructor.</p>`,
     ctaText: "View Full Scorecard PDF",
-    ctaUrl: "https://abroad.edu.np/portal/mocks",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -209,7 +209,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
 </div>
 <p>This is a computer-generated tax invoice and requires no physical signature.</p>`,
     ctaText: "Download Tax Invoice",
-    ctaUrl: "https://abroad.edu.np/portal/invoices",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -226,7 +226,7 @@ export const DEFAULT_EMAIL_TEMPLATES: EmailTemplate[] = [
 <p>Applications for the upcoming <strong>{{intake_season}}</strong> intake are filling rapidly. Top universities are closing priority scholarship quotas this month.</p>
 <p>Our senior advisors can help you secure waiver letters and fast-track admissions without processing delays.</p>`,
     ctaText: "Claim Free Scholarship Check",
-    ctaUrl: "https://abroad.edu.np/scholarships",
+    ctaUrl: "https://aecsnepal.com/",
     updatedAt: "2026-08-20T10:00:00Z",
     isSystem: true,
   },
@@ -275,7 +275,7 @@ export const DEFAULT_AUTOMATION_RULES: AutomationRule[] = [
     isActive: true,
     delayHours: 0,
     destinationFilter: "ALL",
-    description: "Alerts student of visa approval, schedules pre-departure orientation in Putalisadak.",
+    description: "Alerts student of visa approval and schedules pre-departure orientation at the Bagbazar office.",
     totalTriggered: 39,
   },
   {
@@ -383,12 +383,12 @@ export class EmailAutomationService {
     return {
       provider: "smtp",
       senderName: "AECS Global Admissions",
-      senderEmail: "admissions@abroad.edu.np",
-      replyTo: "info@abroad.edu.np",
+      senderEmail: "",
+      replyTo: "",
       smtpHost: "smtp.gmail.com",
       smtpPort: 587,
-      smtpUser: "admissions@abroad.edu.np",
-      enableRealSending: true,
+      smtpUser: "",
+      enableRealSending: false,
     };
   }
 
@@ -469,7 +469,7 @@ export class EmailAutomationService {
             invoice_no: `INV-${Date.now().toString().slice(-6)}`,
             amount_paid: "25,000",
             payment_purpose: "Application & University Processing Fee",
-            branch_name: "Kathmandu Central Hub",
+            branch_name: "AECS Bagbazar Main Office",
             ...params.variables,
           };
           finalSubject = this.interpolate(tpl.subject, vars);

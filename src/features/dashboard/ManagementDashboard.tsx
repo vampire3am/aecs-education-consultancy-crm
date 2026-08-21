@@ -27,6 +27,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
+import { AECS_ORGANIZATION } from "../../config/organization";
 
 // Trend series for 30-day analytics
 const INTAKE_TREND_DATA: Array<{ day: string; leads: number; applications: number }> = [];
@@ -128,11 +129,11 @@ export function ManagementDashboard() {
       <div className="page-header-row">
         <div className="page-header-titles">
           <span className="page-category-eyebrow">
-            AECS Kathmandu Central · Executive Operations
+            AECS Bagbazar · Executive Operations
           </span>
           <h2>Executive Operations Hub</h2>
           <p>
-            Real-time admissions pipeline, daily counselling schedule, and revenue analytics for AECS Kathmandu.
+            Real-time admissions pipeline, counselling schedule, and revenue analytics for {AECS_ORGANIZATION.officeName}.
           </p>
         </div>
 
@@ -275,7 +276,7 @@ export function ManagementDashboard() {
           <div className="panel-header-bar">
             <div>
               <h3>Today's Counselling Appointments</h3>
-              <p>Scheduled consultations at Kathmandu Central Desk</p>
+              <p>Scheduled consultations at the Bagbazar counselling desk</p>
             </div>
             <button
               type="button"

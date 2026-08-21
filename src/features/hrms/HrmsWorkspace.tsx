@@ -26,7 +26,7 @@ interface StaffMember {
   fullName: string;
   role: string;
   department: "Management" | "Counselling" | "Admissions" | "Academic" | "Finance" | "HR & Admin";
-  branch: "Kathmandu Central" | "Pokhara Regional";
+  branch: "AECS Bagbazar Main Office";
   email: string;
   phone: string;
   joinDate: string;
@@ -146,7 +146,7 @@ export function HrmsWorkspace() {
     fullName: "",
     role: "Education Counsellor",
     department: "Counselling" as StaffMember["department"],
-    branch: "Kathmandu Central" as StaffMember["branch"],
+    branch: "AECS Bagbazar Main Office" as StaffMember["branch"],
     email: "",
     phone: "",
     baseSalary: 45000,
@@ -469,7 +469,7 @@ export function HrmsWorkspace() {
           <div className="panel-header-bar">
             <div>
               <h3>Daily Biometric & Web Attendance Log</h3>
-              <p>Real-time clock-in records for Kathmandu Central & Pokhara Branch</p>
+              <p>Real-time clock-in records for the AECS Bagbazar Main Office</p>
             </div>
             <span className="status-pill">
               <Clock size={13} style={{ color: "var(--accent-blue)" }} />
@@ -850,8 +850,7 @@ export function HrmsWorkspace() {
                       value={newStaff.branch}
                       onChange={e => setNewStaff({ ...newStaff, branch: e.target.value as StaffMember["branch"] })}
                     >
-                      <option value="Kathmandu Central">Kathmandu Central Main Hub</option>
-                      <option value="Pokhara Regional">Pokhara Regional Branch</option>
+                      <option value="AECS Bagbazar Main Office">AECS Bagbazar Main Office</option>
                     </select>
                   </div>
                 </div>
@@ -864,7 +863,7 @@ export function HrmsWorkspace() {
                       required
                       value={newStaff.email}
                       onChange={e => setNewStaff({ ...newStaff, email: e.target.value })}
-                      placeholder="staff@abroad.edu.np"
+                      placeholder="staff@aecsnepal.com"
                     />
                   </div>
                   <div className="form-group">
@@ -1047,7 +1046,7 @@ export function HrmsWorkspace() {
                   <strong style={{ fontSize: "14px", color: "#0B1E3B" }}>Abroad Education Consultancy Services</strong>
                 </div>
                 <p style={{ fontSize: "11px", color: "#64748B" }}>
-                  Putalisadak / Bagbazar, Kathmandu, Nepal · PAN: <strong>609823411</strong>
+                  Adwait Marga, Purano Buspark, Bagbazar, Kathmandu · PAN/VAT: <strong>Configure in Settings</strong>
                 </p>
               </div>
               <span className="status-pill" style={{ background: "#ECFDF5", color: "#047857", borderColor: "#A7F3D0" }}>

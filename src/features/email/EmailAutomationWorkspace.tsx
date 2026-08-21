@@ -805,7 +805,7 @@ export function EmailAutomationWorkspace() {
                     setSettings({
                       ...settings,
                       provider: "smtp",
-                      smtpHost: "mail.abroad.edu.np",
+                      smtpHost: "smtp.gmail.com",
                       smtpPort: 465,
                     });
                   }}
@@ -834,7 +834,7 @@ export function EmailAutomationWorkspace() {
                   </label>
                   <input
                     type="email"
-                    placeholder="admissions@abroad.edu.np"
+                    placeholder="name@aecsnepal.com"
                     value={settings.senderEmail}
                     onChange={e => setSettings({ ...settings, senderEmail: e.target.value, smtpUser: e.target.value })}
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle, #E2E8F0)", background: "var(--bg-app, #F8FAFC)", fontSize: "13px" }}
@@ -1082,15 +1082,15 @@ export function EmailAutomationWorkspace() {
               <div className="email-preview-frame">
                 {/* Simulated Email Client Header */}
                 <div style={{ borderBottom: "1px solid #E2E8F0", paddingBottom: "12px", marginBottom: "16px", fontSize: "12.5px", color: "#64748B" }}>
-                  <div><strong>From:</strong> AECS Global Admissions &lt;admissions@abroad.edu.np&gt;</div>
+                  <div><strong>From:</strong> AECS Global Admissions &lt;configure sender email in Settings&gt;</div>
                   <div><strong>To:</strong> Aarav Sharma &lt;aarav.sharma@gmail.com&gt;</div>
                   <div><strong>Subject:</strong> {EmailAutomationService.interpolate(previewTemplate.subject, { student_name: "Aarav Sharma", destination_country: "Australia" })}</div>
                 </div>
 
                 {/* Branded Header Banner */}
                 <div style={{ background: previewTemplate.headerColor, color: "#FFFFFF", padding: "18px 20px", borderRadius: "8px", marginBottom: "18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <strong style={{ fontSize: "16px" }}>AECS Education Consultancy</strong>
-                  <span style={{ fontSize: "11.5px", opacity: 0.9 }}>Kathmandu, Nepal</span>
+                  <strong style={{ fontSize: "16px" }}>Abroad Education Consultancy Services</strong>
+                  <span style={{ fontSize: "11.5px", opacity: 0.9 }}>Bagbazar, Kathmandu</span>
                 </div>
 
                 {/* Body Content */}
@@ -1137,8 +1137,8 @@ export function EmailAutomationWorkspace() {
 
                 {/* Compliance Footer */}
                 <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: "14px", marginTop: "24px", fontSize: "11px", color: "#94A3B8", textAlign: "center" }}>
-                  AECS Education Consultancy Pvt. Ltd. · Putalisadak, Kathmandu, Nepal · Tel: +977 1 4420000<br/>
-                  Official Education Agent for Australia, UK, USA, Canada & New Zealand.
+                  Abroad Education Consultancy Services Pvt. Ltd. · Adwait Marga, Purano Buspark, Bagbazar, Kathmandu<br/>
+                  ICEF IAS-Verified Agency · IELTS, PTE & Duolingo preparation and study-abroad counselling.
                 </div>
               </div>
             </div>

@@ -932,7 +932,7 @@ export function StudentDirectory() {
               <div>
                 <h3>Register Quick Student Lead</h3>
                 <p style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
-                  Create an intake case in the AECS Kathmandu operations database
+                  Create an intake case in the AECS Bagbazar operations database
                 </p>
               </div>
               <button

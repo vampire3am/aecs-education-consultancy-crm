@@ -706,7 +706,7 @@ export function LeadsWorkspace() {
                     >
                       <option value="Facebook / Instagram Ads">Facebook / Instagram Ads</option>
                       <option value="Google Search">Google Search & SEO</option>
-                      <option value="Walk-in Inquiry">Walk-in Inquiry (Putalisadak Counter)</option>
+                      <option value="Walk-in Inquiry">Walk-in Inquiry (Bagbazar Office)</option>
                       <option value="Education Fair 2026">Education Fair 2026</option>
                       <option value="Student Referral">Student / Alumni Referral</option>
                       <option value="TikTok / Social">TikTok / Social Media DM</option>

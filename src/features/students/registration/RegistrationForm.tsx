@@ -101,7 +101,7 @@ export function RegistrationForm() {
 
     // Step 6: Referral & Initial Note
     leadSource: "Friend Referral",
-    counsellorNotes: "Student attended direct walk-in counselling at AECS Kathmandu Central Office.",
+    counsellorNotes: "Student attended direct walk-in counselling at the AECS Bagbazar Main Office.",
   });
 
   const handleChange = (field: string, value: any) => {
@@ -196,7 +196,7 @@ export function RegistrationForm() {
             Student Registered Successfully
           </h2>
           <p style={{ fontSize: "13px", color: "var(--text-muted)", maxWidth: "480px", margin: "0 auto 24px" }}>
-            Official student dossier and multi-table records have been created in the AECS Kathmandu Central database.
+            Official student dossier and multi-table records have been created in the AECS Bagbazar operations database.
           </p>
 
           <div

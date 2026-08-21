@@ -11,7 +11,7 @@ export function PublicIntake() {
   if (journey === "classes") return <ClassEnquiryForm onBack={() => setJourney(null)} />;
 
   return <main className="public-register intake-choice-page"><section className="intake-choice-card">
-    <header className="choice-brand"><span className="public-logo-frame"><img src="/abroad-logo-new.png" alt="Abroad Education Consultancy Services" /></span><div><strong>Abroad Education Consultancy Services</strong><small>Choose Abroad to Study Abroad</small></div><span className="secure-note"><ShieldCheck size={16}/>Secure enquiry</span></header>
+    <header className="choice-brand"><span className="public-logo-frame"><img src="/abroad-logo-new.png" alt="Abroad Education Consultancy Services" /></span><div><strong>Abroad Education Consultancy Services</strong><small>Building global futures, one student at a time.</small></div><span className="secure-note"><ShieldCheck size={16}/>Secure enquiry</span></header>
     <div className="choice-copy"><p className="eyebrow">Welcome to AECS</p><h1>How can we assist you today?</h1><p>Choose the service you are interested in. We will only ask for information relevant to your enquiry.</p></div>
     <div className="journey-options">
       <button type="button" onClick={() => setJourney("counselling")}><span className="journey-icon counselling"><GraduationCap /></span><div><strong>Study Abroad Counselling</strong><p>Personalised guidance about destinations, courses, intakes and applications.</p><small>Continue to counselling form →</small></div></button>

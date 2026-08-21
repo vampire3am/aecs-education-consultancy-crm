@@ -399,7 +399,7 @@ export function AnalyticsDashboard() {
                 </div>
                 <div>
                   <span style={{ color: "var(--text-muted)", display: "block" }}>Data Source:</span>
-                  <strong className="code-font">PostgreSQL · Kathmandu Main Hub</strong>
+                  <strong className="code-font">PostgreSQL · AECS Bagbazar Main Office</strong>
                 </div>
               </div>
 

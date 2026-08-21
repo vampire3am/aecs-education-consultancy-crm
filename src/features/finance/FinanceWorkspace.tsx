@@ -777,7 +777,7 @@ export function FinanceWorkspace() {
                     Abroad Education Consultancy Services Pvt. Ltd.
                   </h3>
                   <p style={{ fontSize: "11px", color: "#475569", margin: "2px 0 0 0" }}>
-                    Adwit Marga, Purano Buspark, Bagbazar, Kathmandu
+                    Adwait Marga, Purano Buspark, Bagbazar, Kathmandu
                   </p>
                 </div>
               </div>
@@ -1468,7 +1468,7 @@ export function FinanceWorkspace() {
 
                 <div style={{ textAlign: "right", fontSize: "11px", lineHeight: "1.5", color: "#000000" }}>
                   <strong style={{ display: "block" }}>Regd. No.: 278906/078/079</strong>
-                  <span>Bagbazar-28, Kathmandu, Nepal</span><br />
+                  <span>Adwait Marga, Purano Buspark, Bagbazar, Kathmandu</span><br />
                   <span>Tel: 01-5922188 | 01-5926544</span><br />
                   <span>Email: info@aecsnepal.com</span>
                 </div>
@@ -1577,7 +1577,7 @@ export function FinanceWorkspace() {
 
               <div style={{ borderTop: "2px solid #000000", paddingTop: "10px", textAlign: "center" }}>
                 <strong style={{ fontSize: "12px", color: "#000000" }}>
-                  Choose ABROAD to study Abroad. Thank you!
+                  Building global futures, one student at a time. Thank you!
                 </strong>
               </div>
             </div>
@@ -1625,7 +1625,7 @@ export function FinanceWorkspace() {
                     Abroad Education Consultancy Services Pvt. Ltd.
                   </h2>
                   <p style={{ fontSize: "11px", color: "#475569", margin: "2px 0 0 0" }}>
-                    Adwit Marga, Purano Buspark, Bagbazar, Kathmandu
+                    Adwait Marga, Purano Buspark, Bagbazar, Kathmandu
                   </p>
                   <h1 style={{ fontSize: "20px", fontWeight: 900, textDecoration: "underline", margin: "10px 0 0 0", color: "#000000" }}>
                     Journal Voucher

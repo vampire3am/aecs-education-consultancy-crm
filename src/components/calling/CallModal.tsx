@@ -53,7 +53,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
         presence: "ONLINE",
         avatarBg: "#F97316",
         phone: "+977 9801980000",
-        email: "staff@abroad.edu.np",
+        email: "staff@aecsnepal.com",
       };
   }, [currentUserId]);
 
@@ -67,7 +67,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
         presence: "ONLINE",
         avatarBg: isCaller ? session.recipientAvatarBg : session.callerAvatarBg,
         phone: "+977 9841230000",
-        email: "staff@abroad.edu.np",
+        email: "staff@aecsnepal.com",
       };
   }, [otherPartyId, isCaller, session]);
 
@@ -563,7 +563,7 @@ export function CallModal({ session, currentUserId, onClose }: CallModalProps) {
                 <div><strong>🏢 Department:</strong> {otherStaff.department}</div>
                 <div><strong>📞 Direct Phone:</strong> {otherStaff.phone || "+977 9801980003"}</div>
                 <div><strong>📧 Email:</strong> {otherStaff.email}</div>
-                <div><strong>📍 Location:</strong> Kathmandu Central Hub</div>
+                <div><strong>📍 Location:</strong> Adwait Marga, Purano Buspark, Bagbazar</div>
                 <div><strong>🔒 Connection:</strong> Direct Encrypted WebRTC</div>
               </div>
             </div>

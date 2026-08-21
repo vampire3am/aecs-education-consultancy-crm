@@ -6,7 +6,7 @@ import { STAFF_MODULES, STAFF_ROLES, StaffAdminService, type StaffAdminInput, ty
 const defaultModules = (role: StaffRole) => Object.entries(ROLE_PERMISSIONS[role]).filter(([, enabled]) => enabled).map(([key]) => key);
 const emptyForm = (): StaffAdminInput => ({
   full_name: "", email: "", role: "COUNSELLOR", job_title: "", department: "",
-  branch: "Kathmandu Central Hub", phone: "", desktop_modules: defaultModules("COUNSELLOR"),
+  branch: "AECS Bagbazar Main Office", phone: "", desktop_modules: defaultModules("COUNSELLOR"),
   assigned_responsibilities: "", password: "", is_active: true,
 });
 

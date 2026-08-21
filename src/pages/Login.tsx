@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { AECS_ORGANIZATION } from "../config/organization";
 import { type FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
@@ -83,7 +84,7 @@ export function Login() {
                 </div>
                 <div className="login-point-text">
                   <strong>Global Placements</strong>
-                  <span>UK, Australia, Canada, USA, Germany, Japan, New Zealand</span>
+                  <span>{AECS_ORGANIZATION.destinations.join(", ")}</span>
                 </div>
               </div>
 
@@ -112,7 +113,7 @@ export function Login() {
           <div>
             <div className="login-badge-seal">
               <Shield size={13} />
-              <span>Kathmandu Central Hub · Secure staff access</span>
+              <span>{AECS_ORGANIZATION.shortAddress} · Secure staff access</span>
             </div>
           </div>
         </div>
@@ -148,7 +149,7 @@ export function Login() {
                   className="login-text-input"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="name@abroad.edu.np"
+                  placeholder="name@aecsnepal.com"
                   autoComplete="email"
                   required
                 />

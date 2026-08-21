@@ -33,6 +33,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { AECS_ORGANIZATION } from "../../config/organization";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../features/auth/AuthProvider";
@@ -157,7 +158,7 @@ export function AppShell() {
           </div>
           <div className="brand-text">
             <strong>AECS CRM</strong>
-            <span>Abroad Education Consultancy</span>
+            <span>Education Consultancy Services</span>
           </div>
         </div>
 
@@ -435,8 +436,8 @@ export function AppShell() {
           <div className="hub-status">
             <span className="hub-dot" />
             <div>
-              <strong style={{ fontSize: "11.5px", color: "#FFFFFF", display: "block" }}>Kathmandu Main Hub</strong>
-              <span style={{ fontSize: "10px", color: "#94A3B8" }}>Asia/Kathmandu · NPR</span>
+              <strong style={{ fontSize: "11.5px", color: "#FFFFFF", display: "block" }}>{AECS_ORGANIZATION.officeName}</strong>
+              <span style={{ fontSize: "10px", color: "#94A3B8" }}>Purano Buspark, Bagbazar · NPR</span>
             </div>
           </div>
         </div>
