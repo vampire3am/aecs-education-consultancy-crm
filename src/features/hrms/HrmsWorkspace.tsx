@@ -2,44 +2,23 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
-  Award,
-  BadgeCheck,
-  Building,
-  Building2,
   Calendar,
   Check,
-  CheckCircle2,
   Clock,
-  CreditCard,
-  DollarSign,
-  Download,
-  Eye,
-  FileCheck2,
-  FileSpreadsheet,
   FileText,
-  Filter,
-  Folder,
-  GraduationCap,
-  Mail,
-  MapPin,
-  MessageSquare,
-  Phone,
   Plus,
   Printer,
   Receipt,
   Search,
-  ShieldCheck,
   TrendingUp,
   UserCheck,
-  UserMinus,
   UserPlus,
   Users,
   Wallet,
   X,
-  XCircle,
 } from "lucide-react";
-import { useAuth } from "../auth/AuthProvider";
 import { PhoneInput } from "../../components/ui/PhoneInput";
+import { HrmsService } from "../../services/hrmsService";
 
 interface StaffMember {
   id: string;
@@ -310,7 +289,6 @@ const INITIAL_PAYROLL: PayrollRecord[] = [
 ];
 
 export function HrmsWorkspace() {
-  const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") as "staff" | "attendance" | "leaves" | "payroll" | "performance" | "documents" | null;
 
@@ -320,9 +298,10 @@ export function HrmsWorkspace() {
 
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tabFromUrl);
     }
-  }, [tabFromUrl]);
+  }, [tabFromUrl, activeTab]);
 
   const handleTabChange = (tab: "staff" | "attendance" | "leaves" | "payroll" | "performance" | "documents") => {
     setActiveTab(tab);
@@ -333,6 +312,27 @@ export function HrmsWorkspace() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [leaves, setLeaves] = useState<LeaveRequest[]>(INITIAL_LEAVES);
   const [payroll, setPayroll] = useState<PayrollRecord[]>(INITIAL_PAYROLL);
+  const [dataError, setDataError] = useState("");
+
+  const loadHrmsData = async () => {
+    try {
+      setDataError("");
+      const [staff, attendanceRows, leaveRows, payrollRows] = await Promise.all([
+        HrmsService.getStaff(), HrmsService.getAttendance(), HrmsService.getLeaves(), HrmsService.getPayroll(),
+      ]);
+      setStaffList(staff as StaffMember[]);
+      setAttendance(attendanceRows as AttendanceRecord[]);
+      setLeaves(leaveRows as LeaveRequest[]);
+      setPayroll(payrollRows as PayrollRecord[]);
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : "HRMS records could not be loaded");
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadHrmsData();
+  }, []);
 
   const [staffSearch, setStaffSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("ALL");
@@ -367,81 +367,33 @@ export function HrmsWorkspace() {
     reason: "",
   });
 
-  const handleCreateStaff = (e: React.FormEvent) => {
+  const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStaff.fullName.trim()) return;
 
-    const nextCode = `AECS-EMP-00${staffList.length + 1}`;
-    const created: StaffMember = {
-      id: `emp-${Date.now()}`,
-      empCode: nextCode,
-      fullName: newStaff.fullName,
-      role: newStaff.role,
-      department: newStaff.department,
-      branch: newStaff.branch,
-      email: newStaff.email,
-      phone: newStaff.phone,
-      joinDate: "Today",
-      baseSalary: Number(newStaff.baseSalary),
-      status: "ACTIVE",
-      bankAccount: newStaff.bankAccount,
-      panNumber: newStaff.panNumber || "102938475",
-    };
-
-    setStaffList([...staffList, created]);
-    setShowAddStaffModal(false);
+    try {
+      await HrmsService.createEmployee({full_name:newStaff.fullName,email:newStaff.email,phone:newStaff.phone,job_title:newStaff.role,department:newStaff.department,branch:newStaff.branch,join_date:new Date().toISOString().slice(0,10),base_salary:Number(newStaff.baseSalary),bank_account:newStaff.bankAccount,pan_number:newStaff.panNumber});
+      await loadHrmsData(); setShowAddStaffModal(false);
+    } catch(error){setDataError(error instanceof Error?error.message:"Employee could not be created");}
   };
 
-  const handleClockIn = () => {
-    const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const userCode = profile?.role === "ADMIN" ? "AECS-EMP-001" : "AECS-EMP-002";
-    const userName = profile?.full_name || "Arun Sharma";
-
-    const newAtt: AttendanceRecord = {
-      id: `att-${Date.now()}`,
-      empCode: userCode,
-      fullName: userName,
-      date: "Today (17 Aug)",
-      checkIn: timeStr,
-      checkOut: "In Office",
-      status: "PRESENT",
-    };
-
-    setAttendance([newAtt, ...attendance.filter(a => a.empCode !== userCode)]);
-    setClockInSuccess(true);
-    setTimeout(() => setClockInSuccess(false), 3000);
+  const handleClockIn = async () => {
+    try { await HrmsService.clockIn(); await loadHrmsData(); setClockInSuccess(true); setTimeout(() => setClockInSuccess(false), 3000); }
+    catch(error){setDataError(error instanceof Error?error.message:"Clock-in failed");}
   };
 
-  const handleApproveLeave = (id: string) => {
-    setLeaves(
-      leaves.map(l =>
-        l.id === id ? { ...l, status: "APPROVED", approvedBy: profile?.full_name || "Arun Sharma" } : l
-      )
-    );
+  const handleApproveLeave = async (id: string) => {
+    try { await HrmsService.decideLeave(id,"APPROVED"); await loadHrmsData(); } catch(error){setDataError(error instanceof Error?error.message:"Leave approval failed");}
   };
 
-  const handleRejectLeave = (id: string) => {
-    setLeaves(
-      leaves.map(l => (l.id === id ? { ...l, status: "REJECTED" } : l))
-    );
+  const handleRejectLeave = async (id: string) => {
+    try { await HrmsService.decideLeave(id,"REJECTED"); await loadHrmsData(); } catch(error){setDataError(error instanceof Error?error.message:"Leave rejection failed");}
   };
 
-  const handleRequestLeave = (e: React.FormEvent) => {
+  const handleRequestLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const req: LeaveRequest = {
-      id: `lv-${Date.now()}`,
-      empCode: leaveForm.empCode,
-      fullName: leaveForm.fullName,
-      leaveType: leaveForm.leaveType,
-      fromDate: leaveForm.fromDate,
-      toDate: leaveForm.toDate,
-      days: Number(leaveForm.days),
-      reason: leaveForm.reason || "Personal matter",
-      status: "PENDING",
-    };
-
-    setLeaves([req, ...leaves]);
-    setShowLeaveModal(false);
+    try { await HrmsService.requestLeave({employee_code:leaveForm.empCode,leave_type:leaveForm.leaveType,from_date:leaveForm.fromDate,to_date:leaveForm.toDate,days:Number(leaveForm.days),reason:leaveForm.reason||"Personal matter"}); await loadHrmsData(); setShowLeaveModal(false); }
+    catch(error){setDataError(error instanceof Error?error.message:"Leave request failed");}
   };
 
   const filteredStaff = staffList.filter(s => {
@@ -458,6 +410,7 @@ export function HrmsWorkspace() {
 
   return (
     <div className="page-container">
+      {dataError&&<div className="alert-banner error" role="alert"><AlertCircle size={16}/>{dataError}</div>}
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
@@ -1082,7 +1035,7 @@ export function HrmsWorkspace() {
                     <label>Department *</label>
                     <select
                       value={newStaff.department}
-                      onChange={e => setNewStaff({ ...newStaff, department: e.target.value as any })}
+                      onChange={e => setNewStaff({ ...newStaff, department: e.target.value as StaffMember["department"] })}
                     >
                       <option value="Counselling">Counselling</option>
                       <option value="Admissions">Admissions & Visa</option>
@@ -1097,7 +1050,7 @@ export function HrmsWorkspace() {
                     <label>Operating Branch *</label>
                     <select
                       value={newStaff.branch}
-                      onChange={e => setNewStaff({ ...newStaff, branch: e.target.value as any })}
+                      onChange={e => setNewStaff({ ...newStaff, branch: e.target.value as StaffMember["branch"] })}
                     >
                       <option value="Kathmandu Central">Kathmandu Central Main Hub</option>
                       <option value="Pokhara Regional">Pokhara Regional Branch</option>
@@ -1213,7 +1166,7 @@ export function HrmsWorkspace() {
                     <label>Leave Category *</label>
                     <select
                       value={leaveForm.leaveType}
-                      onChange={e => setLeaveForm({ ...leaveForm, leaveType: e.target.value as any })}
+                      onChange={e => setLeaveForm({ ...leaveForm, leaveType: e.target.value as LeaveRequest["leaveType"] })}
                     >
                       <option value="Annual Leave">Annual Leave</option>
                       <option value="Casual Leave">Casual Leave</option>
