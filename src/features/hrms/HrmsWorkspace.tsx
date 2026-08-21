@@ -17,8 +17,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { PhoneInput } from "../../components/ui/PhoneInput";
 import { HrmsService } from "../../services/hrmsService";
+import { AttendanceService } from "../../services/attendanceService";
 
 interface StaffMember {
   id: string;
@@ -80,7 +80,17 @@ interface PayrollRecord {
 
 const INITIAL_STAFF: StaffMember[] = [];
 
+<<<<<<< HEAD
 const INITIAL_ATTENDANCE: AttendanceRecord[] = [];
+=======
+const INITIAL_ATTENDANCE: AttendanceRecord[] = [
+  { id: "att-2", empCode: "AECS-EMP-002", fullName: "Sita Adhikari", date: "Today", checkIn: "09:58 AM", checkOut: "In Office", status: "PRESENT" },
+  { id: "att-3", empCode: "AECS-EMP-003", fullName: "Binod Maharjan", date: "Today", checkIn: "10:24 AM", checkOut: "In Office", status: "LATE", lateMinutes: 9 },
+  { id: "att-4", empCode: "AECS-EMP-004", fullName: "Ramesh Shrestha", date: "Today", checkIn: "10:04 AM", checkOut: "In Office", status: "PRESENT" },
+  { id: "att-5", empCode: "AECS-EMP-005", fullName: "Pradeep Joshi", date: "Today", checkIn: "09:52 AM", checkOut: "In Office", status: "PRESENT" },
+  { id: "att-6", empCode: "AECS-EMP-006", fullName: "Pooja Gurung", date: "Today", checkIn: "10:02 AM", checkOut: "In Office", status: "PRESENT" },
+];
+>>>>>>> e220a1c (feat: mandatory staff attendance check-in/out on main dashboard with 10 to 6 shift and late calculation past 10:15 AM)
 
 const INITIAL_LEAVES: LeaveRequest[] = [];
 
@@ -130,6 +140,22 @@ export function HrmsWorkspace() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadHrmsData();
+  }, []);
+
+  useEffect(() => {
+    AttendanceService.getAttendance().then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        setAttendance(data);
+      }
+    });
+    const interval = setInterval(() => {
+      AttendanceService.getAttendance().then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAttendance(data);
+        }
+      });
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const [staffSearch, setStaffSearch] = useState("");
@@ -473,7 +499,7 @@ export function HrmsWorkspace() {
             </div>
             <span className="status-pill">
               <Clock size={13} style={{ color: "var(--accent-blue)" }} />
-              <span>Shift: 09:30 AM – 05:30 PM</span>
+              <span>Shift: 10:00 AM – 06:00 PM (Late after 10:15 AM)</span>
             </span>
           </div>
 

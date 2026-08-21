@@ -14,6 +14,7 @@ function crmSyncPlugin(): Plugin {
   const emailAutomationsFile = path.resolve(dataDir, "email_automations.json");
   const emailLogsFile = path.resolve(dataDir, "email_logs.json");
   const emailSettingsFile = path.resolve(dataDir, "email_settings.json");
+  const attendanceFile = path.resolve(dataDir, "shared_attendance.json");
 
   // Ensure data folder and files exist
   if (!fs.existsSync(dataDir)) {
@@ -30,6 +31,17 @@ function crmSyncPlugin(): Plugin {
   }
   if (!fs.existsSync(emailLogsFile)) {
     fs.writeFileSync(emailLogsFile, JSON.stringify([]), "utf-8");
+  }
+  if (!fs.existsSync(attendanceFile)) {
+    const todayStr = new Date().toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    const initialAttendance = [
+      { id: "att-2", empCode: "AECS-EMP-002", fullName: "Sita Adhikari", date: `Today (${todayStr})`, checkIn: "09:58 AM", checkOut: "In Office", status: "PRESENT", punchInIso: new Date().toISOString() },
+      { id: "att-3", empCode: "AECS-EMP-003", fullName: "Binod Maharjan", date: `Today (${todayStr})`, checkIn: "10:24 AM", checkOut: "In Office", status: "LATE", lateMinutes: 9, punchInIso: new Date().toISOString() },
+      { id: "att-4", empCode: "AECS-EMP-004", fullName: "Ramesh Shrestha", date: `Today (${todayStr})`, checkIn: "10:04 AM", checkOut: "In Office", status: "PRESENT", punchInIso: new Date().toISOString() },
+      { id: "att-5", empCode: "AECS-EMP-005", fullName: "Pradeep Joshi", date: `Today (${todayStr})`, checkIn: "09:52 AM", checkOut: "In Office", status: "PRESENT", punchInIso: new Date().toISOString() },
+      { id: "att-6", empCode: "AECS-EMP-006", fullName: "Pooja Gurung", date: `Today (${todayStr})`, checkIn: "10:02 AM", checkOut: "In Office", status: "PRESENT", punchInIso: new Date().toISOString() },
+    ];
+    fs.writeFileSync(attendanceFile, JSON.stringify(initialAttendance, null, 2), "utf-8");
   }
   if (!fs.existsSync(emailSettingsFile)) {
     fs.writeFileSync(
@@ -747,6 +759,132 @@ function crmSyncPlugin(): Plugin {
               res.setHeader("Content-Type", "application/json");
               res.setHeader("Access-Control-Allow-Origin", "*");
               res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        // ==========================================
+        // ATTENDANCE & BIOMETRIC CLOCK-IN API
+        // ==========================================
+
+        // Get Attendance List
+        if (url === "/api/sync/attendance") {
+          if (req.method === "GET") {
+            try {
+              const data = fs.existsSync(attendanceFile)
+                ? JSON.parse(fs.readFileSync(attendanceFile, "utf-8"))
+                : [];
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify(data));
+            } catch {
+              res.end(JSON.stringify([]));
+            }
+            return;
+          }
+        }
+
+        // Punch In Endpoint
+        if (url === "/api/sync/attendance/punch-in" && req.method === "POST") {
+          let body = "";
+          req.on("data", chunk => (body += chunk));
+          req.on("end", () => {
+            try {
+              const { empCode, fullName, role } = JSON.parse(body);
+              const now = new Date();
+              const todayStr = now.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+              const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+              // Calculate Late Arrival: Shift is 10:00 AM - 06:00 PM. After 10:15 AM is LATE!
+              const currentMinutes = now.getHours() * 60 + now.getMinutes();
+              const lateThreshold = 10 * 60 + 15; // 10:15 AM
+              const isLate = currentMinutes > lateThreshold;
+              const lateMinutes = isLate ? currentMinutes - (10 * 60) : 0;
+
+              const currentList = fs.existsSync(attendanceFile)
+                ? JSON.parse(fs.readFileSync(attendanceFile, "utf-8"))
+                : [];
+
+              // Match existing today record
+              const existingIdx = currentList.findIndex(
+                (a: any) => a.empCode === empCode && (a.date.includes(todayStr) || a.date.startsWith("Today"))
+              );
+
+              const newRecord = {
+                id: `att-${Date.now()}`,
+                empCode: empCode || "AECS-EMP-000",
+                fullName: fullName || "Staff Member",
+                role: role || "Staff",
+                date: `Today (${todayStr})`,
+                checkIn: timeStr,
+                checkOut: "In Office",
+                status: isLate ? "LATE" : "PRESENT",
+                lateMinutes: isLate ? lateMinutes : 0,
+                punchInIso: now.toISOString(),
+              };
+
+              if (existingIdx >= 0) {
+                currentList[existingIdx] = { ...currentList[existingIdx], ...newRecord };
+              } else {
+                currentList.unshift(newRecord);
+              }
+
+              fs.writeFileSync(attendanceFile, JSON.stringify(currentList, null, 2), "utf-8");
+              broadcast("attendance_updated", currentList);
+
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify({ success: true, record: newRecord, attendance: currentList }));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
+
+        // Punch Out Endpoint
+        if (url === "/api/sync/attendance/punch-out" && req.method === "POST") {
+          let body = "";
+          req.on("data", chunk => (body += chunk));
+          req.on("end", () => {
+            try {
+              const { empCode } = JSON.parse(body);
+              const now = new Date();
+              const todayStr = now.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+              const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+              const currentList = fs.existsSync(attendanceFile)
+                ? JSON.parse(fs.readFileSync(attendanceFile, "utf-8"))
+                : [];
+
+              const target = currentList.find(
+                (a: any) => a.empCode === empCode && (a.date.includes(todayStr) || a.date.startsWith("Today"))
+              );
+
+              if (target) {
+                target.checkOut = timeStr;
+                target.punchOutIso = now.toISOString();
+
+                // Compute total duration
+                if (target.punchInIso) {
+                  const diffMs = now.getTime() - new Date(target.punchInIso).getTime();
+                  const totalHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                  const totalMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                  target.totalHoursWorked = `${totalHrs}h ${totalMins}m`;
+                }
+
+                fs.writeFileSync(attendanceFile, JSON.stringify(currentList, null, 2), "utf-8");
+                broadcast("attendance_updated", currentList);
+              }
+
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify({ success: true, record: target, attendance: currentList }));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err.message }));
             }
           });
           return;

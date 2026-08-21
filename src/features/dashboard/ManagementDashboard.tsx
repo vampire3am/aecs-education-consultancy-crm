@@ -28,6 +28,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { AECS_ORGANIZATION } from "../../config/organization";
+import { useAuth } from "../auth/AuthProvider";
+import { StudentService } from "../../services/studentService";
+import { StaffPunchCard } from "../../components/attendance/StaffPunchCard";
 
 // Trend series for 30-day analytics
 const INTAKE_TREND_DATA: Array<{ day: string; leads: number; applications: number }> = [];
@@ -125,6 +128,9 @@ export function ManagementDashboard() {
 
   return (
     <div className="page-container">
+      {/* Staff Mandatory Punch Card / Owner Radar */}
+      <StaffPunchCard />
+
       {/* Executive Welcome Header */}
       <div className="page-header-row">
         <div className="page-header-titles">
