@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Download,
   MessageCircle,
+  RotateCcw,
   Search,
   Send,
   Sparkles,
@@ -363,9 +364,13 @@ export function LeadsWorkspace() {
       </div>
 
       {/* Toolbar & Filter Controls */}
-      <div className="crm-panel">
-        <div className="filter-toolbar">
-          <div className="search-input-wrap" style={{ width: "320px" }}>
+      <div className="crm-panel lead-directory-panel">
+        <div className="lead-directory-heading">
+          <div><h3>Lead Directory</h3><p>{filteredLeads.length} of {leads.length} prospects match the current view</p></div>
+          {(search || sourceFilter !== "ALL" || countryFilter !== "ALL" || priorityFilter !== "ALL") && <button type="button" className="lead-reset-button" onClick={() => {setSearch("");setSourceFilter("ALL");setCountryFilter("ALL");setPriorityFilter("ALL")}}><RotateCcw size={13}/>Reset filters</button>}
+        </div>
+        <div className="filter-toolbar lead-filter-toolbar">
+          <div className="search-input-wrap lead-search">
             <Search size={16} />
             <input
               type="text"
@@ -414,33 +419,17 @@ export function LeadsWorkspace() {
             </select>
 
             {/* View Switcher Toggle */}
-            <div style={{ display: "flex", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+            <div className="lead-view-switcher">
               <button
                 type="button"
-                style={{
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  border: "none",
-                  cursor: "pointer",
-                  background: viewMode === "table" ? "var(--accent-blue)" : "var(--bg-card-subtle)",
-                  color: viewMode === "table" ? "#FFFFFF" : "var(--text-muted)",
-                }}
+                className={viewMode === "table" ? "active" : ""}
                 onClick={() => setViewMode("table")}
               >
                 Table
               </button>
               <button
                 type="button"
-                style={{
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  border: "none",
-                  cursor: "pointer",
-                  background: viewMode === "kanban" ? "var(--accent-blue)" : "var(--bg-card-subtle)",
-                  color: viewMode === "kanban" ? "#FFFFFF" : "var(--text-muted)",
-                }}
+                className={viewMode === "kanban" ? "active" : ""}
                 onClick={() => setViewMode("kanban")}
               >
                 Kanban
@@ -451,19 +440,17 @@ export function LeadsWorkspace() {
 
         {/* VIEW 1: DATA TABLE */}
         {viewMode === "table" && (
-          <div className="table-wrapper">
-            <table className="crm-table">
+          <div className="table-wrapper lead-table-wrapper">
+            <table className="crm-table lead-table">
               <thead>
                 <tr>
-                  <th style={{ width: "135px" }}>Lead Code</th>
-                  <th>Candidate Name</th>
-                  <th>Direct Contact</th>
-                  <th>Source Attribution</th>
-                  <th>Destination & Course</th>
-                  <th>Assigned Counsellor</th>
-                  <th>Priority</th>
-                  <th>Pipeline Stage</th>
-                  <th style={{ textAlign: "right", width: "170px" }}>Convert / Actions</th>
+                  <th>Prospect</th>
+                  <th>Contact</th>
+                  <th>Acquisition</th>
+                  <th>Study plan</th>
+                  <th>Owner</th>
+                  <th>Pipeline status</th>
+                  <th style={{ textAlign: "right" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -483,46 +470,25 @@ export function LeadsWorkspace() {
                       onClick={() => setActiveLead(lead)}
                       style={{ cursor: "pointer" }}
                     >
-                      <td>
-                        <span className="account-code-cell">{lead.leadCode}</span>
-                      </td>
-
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div
-                            style={{
-                              width: "30px",
-                              height: "30px",
-                              borderRadius: "50%",
-                              background: lead.priority === "HIGH" ? "rgba(239, 68, 68, 0.2)" : "rgba(249, 115, 22, 0.2)",
-                              color: lead.priority === "HIGH" ? "var(--danger)" : "var(--accent-blue)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
+                      <td><div className="lead-prospect-cell"><div className={`lead-avatar ${lead.priority === "HIGH" ? "urgent" : ""}`}>
                             {initials}
                           </div>
                           <div className="student-name-cell">
                             <strong style={{ fontSize: "13px" }}>{lead.fullName}</strong>
-                            <small>{lead.createdAt}</small>
+                            <small className="lead-code-line"><span className="account-code-cell">{lead.leadCode}</span><span>{lead.createdAt}</span></small>
                           </div>
-                        </div>
-                      </td>
+                        </div></td>
 
                       <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{lead.phone}</span>
+                        <div className="lead-contact-cell">
+                          <span>{lead.phone}</span><small>{lead.email || "No email recorded"}</small>
                           <a
                             href={`https://wa.me/${cleanPhone}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
                             title="Chat on WhatsApp"
-                            style={{ color: "#25D366" }}
+                            className="lead-whatsapp"
                           >
                             <MessageCircle size={14} />
                           </a>
@@ -530,49 +496,19 @@ export function LeadsWorkspace() {
                       </td>
 
                       <td>
-                        <span className="badge-status application">{lead.source}</span>
+                        <span className="lead-source-pill">{lead.source}</span>
                       </td>
 
                       <td>
-                        <div>
-                          <span className="badge-status enrolled" style={{ marginRight: "6px" }}>
-                            {lead.targetCountry}
-                          </span>
-                          <span style={{ fontSize: "12px", fontWeight: 500 }}>{lead.targetCourse}</span>
-                        </div>
+                        <div className="lead-study-cell"><strong>{lead.targetCountry}</strong><span>{lead.targetCourse}</span><small>{lead.targetIntake}</small></div>
                       </td>
 
                       <td>
-                        <span style={{ fontSize: "12px", color: "var(--text-main)" }}>{lead.assignedCounsellor}</span>
+                        <div className="lead-owner-cell"><UserCheck size={14}/><span>{lead.assignedCounsellor}</span></div>
                       </td>
 
                       <td>
-                        <span
-                          style={{
-                            fontSize: "10.5px",
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            background:
-                              lead.priority === "HIGH"
-                                ? "var(--danger-soft)"
-                                : lead.priority === "MEDIUM"
-                                ? "var(--warning-soft)"
-                                : "var(--bg-card-subtle)",
-                            color:
-                              lead.priority === "HIGH"
-                                ? "var(--danger)"
-                                : lead.priority === "MEDIUM"
-                                ? "var(--warning)"
-                                : "var(--text-muted)",
-                          }}
-                        >
-                          {lead.priority}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span
+                        <div className="lead-status-stack"><span
                           className={`badge-status ${
                             lead.stage === "CONVERTED"
                               ? "enrolled"
@@ -584,7 +520,7 @@ export function LeadsWorkspace() {
                           }`}
                         >
                           {lead.stage.replace(/_/g, " ")}
-                        </span>
+                        </span><small className={`lead-priority priority-${lead.priority.toLowerCase()}`}>{lead.priority} priority</small></div>
                       </td>
 
                       <td style={{ textAlign: "right" }}>
@@ -603,14 +539,13 @@ export function LeadsWorkspace() {
                             <span>Convert to Student</span>
                           </button>
                         ) : (
-                          <span style={{ fontSize: "11px", color: "var(--success-text)", fontWeight: 600 }}>
-                            ✓ Enrolled Student
-                          </span>
+                          <button type="button" className="lead-enrolled-action" onClick={e=>{e.stopPropagation();navigate("/students")}}><CheckCircle2 size={14}/>View student</button>
                         )}
                       </td>
                     </tr>
                   );
                 })}
+                {!filteredLeads.length && <tr><td colSpan={7}><div className="lead-empty-state"><Search size={22}/><strong>No matching leads</strong><span>Adjust or reset the filters to see more prospects.</span></div></td></tr>}
               </tbody>
             </table>
           </div>
