@@ -103,6 +103,7 @@ export function StudentDirectory() {
   const [countryFilter, setCountryFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [activeStudent, setActiveStudent] = useState<StudentRecord | null>(null);
+  const [loadError, setLoadError] = useState("");
 
   // Inspector Drawer Active Tab
   const [inspectorTab, setInspectorTab] = useState<"profile" | "academic" | "docs" | "notes">("profile");
@@ -126,18 +127,15 @@ export function StudentDirectory() {
       if (data && data.length > 0) {
         setStudents(data as StudentRecord[]);
       }
-    });
+    }).catch(error => setLoadError(error instanceof Error ? error.message : "Students could not be loaded"));
   }, []);
 
   const filteredStudents = students.filter(std => {
     const matchesCountry = countryFilter === "ALL" || std.targetCountry === countryFilter;
     const matchesStatus = statusFilter === "ALL" || std.status === statusFilter;
-    const matchesSearch =
-      std.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      std.code.toLowerCase().includes(search.toLowerCase()) ||
-      std.email.toLowerCase().includes(search.toLowerCase()) ||
-      std.phone.includes(search) ||
-      std.targetCourse.toLowerCase().includes(search.toLowerCase());
+    const query = search.trim().toLowerCase();
+    const matchesSearch = [std.fullName, std.code, std.email, std.phone, std.targetCourse]
+      .some(value => String(value ?? "").toLowerCase().includes(query));
     return matchesCountry && matchesStatus && matchesSearch;
   });
 
@@ -217,6 +215,7 @@ export function StudentDirectory() {
 
   return (
     <div className="page-container">
+      {loadError && <div className="alert-banner error" role="alert"><AlertCircle size={16}/>{loadError}</div>}
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
