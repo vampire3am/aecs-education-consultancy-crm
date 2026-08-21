@@ -46,6 +46,14 @@ import {
 } from "../../services/financeService";
 import { StudentService } from "../../services/studentService";
 
+type FinanceStudent = {
+  id: string;
+  student_code: string;
+  full_name: string;
+  email: string | null;
+  whatsapp: string;
+};
+
 export function FinanceWorkspace() {
   const [activeTab, setActiveTab] = useState<
     "billing" | "commissions" | "journals" | "trialbalance" | "coa"
@@ -54,7 +62,8 @@ export function FinanceWorkspace() {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [commissions, setCommissions] = useState<UniversityCommission[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<FinanceStudent[]>([]);
+  const [loadError, setLoadError] = useState("");
 
   // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -102,33 +111,41 @@ export function FinanceWorkspace() {
   });
 
   useEffect(() => {
-    loadData();
+    void loadData();
     StudentService.getStudents().then(data => {
-      setStudents(data || []);
+      const financeStudents = (data || []) as FinanceStudent[];
+      setStudents(financeStudents);
       if (data && data.length > 0) {
         setForm(prev => ({
           ...prev,
-          studentCode: data[0].code,
-          studentName: data[0].fullName,
-          studentEmail: data[0].email,
-          studentPhone: data[0].phone,
+          studentCode: financeStudents[0].student_code,
+          studentName: financeStudents[0].full_name,
+          studentEmail: financeStudents[0].email ?? "",
+          studentPhone: financeStudents[0].whatsapp,
         }));
         setCommForm(prev => ({
           ...prev,
-          studentCode: data[0].code,
-          studentName: data[0].fullName,
+          studentCode: financeStudents[0].student_code,
+          studentName: financeStudents[0].full_name,
         }));
       }
-    });
+    }).catch(error => setLoadError(error instanceof Error ? error.message : "Students could not be loaded"));
   }, []);
 
   const loadData = async () => {
-    const invs = await FinanceService.getInvoices();
-    const jrns = await FinanceService.getJournals();
-    const comms = await FinanceService.getCommissions();
-    if (invs) setInvoices(invs);
-    if (jrns) setJournals(jrns);
-    if (comms) setCommissions(comms);
+    try {
+      setLoadError("");
+      const [invs, jrns, comms] = await Promise.all([
+        FinanceService.getInvoices(),
+        FinanceService.getJournals(),
+        FinanceService.getCommissions(),
+      ]);
+      setInvoices(invs);
+      setJournals(jrns);
+      setCommissions(comms);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Finance records could not be loaded");
+    }
   };
 
   const handleCreateInvoice = async (e: React.FormEvent) => {
@@ -233,10 +250,15 @@ export function FinanceWorkspace() {
     .filter(j => j.creditAccountCode.startsWith("2"))
     .reduce((sum, j) => sum + j.amount, 0);
 
-  const netProfitTotal = (750000 + incomeJournalsTotal) - (420000 + expenseJournalsTotal);
+  const netProfitTotal = incomeJournalsTotal - expenseJournalsTotal;
 
   return (
     <div className="page-container">
+      {loadError && (
+        <div className="alert-banner error" role="alert">
+          <AlertTriangle size={16} /> Finance data unavailable: {loadError}
+        </div>
+      )}
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
@@ -804,23 +826,23 @@ export function FinanceWorkspace() {
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", fontWeight: 700 }}>1.0</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", fontWeight: 700 }}>INCOME</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>—</td>
-                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 7,50,000</td>
+                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 0</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>—</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ {incomeJournalsTotal.toLocaleString()}</td>
-                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right", fontWeight: 700 }}>₨ {(750000 + incomeJournalsTotal).toLocaleString()}</td>
+                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right", fontWeight: 700 }}>₨ {incomeJournalsTotal.toLocaleString()}</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>—</td>
-                        <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 700 }}>₨ {(750000 + incomeJournalsTotal).toLocaleString()}</td>
+                        <td style={{ padding: "6px 10px", textAlign: "right", fontWeight: 700 }}>₨ {incomeJournalsTotal.toLocaleString()}</td>
                       </tr>
 
                       <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", fontWeight: 700 }}>2.0</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", fontWeight: 700 }}>EXPENSE</td>
-                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 4,20,000</td>
+                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 0</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>—</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ {expenseJournalsTotal.toLocaleString()}</td>
                         <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>—</td>
-                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right", fontWeight: 700 }}>₨ {(420000 + expenseJournalsTotal).toLocaleString()}</td>
-                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right", fontWeight: 700 }}>₨ {(420000 + expenseJournalsTotal).toLocaleString()}</td>
+                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right", fontWeight: 700 }}>₨ {expenseJournalsTotal.toLocaleString()}</td>
+                        <td style={{ padding: "6px 10px", borderRight: "1px solid #CBD5E1", textAlign: "right", fontWeight: 700 }}>₨ {expenseJournalsTotal.toLocaleString()}</td>
                         <td style={{ padding: "6px 10px", textAlign: "right" }}>—</td>
                       </tr>
 
@@ -889,17 +911,17 @@ export function FinanceWorkspace() {
                       <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
                         <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right", color: "#64748B" }}>0.00</td>
                         <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", fontWeight: 800 }}>INCOME</td>
-                        <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 7,50,000</td>
+                        <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 0</td>
                         <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right", color: "#047857", fontWeight: 700 }}>₨ {incomeJournalsTotal.toLocaleString()}</td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800 }}>₨ {(750000 + incomeJournalsTotal).toLocaleString()}</td>
+                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800 }}>₨ {incomeJournalsTotal.toLocaleString()}</td>
                       </tr>
 
                       <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
                         <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right", color: "#64748B" }}>0.00</td>
                         <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", fontWeight: 800 }}>EXPENSE</td>
-                        <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 4,20,000</td>
+                        <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right" }}>₨ 0</td>
                         <td style={{ padding: "8px 12px", borderRight: "1px solid #CBD5E1", textAlign: "right", color: "#DC2626", fontWeight: 700 }}>₨ {expenseJournalsTotal.toLocaleString()}</td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800 }}>₨ {(420000 + expenseJournalsTotal).toLocaleString()}</td>
+                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800 }}>₨ {expenseJournalsTotal.toLocaleString()}</td>
                       </tr>
 
                       <tr style={{ background: "#F8FAFC", borderTop: "2px solid #000000", fontWeight: 900 }}>
@@ -1159,8 +1181,8 @@ export function FinanceWorkspace() {
                         }}
                       >
                         {students.map(s => (
-                          <option key={s.id} value={`${s.code}|${s.fullName}|${s.email}|${s.phone}`}>
-                            {s.fullName} ({s.code})
+                          <option key={s.id} value={`${s.student_code}|${s.full_name}|${s.email ?? ""}|${s.whatsapp}`}>
+                            {s.full_name} ({s.student_code})
                           </option>
                         ))}
                       </select>
@@ -1264,7 +1286,7 @@ export function FinanceWorkspace() {
                     <label>Payment Status</label>
                     <select
                       value={form.status}
-                      onChange={e => setForm({ ...form, status: e.target.value as any })}
+                      onChange={e => setForm({ ...form, status: e.target.value as typeof form.status })}
                     >
                       <option value="PAID">PAID (Full Settlement)</option>
                       <option value="PARTIAL">PARTIAL (Advance Paid)</option>
@@ -1354,8 +1376,8 @@ export function FinanceWorkspace() {
                         }}
                       >
                         {students.map(s => (
-                          <option key={s.id} value={`${s.code}|${s.fullName}`}>
-                            {s.fullName} ({s.code})
+                          <option key={s.id} value={`${s.student_code}|${s.full_name}`}>
+                            {s.full_name} ({s.student_code})
                           </option>
                         ))}
                       </select>
@@ -1374,7 +1396,7 @@ export function FinanceWorkspace() {
                     <label>Commission Agreement Type *</label>
                     <select
                       value={commForm.commissionType}
-                      onChange={e => setCommForm({ ...commForm, commissionType: e.target.value as any })}
+                      onChange={e => setCommForm({ ...commForm, commissionType: e.target.value as typeof commForm.commissionType })}
                     >
                       <option value="Percentage">Percentage Rate (%)</option>
                       <option value="Fixed Amount">Fixed Agency Amount (NPR)</option>
