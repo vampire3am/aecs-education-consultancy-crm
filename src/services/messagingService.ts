@@ -145,6 +145,10 @@ export const MessagingService = {
   },
 
   subscribeToSyncEvents: (onUpdate: () => void) => {
-    const channel=supabase.channel("crm-communications").on("postgres_changes",{event:"*",schema:"public",table:"communication_messages"},onUpdate).on("postgres_changes",{event:"*",schema:"public",table:"communication_reactions"},onUpdate).subscribe();return()=>{void supabase.removeChannel(channel)};
+    // React StrictMode mounts effects twice in development. A unique topic prevents
+    // Supabase from returning a channel that has already reached `subscribe()` while
+    // the first effect's asynchronous cleanup is still removing it.
+    const channelName = `crm-communications-${crypto.randomUUID()}`;
+    const channel=supabase.channel(channelName).on("postgres_changes",{event:"*",schema:"public",table:"communication_messages"},onUpdate).on("postgres_changes",{event:"*",schema:"public",table:"communication_reactions"},onUpdate).subscribe();return()=>{void supabase.removeChannel(channel)};
   },
 };
