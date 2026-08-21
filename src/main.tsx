@@ -28,6 +28,7 @@ import "./styles/email-workspace.css";
 import "./styles/leads-redesign.css";
 import "./styles/leads-typography.css";
 import "./styles/crm-skeleton.css";
+import "./styles/metric-indicators.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 // Total purge of previous sample dataset keys on initial load
