@@ -61,27 +61,19 @@ export function ManagementDashboard() {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([
-      supabase.from("students").select("id", { count: "exact", head: true }),
-      supabase.from("counselling_records").select("id", { count: "exact", head: true }),
-      supabase.from("university_applications").select("id", { count: "exact", head: true }).in("stage", ["CONDITIONAL_OFFER", "UNCONDITIONAL_OFFER", "CAS_ISSUED", "VISA_LODGED", "VISA_APPROVED", "ENROLLED"]),
-      supabase.from("visa_tracking").select("visa_status"),
-      supabase.from("student_invoices").select("amount_npr").eq("status", "PAID").gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-    ]).then(([students, counselling, offers, visas, invoices]) => {
+    void supabase.rpc("management_dashboard_summary").then(({data,error}) => {
       if (!active) return;
-      const firstError = [students.error, counselling.error, offers.error, visas.error, invoices.error].find(Boolean);
-      if (firstError) {
+      if (error) {
         setDashboardError("Live dashboard data could not be loaded. Check your connection or ask an administrator to verify your permissions.");
         return;
       }
-      const decidedVisas = (visas.data || []).filter(row => row.visa_status === "APPROVED" || row.visa_status === "REJECTED");
-      const approvedVisas = decidedVisas.filter(row => row.visa_status === "APPROVED").length;
-      setTotalStudents(students.count || 0);
+      const live=data as{students?:number;counselling?:number;offers?:number;visa_ratio?:number;month_revenue?:number};
+      setTotalStudents(live.students || 0);
       setSummary({
-        counselling: counselling.count || 0,
-        offers: offers.count || 0,
-        visaRatio: decidedVisas.length ? (approvedVisas / decidedVisas.length) * 100 : 0,
-        revenue: (invoices.data || []).reduce((total, row) => total + Number(row.amount_npr || 0), 0),
+        counselling: live.counselling || 0,
+        offers: live.offers || 0,
+        visaRatio: live.visa_ratio || 0,
+        revenue: live.month_revenue || 0,
       });
     });
     return () => { active = false; };

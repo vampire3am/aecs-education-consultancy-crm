@@ -1,43 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Building2,
   Check,
-  CheckCircle2,
-  Copy,
   CreditCard,
-  Download,
-  FileSpreadsheet,
-  FileText,
-  Filter,
   Globe2,
-  KeyRound,
-  Layers,
   Lock,
-  MapPin,
-  Plus,
   Save,
   Search,
-  Settings2,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
-  UserCheck,
-  UserPlus,
-  Users,
-  X,
 } from "lucide-react";
-import {
-  AECS_ACCOUNT_CATEGORIES,
-  AECS_CHART_OF_ACCOUNTS,
-} from "../../lib/chartOfAccountsData";
 import { BLUEPRINT_ROLES, MAKER_CHECKER_RULES, SENSITIVE_PERMISSIONS } from "../../lib/blueprintRolesData";
-import { BLUEPRINT_50_REPORTS } from "../../lib/blueprintReportsData";
+import { AdminService } from "../../services/adminService";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"org" | "branches" | "roles" | "security">("org");
   const [roleSearch, setRoleSearch] = useState<string>("");
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [liveCounts, setLiveCounts] = useState({branches:0,roles:0,audits:0});
 
   // Form State
   const [orgForm, setOrgForm] = useState({
@@ -53,9 +34,10 @@ export function AdminDashboard() {
     email: "admissions@abroad.edu.np",
   });
 
-  const handleSaveSettings = () => {
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+  useEffect(()=>{Promise.all([AdminService.getOrganization(),AdminService.getCounts()]).then(([organization,counts])=>{if(organization)setOrgForm(organization);setLiveCounts(counts)}).catch(error=>setSaveError(error instanceof Error?error.message:"Administration data could not be loaded"))},[]);
+
+  const handleSaveSettings = async () => {
+    try{setSaveError("");await AdminService.saveOrganization(orgForm);setSavedSuccess(true);setTimeout(() => setSavedSuccess(false), 3000)}catch(error){setSaveError(error instanceof Error?error.message:"Settings could not be saved")}
   };
 
   const filteredRoles = BLUEPRINT_ROLES.filter(
@@ -67,6 +49,7 @@ export function AdminDashboard() {
 
   return (
     <div className="page-container">
+      {saveError&&<div className="alert-banner error" role="alert"><AlertTriangle size={16}/>{saveError}</div>}
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
@@ -97,8 +80,8 @@ export function AdminDashboard() {
               <Building2 size={17} />
             </div>
           </div>
-          <div className="metric-value">2 Branches</div>
-          <span className="metric-sub">Kathmandu Central & Pokhara</span>
+          <div className="metric-value">{liveCounts.branches} Branches</div>
+          <span className="metric-sub">Active database records</span>
         </div>
 
         <div className="metric-box">
@@ -108,8 +91,8 @@ export function AdminDashboard() {
               <ShieldCheck size={17} />
             </div>
           </div>
-          <div className="metric-value">18 Roles</div>
-          <span className="metric-sub">Maker-Checker Segregation</span>
+          <div className="metric-value">{liveCounts.roles} Roles</div>
+          <span className="metric-sub">Roles with configured permissions</span>
         </div>
 
         <div className="metric-box">
@@ -130,8 +113,8 @@ export function AdminDashboard() {
               <Lock size={17} />
             </div>
           </div>
-          <div className="metric-value">100% Compliant</div>
-          <span className="metric-sub">Nepal Tax & Data Privacy</span>
+          <div className="metric-value">{liveCounts.audits.toLocaleString()} Events</div>
+          <span className="metric-sub">Recorded governance audit events</span>
         </div>
       </div>
 
