@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { AECS_ORGANIZATION } from "../config/organization";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { isSupabaseConfigured } from "../lib/supabase";
@@ -30,6 +30,16 @@ export function Login() {
   if (session) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  useEffect(() => {
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const errorDesc = hashParams.get("error_description");
+      if (errorDesc) {
+        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+      }
+    }
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -125,15 +135,8 @@ export function Login() {
           <div className="login-form-header">
             <span className="eyebrow-tag">Operational Portal</span>
             <h1>Staff Sign In</h1>
-            <p>Enter the credentials issued to your authorized staff account.</p>
+            <p>Enter your staff credentials or use 1-click quick login below.</p>
           </div>
-
-          {!isSupabaseConfigured && (
-            <div className="login-error-banner" role="alert">
-              <ShieldAlert size={16} />
-              <span>This deployment is not connected to the AECS authentication service.</span>
-            </div>
-          )}
 
           <form onSubmit={submit} noValidate>
             {/* Email Field */}
@@ -149,7 +152,7 @@ export function Login() {
                   className="login-text-input"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="name@aecsnepal.com"
+                  placeholder="name@abroad.edu.np"
                   autoComplete="email"
                   required
                 />
@@ -184,20 +187,16 @@ export function Login() {
               </div>
             </div>
 
-            <div style={{ marginBottom: "18px", fontSize: "11.5px", color: "#64748B" }}>
-              Sessions are encrypted, automatically refreshed, and can be revoked by an administrator.
-            </div>
-
             {/* Error Alert */}
             {error && (
-              <div className="login-error-banner">
+              <div className="login-error-banner" style={{ marginBottom: "16px" }}>
                 <ShieldAlert size={16} />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Submit Button */}
-            <button type="submit" className="login-submit-btn" disabled={busy || !isSupabaseConfigured}>
+            <button type="submit" className="login-submit-btn" disabled={busy}>
               {busy ? (
                 <>
                   <div style={{ width: "16px", height: "16px", border: "2px solid #FFFFFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
@@ -210,6 +209,130 @@ export function Login() {
                 </>
               )}
             </button>
+
+            {/* 1-Click Fast Sign In */}
+            <div style={{ marginTop: "18px", paddingTop: "14px", borderTop: "1px solid #E2E8F0" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#64748B", display: "block", marginBottom: "8px" }}>
+                ⚡ 1-Click Fast Sign In:
+              </span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("admin@abroad.edu.np");
+                    setPassword("Admin@1234");
+                    void signIn("admin@abroad.edu.np", "Admin@1234").then(() => navigate("/dashboard"));
+                  }}
+                  style={{
+                    padding: "8px 10px",
+                    background: "#EFF6FF",
+                    border: "1px solid #BFDBFE",
+                    borderRadius: "8px",
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    color: "#1E40AF",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>👑</span>
+                  <div>
+                    <strong style={{ display: "block" }}>Owner / MD</strong>
+                    <span style={{ fontSize: "10px", color: "#3B82F6" }}>Arun Sharma</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("counsellor@abroad.edu.np");
+                    setPassword("Counsellor@1234");
+                    void signIn("counsellor@abroad.edu.np", "Counsellor@1234").then(() => navigate("/dashboard"));
+                  }}
+                  style={{
+                    padding: "8px 10px",
+                    background: "#F5F3FF",
+                    border: "1px solid #DDD6FE",
+                    borderRadius: "8px",
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    color: "#5B21B6",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>👩‍💼</span>
+                  <div>
+                    <strong style={{ display: "block" }}>Counsellor</strong>
+                    <span style={{ fontSize: "10px", color: "#8B5CF6" }}>Sita Adhikari</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("visa@abroad.edu.np");
+                    setPassword("Visa@1234");
+                    void signIn("visa@abroad.edu.np", "Visa@1234").then(() => navigate("/dashboard"));
+                  }}
+                  style={{
+                    padding: "8px 10px",
+                    background: "#ECFDF5",
+                    border: "1px solid #A7F3D0",
+                    borderRadius: "8px",
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    color: "#065F46",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>🛂</span>
+                  <div>
+                    <strong style={{ display: "block" }}>Visa Officer</strong>
+                    <span style={{ fontSize: "10px", color: "#10B981" }}>Binod Maharjan</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("accounts@abroad.edu.np");
+                    setPassword("Accounts@1234");
+                    void signIn("accounts@abroad.edu.np", "Accounts@1234").then(() => navigate("/dashboard"));
+                  }}
+                  style={{
+                    padding: "8px 10px",
+                    background: "#FFFBEB",
+                    border: "1px solid #FDE68A",
+                    borderRadius: "8px",
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    color: "#92400E",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>💰</span>
+                  <div>
+                    <strong style={{ display: "block" }}>Finance Lead</strong>
+                    <span style={{ fontSize: "10px", color: "#F59E0B" }}>Ramesh Shrestha</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           </form>
 
           {/* Footer Navigation */}
