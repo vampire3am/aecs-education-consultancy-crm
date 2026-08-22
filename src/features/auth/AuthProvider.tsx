@@ -104,9 +104,41 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const NO_PERMISSIONS = permissions([]);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<StaffProfile | null>(null);
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [session, setSession] = useState<Session | null>(() => {
+    try {
+      const saved = sessionStorage.getItem("aecs_crm_current_user");
+      return saved ? (JSON.parse(saved) as Session) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [profile, setProfile] = useState<StaffProfile | null>(() => {
+    try {
+      const saved = sessionStorage.getItem("aecs_crm_current_user_profile");
+      return saved ? (JSON.parse(saved) as StaffProfile) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [loading, setLoading] = useState(!session && isSupabaseConfigured);
+
+  useEffect(() => {
+    if (session) {
+      try { sessionStorage.setItem("aecs_crm_current_user", JSON.stringify(session)); } catch {}
+    } else {
+      try { sessionStorage.removeItem("aecs_crm_current_user"); } catch {}
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (profile) {
+      try { sessionStorage.setItem("aecs_crm_current_user_profile", JSON.stringify(profile)); } catch {}
+    } else {
+      try { sessionStorage.removeItem("aecs_crm_current_user_profile"); } catch {}
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -115,14 +147,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted) return;
       if (error) console.error("Unable to restore staff session", error);
-      setSession(data.session);
-      setLoading(Boolean(data.session));
+      if (data.session) {
+        setSession(data.session);
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (!nextSession) setProfile(null);
-      setLoading(Boolean(nextSession));
+      setLoading(false);
     });
 
     return () => {
@@ -249,6 +283,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     },
     signOut: async () => {
+      try {
+        sessionStorage.removeItem("aecs_crm_current_user");
+        sessionStorage.removeItem("aecs_crm_current_user_profile");
+      } catch {}
       if (isSupabaseConfigured) await supabase.auth.signOut();
       setProfile(null);
       setSession(null);
