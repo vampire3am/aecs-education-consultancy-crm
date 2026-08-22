@@ -1,6 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import basicSsl from "@vitejs/plugin-basic-ssl";
 import fs from "fs";
 import path from "path";
 import nodemailer from "nodemailer";
@@ -897,7 +896,7 @@ function crmSyncPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), basicSsl(), crmSyncPlugin()],
+  plugins: [react(), crmSyncPlugin()],
   server: {
     host: "0.0.0.0",
     port: 5173,
