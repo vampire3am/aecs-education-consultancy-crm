@@ -196,7 +196,7 @@ export function Login() {
             )}
 
             {/* Submit Button */}
-            <button type="submit" className="login-submit-btn" disabled={busy}>
+            <button type="submit" className="login-submit-btn" disabled={busy || !isSupabaseConfigured}>
               {busy ? (
                 <>
                   <div style={{ width: "16px", height: "16px", border: "2px solid #FFFFFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />

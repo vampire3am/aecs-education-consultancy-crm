@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle()
       .then(async ({ data, error }) => {
         if (!mounted) return;
-        if (data && data.is_active) {
+        if (data?.is_active) {
           const { data: access } = await supabase.from("staff_profiles")
             .select("desktop_modules,assigned_responsibilities").eq("id", session.user.id).maybeSingle();
           setProfile({ ...data, ...(access ?? {}), avatarBg: data.avatar_bg ?? undefined } as StaffProfile);
