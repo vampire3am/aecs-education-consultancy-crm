@@ -104,41 +104,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const NO_PERMISSIONS = permissions([]);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(() => {
-    try {
-      const saved = sessionStorage.getItem("aecs_crm_current_user");
-      return saved ? (JSON.parse(saved) as Session) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [profile, setProfile] = useState<StaffProfile | null>(() => {
-    try {
-      const saved = sessionStorage.getItem("aecs_crm_current_user_profile");
-      return saved ? (JSON.parse(saved) as StaffProfile) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [loading, setLoading] = useState(!session && isSupabaseConfigured);
-
-  useEffect(() => {
-    if (session) {
-      try { sessionStorage.setItem("aecs_crm_current_user", JSON.stringify(session)); } catch {}
-    } else {
-      try { sessionStorage.removeItem("aecs_crm_current_user"); } catch {}
-    }
-  }, [session]);
-
-  useEffect(() => {
-    if (profile) {
-      try { sessionStorage.setItem("aecs_crm_current_user_profile", JSON.stringify(profile)); } catch {}
-    } else {
-      try { sessionStorage.removeItem("aecs_crm_current_user_profile"); } catch {}
-    }
-  }, [profile]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -147,16 +115,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted) return;
       if (error) console.error("Unable to restore staff session", error);
-      if (data.session) {
-        setSession(data.session);
-        setLoading(false);
-      }
+      setSession(data.session);
+      setLoading(Boolean(data.session));
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (!nextSession) setProfile(null);
-      setLoading(false);
+      setLoading(Boolean(nextSession));
     });
 
     return () => {
@@ -166,47 +132,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!session) {
-      setLoading(false);
-      return;
-    }
-
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
+    if (!session || !isSupabaseConfigured) return;
 
     let mounted = true;
     void supabase
       .from("staff_profiles")
       .select("id,full_name,email,role,is_active,job_title,branch,phone,department,avatar_bg")
       .eq("id", session.user.id)
-      .maybeSingle()
+      .single()
       .then(async ({ data, error }) => {
         if (!mounted) return;
-        if (data?.is_active) {
-          const { data: access } = await supabase.from("staff_profiles")
-            .select("desktop_modules,assigned_responsibilities").eq("id", session.user.id).maybeSingle();
-          setProfile({ ...data, ...(access ?? {}), avatarBg: data.avatar_bg ?? undefined } as StaffProfile);
-        } else if (data && !data.is_active) {
+        if (error || !data?.is_active) {
           setProfile(null);
           await supabase.auth.signOut();
         } else {
-          // If no row exists in staff_profiles for this Supabase user yet, auto-provision active profile
-          const userEmail = session.user.email || "staff@abroad.edu.np";
-          const autoProfile: StaffProfile = {
-            id: session.user.id,
-            full_name: session.user.user_metadata?.full_name || userEmail.split("@")[0].toUpperCase(),
-            email: userEmail,
-            role: "ADMIN",
-            job_title: "Operations & Admissions Lead",
-            is_active: true,
-            branch: "Kathmandu Central Hub",
-            phone: "+977 9801234560",
-            department: "Executive Management",
-            avatarBg: "#2563EB",
-          };
-          setProfile(autoProfile);
+          // Access customization was added after the core identity schema. Keep
+          // sign-in compatible while that migration is being rolled out.
+          const { data: access } = await supabase.from("staff_profiles")
+            .select("desktop_modules,assigned_responsibilities").eq("id", session.user.id).maybeSingle();
+          setProfile({ ...data, ...(access ?? {}), avatarBg: data.avatar_bg ?? undefined } as StaffProfile);
         }
         setLoading(false);
       });
@@ -227,66 +171,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     permissions: rolePermissions,
     loading,
     signIn: async (email: string, password: string) => {
-      const cleanEmail = email.trim().toLowerCase();
-
-      if (isSupabaseConfigured) {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password,
-          });
-          if (!error && data.session) {
-            setSession(data.session);
-            setLoading(true);
-            return;
-          }
-        } catch {}
+      if (!isSupabaseConfigured) {
+        throw new Error("Authentication is not configured. Add the Supabase URL and publishable key to the environment.");
       }
-
-      // Fallback demo/staff profile lookup
-      const roleMap: Record<string, { name: string; role: StaffRole; title: string; dept: string; bg: string }> = {
-        "admin@abroad.edu.np": { name: "Arun Sharma", role: "ADMIN", title: "Managing Director / Owner", dept: "Executive Management", bg: "#2563EB" },
-        "aecsnepal@gmail.com": { name: "AECS Administrator", role: "ADMIN", title: "Managing Director / Owner", dept: "Executive Management", bg: "#2563EB" },
-        "counsellor@abroad.edu.np": { name: "Sita Adhikari", role: "SENIOR_COUNSELLOR", title: "Senior Head Counsellor · UK", dept: "Counselling", bg: "#8B5CF6" },
-        "visa@abroad.edu.np": { name: "Binod Maharjan", role: "VISA_OFFICER", title: "Visa & Compliance Specialist", dept: "Admissions", bg: "#10B981" },
-        "accounts@abroad.edu.np": { name: "Ramesh Shrestha", role: "ACCOUNTANT", title: "Chief Accountant & Finance Lead", dept: "Finance", bg: "#F59E0B" },
-      };
-
-      const info = roleMap[cleanEmail] || {
-        name: cleanEmail.split("@")[0],
-        role: "ADMIN" as StaffRole,
-        title: "Staff Member",
-        dept: "Operations",
-        bg: "#2563EB",
-      };
-
-      const fallbackStaff: StaffProfile = {
-        id: `staff-${Date.now()}`,
-        full_name: info.name,
-        email: cleanEmail,
-        role: info.role,
-        job_title: info.title,
-        is_active: true,
-        branch: "Kathmandu Central Hub",
-        phone: "+977 9801234560",
-        department: info.dept,
-        avatarBg: info.bg,
-      };
-
-      const mockSession: any = {
-        user: { id: fallbackStaff.id, email: fallbackStaff.email },
-        access_token: "mock_token",
-      };
-
-      setProfile(fallbackStaff);
-      setSession(mockSession);
-      setLoading(false);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (error || !data.session) throw new Error("Invalid staff email or password.");
+      setSession(data.session);
+      setLoading(true);
     },
     signOut: async () => {
-      try {
-        sessionStorage.removeItem("aecs_crm_current_user");
-        sessionStorage.removeItem("aecs_crm_current_user_profile");
-      } catch {}
       if (isSupabaseConfigured) await supabase.auth.signOut();
       setProfile(null);
       setSession(null);
