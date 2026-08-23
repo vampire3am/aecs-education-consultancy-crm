@@ -8,6 +8,7 @@ import {
 import { useAuth } from "../auth/AuthProvider";
 import { CaseTaskPanel } from "./CaseTaskPanel";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
+import { CountryDisplay } from "../../components/ui/CountryDisplay";
 
 type ApplicationStage = UniversityApplication["stage"];
 
@@ -516,24 +517,13 @@ export function ApplicationWorkspace() {
                         <td>
                           <div>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <span
-                                style={{
-                                  fontSize: "10px",
-                                  fontWeight: 800,
-                                  padding: "1px 5px",
-                                  borderRadius: "3px",
-                                  background: "var(--bg-card-subtle)",
-                                  border: "1px solid var(--border-subtle)",
-                                }}
-                              >
-                                {app.countryCode}
-                              </span>
+                              <CountryDisplay country={app.country} size={16}/>
                               <strong style={{ fontSize: "12.5px", color: "var(--text-main)" }}>
                                 {app.universityName}
                               </strong>
                             </div>
                             <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
-                              Destination: {app.country}
+                              Destination: <CountryDisplay country={app.country} size={14}/>
                             </div>
                           </div>
                         </td>
@@ -1031,7 +1021,7 @@ export function ApplicationWorkspace() {
                       fontSize: "12px",
                     }}
                   >
-                    {activeDossier.countryCode}
+                    <CountryDisplay country={activeDossier.country} size={18}/>
                   </div>
                   <div>
                     <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>
@@ -1075,7 +1065,7 @@ export function ApplicationWorkspace() {
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ color: "var(--text-muted)" }}>Destination Country:</span>
-                    <strong>{activeDossier.country}</strong>
+                    <strong><CountryDisplay country={activeDossier.country}/></strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ color: "var(--text-muted)" }}>Tuition Fee:</span>
