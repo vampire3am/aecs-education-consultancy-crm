@@ -34,6 +34,7 @@ import { PhoneInput } from "../../../components/ui/PhoneInput";
 import { CountrySelect } from "../../../components/ui/CountrySelect";
 import { IntakePicker } from "../../../components/ui/IntakePicker";
 import { AECS_AUTHORIZED_COUNTRIES } from "../../../lib/destinationsData";
+import { CountryDisplay } from "../../../components/ui/CountryDisplay";
 
 const REGISTRATION_STEPS = [
   { step: 1, title: "Personal Details", sub: "Identity & Contact", icon: User },
@@ -772,7 +773,7 @@ export function RegistrationForm() {
                   <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
                     Target Destination
                   </span>
-                  <strong>{formData.targetCountry} ({formData.targetIntake})</strong>
+                  <strong><CountryDisplay country={formData.targetCountry}/> ({formData.targetIntake})</strong>
                 </div>
                 <div>
                   <span style={{ fontSize: "10.5px", textTransform: "uppercase", color: "var(--text-muted)", display: "block" }}>
