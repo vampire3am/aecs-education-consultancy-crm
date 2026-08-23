@@ -316,40 +316,69 @@ export const DEFAULT_AUTOMATION_RULES: AutomationRule[] = [
 export class EmailAutomationService {
   // 1. Fetch Templates with Fallback
   static async getTemplates(): Promise<EmailTemplate[]> {
-    try {
-      const res = await fetch("/api/sync/email/templates");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {}
-    return DEFAULT_EMAIL_TEMPLATES;
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select("id,name,category,subject,preheader,body_html,updated_at")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(row => ({
+      id: row.id,
+      name: row.name,
+      category: row.category as EmailTemplate["category"],
+      subject: row.subject,
+      preheader: row.preheader ?? "",
+      badge: "Custom Template",
+      headerColor: "#F97316",
+      bodyHtml: row.body_html,
+      updatedAt: row.updated_at,
+      isSystem: false,
+    }));
   }
 
   // 2. Save Templates
   static async saveTemplates(templates: EmailTemplate[]): Promise<boolean> {
-    try {
-      const res = await fetch("/api/sync/email/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templates),
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) return false;
+    const rows = templates.map(template => ({
+      id: template.id,
+      template_key: `custom_${template.id.replaceAll("-", "_")}`,
+      name: template.name,
+      category: template.category,
+      subject: template.subject,
+      preheader: template.preheader,
+      body_html: template.bodyHtml,
+      is_active: true,
+      updated_by: authData.user.id,
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase.from("email_templates").upsert(rows, { onConflict: "id" });
+    return !error;
+  }
+
+  static async deleteTemplate(templateId: string): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase.from("email_templates").delete().eq("id", templateId);
+    return error ? { success: false, error: error.message } : { success: true };
   }
 
   // 3. Fetch Automation Rules
   static async getAutomations(): Promise<AutomationRule[]> {
-    try {
-      const res = await fetch("/api/sync/email/automations");
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch {}
-    return DEFAULT_AUTOMATION_RULES;
+    const { data, error } = await supabase
+      .from("email_automations")
+      .select("id,name,trigger_event,template_id,is_active,delay_hours,destination_filter")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(row => ({
+      id: row.id,
+      name: row.name,
+      triggerEvent: row.trigger_event as AutomationRule["triggerEvent"],
+      templateId: row.template_id,
+      isActive: row.is_active,
+      delayHours: row.delay_hours,
+      destinationFilter: row.destination_filter ?? "ALL",
+      description: "User-configured lifecycle communication rule.",
+      totalTriggered: 0,
+    }));
   }
 
   // 4. Save Automation Rules

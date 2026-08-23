@@ -64,6 +64,9 @@ export function EmailAutomationWorkspace() {
   const [settings, setSettings] = useState<SmtpSettings | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [testingRuleId, setTestingRuleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
 
@@ -71,57 +74,87 @@ export function EmailAutomationWorkspace() {
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [templateSaving, setTemplateSaving] = useState(false);
   const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
 
   // Quick Send Modal
   const [quickSendOpen, setQuickSendOpen] = useState(false);
   const [quickSendRecipient, setQuickSendRecipient] = useState("");
   const [quickSendName, setQuickSendName] = useState("");
-  const [quickSendTemplateId, setQuickSendTemplateId] = useState("tpl-welcome");
+  const [quickSendTemplateId, setQuickSendTemplateId] = useState("");
   const [quickSendSending, setQuickSendSending] = useState(false);
   const [quickSendSuccess, setQuickSendSuccess] = useState(false);
 
   // Load Data
   const loadData = async () => {
     setLoading(true);
-    const [tpls, autos, lgEntries, sets] = await Promise.all([
-      EmailAutomationService.getTemplates(),
-      EmailAutomationService.getAutomations(),
-      EmailAutomationService.getLogs(),
-      EmailAutomationService.getSettings(),
-    ]);
-    setTemplates(tpls);
-    setAutomations(autos);
-    setLogs(lgEntries);
-    setSettings(sets);
-    setLoading(false);
+    setLoadError("");
+    try {
+      const [tpls, autos, lgEntries, sets] = await Promise.all([
+        EmailAutomationService.getTemplates(),
+        EmailAutomationService.getAutomations(),
+        EmailAutomationService.getLogs(),
+        EmailAutomationService.getSettings(),
+      ]);
+      setTemplates(tpls);
+      setAutomations(autos);
+      setLogs(lgEntries);
+      setSettings(sets);
+      setLastSyncedAt(new Date());
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Email operations data could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
     const interval = setInterval(async () => {
-      const lgEntries = await EmailAutomationService.getLogs();
-      setLogs(lgEntries);
+      try {
+        const lgEntries = await EmailAutomationService.getLogs();
+        setLogs(lgEntries);
+        setLastSyncedAt(new Date());
+      } catch {
+        // Keep the last valid operational snapshot during a transient refresh failure.
+      }
     }, 4000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (templates.length > 0 && !templates.some(template => template.id === quickSendTemplateId)) {
+      setQuickSendTemplateId(templates[0].id);
+    }
+  }, [templates, quickSendTemplateId]);
+
   // Metrics Calculation
   const metrics = useMemo(() => {
-    const totalSent = logs.length || 1420;
-    const deliveredCount = logs.filter(l => l.status === "DELIVERED" || l.status === "OPENED" || l.status === "CLICKED").length || 1412;
-    const openedCount = logs.filter(l => l.status === "OPENED" || l.status === "CLICKED").length || 968;
-    const clickedCount = logs.filter(l => l.status === "CLICKED").length || 342;
+    const totalSent = logs.length;
+    const deliveredCount = logs.filter(l => l.status === "DELIVERED" || l.status === "OPENED" || l.status === "CLICKED").length;
+    const openedCount = logs.filter(l => l.status === "OPENED" || l.status === "CLICKED").length;
+    const clickedCount = logs.filter(l => l.status === "CLICKED").length;
+    const queuedCount = logs.filter(l => l.status === "QUEUED").length;
+    const bouncedCount = logs.filter(l => l.status === "BOUNCED").length;
     const activeRulesCount = automations.filter(a => a.isActive).length;
+    const rate = (value: number, denominator: number) => denominator > 0 ? ((value / denominator) * 100).toFixed(1) : "0.0";
 
     return {
       totalSent,
-      deliveryRate: ((deliveredCount / (totalSent || 1)) * 100).toFixed(1),
-      openRate: ((openedCount / (totalSent || 1)) * 100).toFixed(1),
-      clickRate: ((clickedCount / (totalSent || 1)) * 100).toFixed(1),
+      deliveredCount,
+      openedCount,
+      clickedCount,
+      queuedCount,
+      bouncedCount,
+      deliveryRate: rate(deliveredCount, totalSent),
+      openRate: rate(openedCount, deliveredCount),
+      clickRate: rate(clickedCount, deliveredCount),
       activeRulesCount,
     };
   }, [logs, automations]);
+
+  const activeAutomations = useMemo(() => automations.filter(rule => rule.isActive), [automations]);
+  const transportReady = Boolean(settings?.enableRealSending && settings.senderEmail.trim());
 
   // Toggle Automation Rule
   const handleToggleAutomation = async (ruleId: string) => {
@@ -132,39 +165,34 @@ export function EmailAutomationWorkspace() {
 
   // Test Trigger Rule
   const handleTestTrigger = async (rule: AutomationRule) => {
-    await EmailAutomationService.sendEmail({
-      to: "student.test@example.com",
-      toName: "Aarav Sharma",
+    if (!rule.isActive) {
+      alert("Activate this automation before running an operational test.");
+      return;
+    }
+    setTestingRuleId(rule.id);
+    const result = await EmailAutomationService.sendEmail({
+      to: settings?.senderEmail || "student.test@example.com",
+      toName: "AECS Test Recipient",
       templateId: rule.templateId,
       automationId: rule.id,
-      triggerEvent: rule.triggerEvent,
-      variables: {
-        student_name: "Aarav Sharma",
-        destination_country: "Australia",
-        counsellor_name: "Assigned counsellor",
-        intake_season: "February 2027",
-        application_id: "AECS-2026-8891",
-        university_name: "University of Sydney",
-        appointment_time: "Tomorrow at 11:30 AM",
-        mock_score: "Overall Band 7.5 (L:8.0, R:7.5, W:7.0, S:7.5)",
-        test_type: "IELTS Academic",
-        invoice_no: `INV-${Date.now().toString().slice(-6)}`,
-        amount_paid: "25,000",
-      },
+      triggerEvent: `TEST_${rule.triggerEvent}`,
+      variables: { student_name: "AECS Test Recipient", destination_country: "Australia" },
     });
-
-    const updated = automations.map(a => (a.id === rule.id ? { ...a, totalTriggered: a.totalTriggered + 1 } : a));
-    setAutomations(updated);
-    await EmailAutomationService.saveAutomations(updated);
-
+    if (!result.success) {
+      alert(`Test failed: ${result.error || "The message could not be queued."}`);
+      setTestingRuleId(null);
+      return;
+    }
     const freshLogs = await EmailAutomationService.getLogs();
     setLogs(freshLogs);
-    alert(`⚡ Test triggered: "${rule.name}" dispatched successfully! Check the Activity Logs tab.`);
+    setLastSyncedAt(new Date());
+    setTestingRuleId(null);
+    alert(`Test queued for "${rule.name}". Review its delivery state in Activity & Logs.`);
   };
 
   // Quick Send Submission
   const handleQuickSend = async () => {
-    if (!quickSendRecipient.trim()) return;
+    if (!quickSendRecipient.trim() || !quickSendTemplateId) return;
     setQuickSendSending(true);
     await EmailAutomationService.sendEmail({
       to: quickSendRecipient.trim(),
@@ -195,6 +223,53 @@ export function EmailAutomationWorkspace() {
     });
   }, [templates, selectedCategory, searchQuery]);
 
+  const openTemplateEditor = (template?: EmailTemplate) => {
+    setEditingTemplate(template ? { ...template } : {
+      id: crypto.randomUUID(),
+      name: "",
+      category: "ONBOARDING",
+      subject: "",
+      preheader: "",
+      badge: "Custom Template",
+      headerColor: "#F97316",
+      bodyHtml: "<p>Dear <strong>{{student_name}}</strong>,</p>\n<p>Write your message here.</p>",
+      updatedAt: new Date().toISOString(),
+      isSystem: false,
+    });
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!editingTemplate?.name.trim() || !editingTemplate.subject.trim() || !editingTemplate.bodyHtml.trim()) return;
+    setTemplateSaving(true);
+    const nextTemplate = { ...editingTemplate, updatedAt: new Date().toISOString(), isSystem: false };
+    const nextTemplates = [...templates.filter(template => template.id !== nextTemplate.id), nextTemplate];
+    const saved = await EmailAutomationService.saveTemplates([nextTemplate]);
+    setTemplateSaving(false);
+    if (!saved) {
+      alert("Template could not be saved. Confirm that your account has email management permission.");
+      return;
+    }
+    setTemplates(nextTemplates);
+    setQuickSendTemplateId(nextTemplate.id);
+    setEditingTemplate(null);
+  };
+
+  const handleDeleteTemplate = async (template: EmailTemplate) => {
+    const dependentRule = automations.find(rule => rule.templateId === template.id);
+    if (dependentRule) {
+      alert(`This template is used by “${dependentRule.name}”. Reassign or delete that automation first.`);
+      return;
+    }
+    if (!window.confirm(`Delete “${template.name}”? This cannot be undone.`)) return;
+    const result = await EmailAutomationService.deleteTemplate(template.id);
+    if (!result.success) {
+      alert(`Template could not be deleted: ${result.error || "Unknown database error"}`);
+      return;
+    }
+    setTemplates(current => current.filter(item => item.id !== template.id));
+    if (quickSendTemplateId === template.id) setQuickSendTemplateId("");
+  };
+
   return (
     <div className="email-workspace-container">
       {/* Header Banner */}
@@ -207,13 +282,18 @@ export function EmailAutomationWorkspace() {
             <h1 style={{ fontSize: "20px", fontWeight: 800, margin: 0 }}>
               Email Automation & Drip Campaigns
             </h1>
-            <span style={{ fontSize: "11.5px", background: "#DCFCE7", color: "#15803D", padding: "3px 10px", borderRadius: "12px", fontWeight: 700 }}>
-              ⚡ SMTP / Engine Online
+            <span className={`email-engine-status ${transportReady ? "ready" : "attention"}`}>
+              {transportReady ? "● Delivery transport configured" : "● Setup required · queue mode"}
             </span>
           </div>
           <p style={{ fontSize: "13px", color: "var(--text-muted, #64748B)", margin: 0 }}>
-            Automated student lifecycle notifications, intake auto-responders, visa milestone congratulations & scholarship drips.
+            Govern student communications from trigger to delivery with auditable rules, controlled templates, and live engagement reporting.
           </p>
+          <div className="email-operations-meta">
+            <span>{lastSyncedAt ? `Last synchronized ${lastSyncedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Awaiting first synchronization"}</span>
+            <span>{metrics.queuedCount} queued</span>
+            <span>{metrics.bouncedCount} bounced</span>
+          </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -238,6 +318,14 @@ export function EmailAutomationWorkspace() {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="email-operational-alert" role="alert">
+          <AlertCircle size={16} />
+          <div><strong>Operational data is temporarily unavailable.</strong><span>{loadError}</span></div>
+          <button type="button" className="btn btn-sm btn-secondary" onClick={loadData}>Retry</button>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="email-tabs-nav">
@@ -310,31 +398,31 @@ export function EmailAutomationWorkspace() {
             <div className="email-metric-card metric-box">
               <div className="metric-header"><span className="metric-label">Total Dispatched</span><div className="metric-icon-wrap blue"><Send size={17} /></div></div>
               <div className="metric-value">{metrics.totalSent}</div>
-              <span className="metric-sub metric-signal positive">↗ Live campaign volume</span>
+              <span className="metric-sub">All recorded delivery attempts</span>
             </div>
 
             <div className="email-metric-card metric-box">
               <div className="metric-header"><span className="metric-label">Delivery Rate</span><div className="metric-icon-wrap green"><CheckCircle2 size={17} /></div></div>
               <div className="metric-value">{metrics.deliveryRate}%</div>
-              <span className="metric-sub">SMTP delivery performance</span>
+              <span className="metric-sub">{metrics.deliveredCount} delivered of {metrics.totalSent} dispatched</span>
             </div>
 
             <div className="email-metric-card metric-box">
               <div className="metric-header"><span className="metric-label">Open Rate (OR)</span><div className="metric-icon-wrap amber"><Eye size={17} /></div></div>
               <div className="metric-value">{metrics.openRate}%</div>
-              <span className="metric-sub metric-signal positive">↗ Recipient engagement</span>
+              <span className="metric-sub">{metrics.openedCount} unique opens from delivered mail</span>
             </div>
 
             <div className="email-metric-card metric-box">
               <div className="metric-header"><span className="metric-label">Click-Through (CTR)</span><div className="metric-icon-wrap purple"><MousePointer size={17} /></div></div>
               <div className="metric-value">{metrics.clickRate}%</div>
-              <span className="metric-sub">CTA engagement rate</span>
+              <span className="metric-sub">{metrics.clickedCount} tracked clicks from delivered mail</span>
             </div>
 
             <div className="email-metric-card metric-box">
               <div className="metric-header"><span className="metric-label">Active Auto Triggers</span><div className="metric-icon-wrap amber"><Zap size={17} /></div></div>
               <div className="metric-value">{metrics.activeRulesCount} Rules</div>
-              <span className="metric-sub metric-signal positive">● Automation health</span>
+              <span className="metric-sub">{automations.length - metrics.activeRulesCount} paused · {automations.length} configured</span>
             </div>
           </div>
 
@@ -349,7 +437,7 @@ export function EmailAutomationWorkspace() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {automations.slice(0, 4).map(rule => (
+                {activeAutomations.slice(0, 4).map(rule => (
                   <div
                     key={rule.id}
                     style={{
@@ -372,13 +460,15 @@ export function EmailAutomationWorkspace() {
                       type="button"
                       className="btn btn-sm btn-secondary"
                       onClick={() => handleTestTrigger(rule)}
+                      disabled={testingRuleId === rule.id}
                       title="Simulate Event Trigger"
                     >
                       <Zap size={12} />
-                      <span>Test</span>
+                      <span>{testingRuleId === rule.id ? "Queuing…" : "Test"}</span>
                     </button>
                   </div>
                 ))}
+                {activeAutomations.length === 0 && <div className="email-empty-state"><Zap size={18}/><strong>No active automations</strong><span>Activate a reviewed rule to begin processing lifecycle events.</span></div>}
               </div>
             </div>
 
@@ -413,6 +503,7 @@ export function EmailAutomationWorkspace() {
                     </span>
                   </div>
                 ))}
+                {logs.length === 0 && <div className="email-empty-state"><Inbox size={18}/><strong>No dispatch activity yet</strong><span>Queued, delivered, opened, clicked, and bounced messages will appear here.</span></div>}
               </div>
             </div>
           </div>
@@ -531,6 +622,9 @@ export function EmailAutomationWorkspace() {
                 <option value="DRIP">Drip Campaigns</option>
               </select>
             </div>
+            <button type="button" className="btn btn-primary" onClick={() => openTemplateEditor()}>
+              <Plus size={14}/><span>Create Custom Template</span>
+            </button>
           </div>
 
           {/* Templates Grid */}
@@ -573,10 +667,13 @@ export function EmailAutomationWorkspace() {
                       <Send size={13} />
                       <span>Use Template</span>
                     </button>
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => openTemplateEditor(tpl)} title="Edit template" aria-label={`Edit ${tpl.name}`}><Edit3 size={13}/></button>
+                    <button type="button" className="btn btn-sm btn-secondary template-delete-btn" onClick={() => handleDeleteTemplate(tpl)} title="Delete template" aria-label={`Delete ${tpl.name}`}><Trash2 size={13}/></button>
                   </div>
                 </div>
               </div>
             ))}
+            {filteredTemplates.length === 0 && <div className="email-empty-state template-library-empty"><Layers size={22}/><strong>No custom templates yet</strong><span>Create your first approved communication template, then send it directly or attach it to an automation rule.</span><button type="button" className="btn btn-primary" onClick={() => openTemplateEditor()}><Plus size={14}/>Create Template</button></div>}
           </div>
         </div>
       )}
@@ -1146,6 +1243,22 @@ export function EmailAutomationWorkspace() {
         </div>
       )}
 
+      {editingTemplate && (
+        <div className="email-modal-backdrop">
+          <div className="custom-template-modal" role="dialog" aria-modal="true" aria-label="Custom email template editor">
+            <header><div><strong>{templates.some(item => item.id === editingTemplate.id) ? "Edit Custom Template" : "Create Custom Template"}</strong><span>Use merge tags such as {"{{student_name}}"}, {"{{destination_country}}"}, and {"{{intake_season}}"}.</span></div><button type="button" onClick={() => setEditingTemplate(null)} aria-label="Close template editor"><X size={18}/></button></header>
+            <div className="custom-template-form">
+              <label>Template name<input value={editingTemplate.name} onChange={event => setEditingTemplate({...editingTemplate,name:event.target.value})} placeholder="Example: September intake reminder"/></label>
+              <label>Category<select value={editingTemplate.category} onChange={event => setEditingTemplate({...editingTemplate,category:event.target.value as EmailTemplate["category"]})}><option value="ONBOARDING">Onboarding</option><option value="COUNSELLING">Counselling</option><option value="APPLICATION">Application</option><option value="VISA">Visa</option><option value="TEST_PREP">Test preparation</option><option value="FINANCE">Finance</option><option value="DRIP">Drip campaign</option><option value="GREETINGS">Greetings</option></select></label>
+              <label className="full">Subject line<input value={editingTemplate.subject} onChange={event => setEditingTemplate({...editingTemplate,subject:event.target.value})} placeholder="Your {{intake_season}} application update"/></label>
+              <label className="full">Inbox preview text<input value={editingTemplate.preheader} onChange={event => setEditingTemplate({...editingTemplate,preheader:event.target.value})} placeholder="Short summary shown beside the subject"/></label>
+              <label className="full">Message body (HTML supported)<textarea value={editingTemplate.bodyHtml} onChange={event => setEditingTemplate({...editingTemplate,bodyHtml:event.target.value})} rows={10}/></label>
+            </div>
+            <footer><button type="button" className="btn btn-secondary" onClick={() => setEditingTemplate(null)}>Cancel</button><button type="button" className="btn btn-primary" disabled={templateSaving || !editingTemplate.name.trim() || !editingTemplate.subject.trim() || !editingTemplate.bodyHtml.trim()} onClick={handleSaveTemplate}><Check size={14}/>{templateSaving ? "Saving…" : "Save Template"}</button></footer>
+          </div>
+        </div>
+      )}
+
       {/* =========================================================================
           QUICK SEND / TEST EMAIL MODAL
           ========================================================================= */}
@@ -1254,7 +1367,7 @@ export function EmailAutomationWorkspace() {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    disabled={quickSendSending || !quickSendRecipient.trim()}
+                    disabled={quickSendSending || !quickSendRecipient.trim() || !quickSendTemplateId}
                     onClick={handleQuickSend}
                     style={{ display: "flex", alignItems: "center", gap: "6px" }}
                   >
