@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import {
   AlertCircle,
   Archive,
@@ -1023,7 +1024,7 @@ export function MessagesWorkspace() {
                         <div>
                           <strong style={{ fontSize: "13px", color: "var(--text-main)" }}>{st.fullName}</strong>
                           <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>
-                            {st.code} · {st.targetCountry || "Study Abroad"}
+                            {st.code} · <CountryDisplay country={st.targetCountry || "Study Abroad"} size={13}/>
                           </span>
                         </div>
                         <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
