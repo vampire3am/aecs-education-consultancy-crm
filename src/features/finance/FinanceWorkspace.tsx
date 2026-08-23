@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -91,9 +92,9 @@ export function FinanceWorkspace() {
     course: "",
     serviceCategory: "Application & Documentation Processing (4112)",
     coaIncomeCode: "4112",
-    subtotal: 25000,
+    subtotal: 0,
     discount: 0,
-    amountReceived: 25000,
+    amountReceived: 0,
     paymentMethod: "eSewa Digital Wallet",
     status: "PAID" as "PAID" | "PENDING" | "PARTIAL",
   });
@@ -101,13 +102,13 @@ export function FinanceWorkspace() {
   // New Commission Form
   const [commForm, setCommForm] = useState({
     universityName: "",
-    country: "United Kingdom",
+    country: "",
     studentName: "",
     studentCode: "",
     commissionType: "Percentage" as "Percentage" | "Fixed Amount",
-    ratePct: 15,
-    tuitionFeeAudNpr: 2500000,
-    dueDate: new Date().toISOString().split("T")[0],
+    ratePct: 0,
+    tuitionFeeAudNpr: 0,
+    dueDate: "",
   });
 
   useEffect(() => {
@@ -115,20 +116,6 @@ export function FinanceWorkspace() {
     StudentService.getStudents().then(data => {
       const financeStudents = (data || []) as FinanceStudent[];
       setStudents(financeStudents);
-      if (data && data.length > 0) {
-        setForm(prev => ({
-          ...prev,
-          studentCode: financeStudents[0].student_code,
-          studentName: financeStudents[0].full_name,
-          studentEmail: financeStudents[0].email ?? "",
-          studentPhone: financeStudents[0].whatsapp,
-        }));
-        setCommForm(prev => ({
-          ...prev,
-          studentCode: financeStudents[0].student_code,
-          studentName: financeStudents[0].full_name,
-        }));
-      }
     }).catch(error => setLoadError(error instanceof Error ? error.message : "Students could not be loaded"));
   }, []);
 
@@ -299,7 +286,7 @@ export function FinanceWorkspace() {
             </div>
           </div>
           <div className="metric-value">₨ {totalInvoiced.toLocaleString()}</div>
-          <span className="metric-sub">Fee billings across all cohorts</span>
+          <KpiTrendIndicator metricKey="finance.invoiced" value={totalInvoiced} label="Fee billings across all cohorts" />
         </div>
 
         <div className="metric-box">
@@ -310,7 +297,7 @@ export function FinanceWorkspace() {
             </div>
           </div>
           <div className="metric-value">₨ {totalReceived.toLocaleString()}</div>
-          <span className="metric-sub">eSewa, Khalti, Cash & Nabil Bank</span>
+          <KpiTrendIndicator metricKey="finance.received" value={totalReceived} label="eSewa, Khalti, Cash & Nabil Bank" />
         </div>
 
         <div className="metric-box">
@@ -321,7 +308,7 @@ export function FinanceWorkspace() {
             </div>
           </div>
           <div className="metric-value">₨ {totalCommissionsDue.toLocaleString()}</div>
-          <span className="metric-sub">UK, Aus, Canada commissions due</span>
+          <KpiTrendIndicator metricKey="finance.commissions-due" value={totalCommissionsDue} label="UK, Aus, Canada commissions due" />
         </div>
 
         <div className="metric-box">

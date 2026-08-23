@@ -128,31 +128,31 @@ export function CounsellingDashboard() {
   const [newCountryForm, setNewCountryForm] = useState({
     name: "",
     code: "",
-    currency: "EUR",
-    dialCode: "+",
+    currency: "",
+    dialCode: "",
     region: "Europe & Schengen" as DestinationCatalog["region"],
-    universitiesCount: 6,
-    coursesCount: 40,
-    avgTuition: "€8,000 – €14,000 / yr",
-    avgLivingCost: "€8,500 / yr",
-    pswvWorkRights: "1 to 2 Years Post-Study Work Permit",
-    popularIntakes: "September, February",
-    keyHighlights: "Recognized European degrees with post-study residence pathways.",
+    universitiesCount: 0,
+    coursesCount: 0,
+    avgTuition: "",
+    avgLivingCost: "",
+    pswvWorkRights: "",
+    popularIntakes: "",
+    keyHighlights: "",
   });
 
   // New University Form State
   const [newUniForm, setNewUniForm] = useState({
     name: "",
     city: "",
-    country: "United Kingdom",
-    countryCode: "GB",
-    ranking: "Top 500 QS World",
-    popularCourses: "MSc Computer Science, MBA, Data Analytics",
-    minPte: "58 overall",
-    minIelts: "6.0",
-    scholarship: "Up to £2,500 Early Bird Grant",
-    tuition: "£16,000 / yr",
-    intake: "September 2026 & January 2027",
+    country: "",
+    countryCode: "",
+    ranking: "",
+    popularCourses: "",
+    minPte: "",
+    minIelts: "",
+    scholarship: "",
+    tuition: "",
+    intake: "",
   });
 
   // Student Consultations State
@@ -160,11 +160,11 @@ export function CounsellingDashboard() {
   const [consultForm, setConsultForm] = useState({
     studentCode: "",
     studentName: "",
-    targetCountry: "United Kingdom",
+    targetCountry: "",
     preferredCourse: "",
-    counsellorName: profile?.full_name || "Unassigned",
+    counsellorName: profile?.full_name || "",
     stageOutcome: "University Shortlisted",
-    followUpDate: new Date().toISOString().split("T")[0],
+    followUpDate: "",
     notes: "",
   });
 
@@ -219,16 +219,16 @@ export function CounsellingDashboard() {
     setNewCountryForm({
       name: "",
       code: "",
-      currency: "EUR",
-      dialCode: "+",
+      currency: "",
+      dialCode: "",
       region: "Europe & Schengen",
-      universitiesCount: 6,
-      coursesCount: 40,
-      avgTuition: "€8,000 – €14,000 / yr",
-      avgLivingCost: "€8,500 / yr",
-      pswvWorkRights: "1 to 2 Years Post-Study Work Permit",
-      popularIntakes: "September, February",
-      keyHighlights: "Recognized European degrees with post-study residence pathways.",
+      universitiesCount: 0,
+      coursesCount: 0,
+      avgTuition: "",
+      avgLivingCost: "",
+      pswvWorkRights: "",
+      popularIntakes: "",
+      keyHighlights: "",
     });
   };
 
@@ -269,15 +269,15 @@ export function CounsellingDashboard() {
     setNewUniForm({
       name: "",
       city: "",
-      country: "United Kingdom",
-      countryCode: "GB",
-      ranking: "Top 500 QS World",
-      popularCourses: "MSc Computer Science, MBA, Data Analytics",
-      minPte: "58 overall",
-      minIelts: "6.0",
-      scholarship: "Up to £2,500 Early Bird Grant",
-      tuition: "£16,000 / yr",
-      intake: "September 2026 & January 2027",
+      country: "",
+      countryCode: "",
+      ranking: "",
+      popularCourses: "",
+      minPte: "",
+      minIelts: "",
+      scholarship: "",
+      tuition: "",
+      intake: "",
     });
   };
 

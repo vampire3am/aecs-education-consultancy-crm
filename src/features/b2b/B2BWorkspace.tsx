@@ -70,29 +70,29 @@ export function B2BWorkspace() {
   const [partnerForm, setPartnerForm] = useState({
     name: "",
     type: "Sub-Agent / Channel Partner" as B2BPartner["type"],
-    country: "Nepal",
-    countryCode: "NP",
-    city: "Kathmandu",
+    country: "",
+    countryCode: "",
+    city: "",
     contactPerson: "",
     contactEmail: "",
-    contactPhone: "+977 ",
+    contactPhone: "",
     status: "Active" as B2BPartner["status"],
-    commissionTerms: "15% Commission on 1st Year Tuition",
+    commissionTerms: "",
     agreementStatus: "Signed MOU" as B2BPartner["agreementStatus"],
-    agreementExpiry: "2027-12-31",
-    assignedStaff: profile?.full_name || "Sudhan Basnet",
-    nextFollowUp: "2026-08-25",
+    agreementExpiry: "",
+    assignedStaff: profile?.full_name || "",
+    nextFollowUp: "",
     referredStudentsCount: 0,
-    totalPayoutClaimed: "NPR 0",
+    totalPayoutClaimed: "",
     notes: "",
   });
 
   // Interaction / Meeting Log Form
   const [interactionNote, setInteractionNote] = useState({
     type: "Call / WhatsApp",
-    date: new Date().toISOString().split("T")[0],
+    date: "",
     summary: "",
-    nextFollowUp: "2026-08-28",
+    nextFollowUp: "",
   });
 
   // Load partners from service
@@ -180,20 +180,20 @@ export function B2BWorkspace() {
     setPartnerForm({
       name: "",
       type: "Sub-Agent / Channel Partner",
-      country: "Nepal",
-      countryCode: "NP",
-      city: "Kathmandu",
+      country: "",
+      countryCode: "",
+      city: "",
       contactPerson: "",
       contactEmail: "",
-      contactPhone: "+977 ",
+      contactPhone: "",
       status: "Active",
-      commissionTerms: "15% Commission on 1st Year Tuition",
+      commissionTerms: "",
       agreementStatus: "Signed MOU",
-      agreementExpiry: "2027-12-31",
-      assignedStaff: profile?.full_name || "Sudhan Basnet",
-      nextFollowUp: "2026-08-25",
+      agreementExpiry: "",
+      assignedStaff: profile?.full_name || "",
+      nextFollowUp: "",
       referredStudentsCount: 0,
-      totalPayoutClaimed: "NPR 0",
+      totalPayoutClaimed: "",
       notes: "",
     });
   };
@@ -213,9 +213,9 @@ export function B2BWorkspace() {
     setShowInteractionModal(false);
     setInteractionNote({
       type: "Call / WhatsApp",
-      date: new Date().toISOString().split("T")[0],
+      date: "",
       summary: "",
-      nextFollowUp: "2026-08-28",
+      nextFollowUp: "",
     });
   };
 

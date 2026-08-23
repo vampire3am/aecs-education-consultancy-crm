@@ -7,6 +7,7 @@ import {
 } from "../../services/applicationService";
 import { useAuth } from "../auth/AuthProvider";
 import { CaseTaskPanel } from "./CaseTaskPanel";
+import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 
 type ApplicationStage = UniversityApplication["stage"];
 
@@ -44,12 +45,12 @@ export function ApplicationWorkspace() {
     country: "UK" as UniversityApplication["country"],
     countryCode: "GB" as UniversityApplication["countryCode"],
     course: "",
-    intake: "September 2026",
+    intake: "",
     stage: "SUBMITTED" as ApplicationStage,
-    deadline: "2026-09-15",
-    officer: profile?.full_name || "Unassigned",
-    tuitionFee: "£16,000",
-    scholarship: "Standard Assessment",
+    deadline: "",
+    officer: profile?.full_name || "",
+    tuitionFee: "",
+    scholarship: "",
     notes: "",
   });
 
@@ -144,18 +145,18 @@ export function ApplicationWorkspace() {
     await loadApplications();
     setShowSubmitModal(false);
     setNewAppForm({
-      studentCode: `AECS-2026-0000${applications.length + 2}`,
+      studentCode: "",
       studentName: "",
       universityName: "",
       country: "UK",
       countryCode: "GB",
       course: "",
-      intake: "September 2026",
+      intake: "",
       stage: "SUBMITTED",
-      deadline: "2026-09-15",
-      officer: profile?.full_name || "Unassigned",
-      tuitionFee: "£16,000",
-      scholarship: "Standard Assessment",
+      deadline: "",
+      officer: profile?.full_name || "",
+      tuitionFee: "",
+      scholarship: "",
       notes: "",
     });
   };
@@ -217,7 +218,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{totalActive}</div>
-          <span className="metric-sub">Across UK, Aus, Canada, USA, Germany</span>
+          <KpiTrendIndicator metricKey="applications.active" value={totalActive} label="Across UK, Aus, Canada, USA, Germany" />
         </div>
 
         <div className="metric-box">
@@ -228,7 +229,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{confirmedOffers}</div>
-          <span className="metric-sub">Ready for fee deposit & CAS</span>
+          <KpiTrendIndicator metricKey="applications.offers" value={confirmedOffers} label="Ready for fee deposit & CAS" />
         </div>
 
         <div className="metric-box">
@@ -239,7 +240,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{visaQueue}</div>
-          <span className="metric-sub">Biometrics & decision pending</span>
+          <KpiTrendIndicator metricKey="applications.visa-queue" value={visaQueue} label="Biometrics & decision pending" />
         </div>
 
         <div className="metric-box">
@@ -250,7 +251,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{visasApproved}</div>
-          <span className="metric-sub">Approved application records</span>
+          <KpiTrendIndicator metricKey="applications.visas-approved" value={visasApproved} label="Approved application records" />
         </div>
       </div>
 

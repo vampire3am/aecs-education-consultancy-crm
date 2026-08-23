@@ -58,26 +58,26 @@ export function ClassesWorkspace() {
 
     // C. First Class Enrolment
     enrolledClass: "IELTS Preparation" as ClassStudent["enrolledClass"],
-    teacher: "Unassigned",
-    startDate: new Date().toISOString().split("T")[0],
+    teacher: "",
+    startDate: "",
     expectedCompletion: "",
-    batchName: "IELTS Morning A",
-    schedule: "Sun–Fri, 7:00–8:30 AM",
+    batchName: "",
+    schedule: "",
     mode: "Classroom" as ClassStudent["mode"],
     classStatus: "Active" as ClassStudent["classStatus"],
     enrolmentNotes: "",
-    feePaid: "NPR 12,500",
+    feePaid: "",
   });
 
   // Batch Form State
   const [batchForm, setBatchForm] = useState({
     batchCode: "",
     courseName: "IELTS Preparation" as BatchItem["courseName"],
-    timing: "07:00 AM – 08:30 AM (Sun–Fri)",
-    instructor: "Unassigned",
-    maxCapacity: 20,
-    room: "Lab 01 · Central Audio Hub",
-    startDate: new Date().toISOString().split("T")[0],
+    timing: "",
+    instructor: "",
+    maxCapacity: 0,
+    room: "",
+    startDate: "",
     status: "ACTIVE" as BatchItem["status"],
   });
 
@@ -136,15 +136,15 @@ export function ClassesWorkspace() {
       recordStatus: "Active",
       notes: "",
       enrolledClass: "IELTS Preparation",
-      teacher: "Unassigned",
-      startDate: new Date().toISOString().split("T")[0],
+      teacher: "",
+      startDate: "",
       expectedCompletion: "",
-      batchName: "IELTS Morning A",
-      schedule: "Sun–Fri, 7:00–8:30 AM",
+      batchName: "",
+      schedule: "",
       mode: "Classroom",
       classStatus: "Active",
       enrolmentNotes: "",
-      feePaid: "NPR 12,500",
+      feePaid: "",
     });
   };
 
@@ -159,11 +159,11 @@ export function ClassesWorkspace() {
     setBatchForm({
       batchCode: "",
       courseName: "IELTS Preparation",
-      timing: "07:00 AM – 08:30 AM (Sun–Fri)",
-      instructor: "Unassigned",
-      maxCapacity: 20,
-      room: "Lab 01 · Central Audio Hub",
-      startDate: new Date().toISOString().split("T")[0],
+      timing: "",
+      instructor: "",
+      maxCapacity: 0,
+      room: "",
+      startDate: "",
       status: "ACTIVE",
     });
   };
