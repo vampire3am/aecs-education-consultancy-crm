@@ -49,7 +49,9 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CountryFlag } from "../../components/ui/PhoneInput";
+import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import { AECS_AUTHORIZED_COUNTRIES, DestinationCountry } from "../../lib/destinationsData";
+import { COUNTRY_METADATA } from "../../lib/countryMetadata.generated";
 import { CounsellingService } from "../../services/counsellingService";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -88,6 +90,24 @@ const INITIAL_DESTINATIONS_MASTER: DestinationCatalog[] = [];
 const INITIAL_PARTNER_UNIVERSITIES: PartnerUniversity[] = [];
 
 const DESTINATIONS_STORAGE_KEY = "aecs_destinations_catalog_v2";
+
+const COUNTRY_AUTOFILL = COUNTRY_METADATA;
+
+const COUNTRY_NAME_ALIASES: Record<string, string> = {
+  US: "United States",
+  USA: "United States",
+  "U.S.": "United States",
+  "U.S.A.": "United States",
+  AMERICA: "United States",
+  UK: "United Kingdom",
+  "U.K.": "United Kingdom",
+  BRITAIN: "United Kingdom",
+  "GREAT BRITAIN": "United Kingdom",
+  UAE: "United Arab Emirates",
+  "U.A.E.": "United Arab Emirates",
+  KOREA: "South Korea",
+  "REPUBLIC OF KOREA": "South Korea",
+};
 const UNIVERSITIES_STORAGE_KEY = "aecs_partner_universities_v2";
 
 export function CounsellingDashboard() {
@@ -139,6 +159,20 @@ export function CounsellingDashboard() {
     popularIntakes: "",
     keyHighlights: "",
   });
+
+  const updateCountryName = (name: string) => {
+    const enteredName = name.trim();
+    const canonicalName = COUNTRY_NAME_ALIASES[enteredName.toUpperCase()] ?? enteredName;
+    const match = COUNTRY_AUTOFILL.find(country => country[0].toLowerCase() === canonicalName.toLowerCase());
+    setNewCountryForm(current => ({
+      ...current,
+      name,
+      code: match?.[1] ?? "",
+      currency: match?.[2] ?? "",
+      dialCode: match?.[3] ?? "",
+      region: (match?.[4] ?? "Europe & Schengen") as DestinationCatalog["region"],
+    }));
+  };
 
   // New University Form State
   const [newUniForm, setNewUniForm] = useState({
@@ -920,7 +954,7 @@ export function CounsellingDashboard() {
                   </p>
 
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-muted)" }}>
-                    <span>Target: <strong>{r.targetCountry}</strong></span>
+                    <span>Target: <strong><CountryDisplay country={r.targetCountry} size={14}/></strong></span>
                     <span>Counsellor: <strong>{r.counsellorName || "Unassigned"}</strong></span>
                   </div>
                 </div>
@@ -970,10 +1004,12 @@ export function CounsellingDashboard() {
                       <input
                         type="text"
                         required
+                        list="aecs-country-catalog"
                         value={newCountryForm.name}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, name: e.target.value })}
-                        placeholder="e.g. Switzerland, Italy, France"
+                        onChange={e => updateCountryName(e.target.value)}
+                        placeholder="Start typing a country name"
                       />
+                      <datalist id="aecs-country-catalog">{COUNTRY_AUTOFILL.map(country => <option key={country[1]} value={country[0]} />)}</datalist>
                     </div>
 
                     <div className="form-group">
@@ -982,9 +1018,9 @@ export function CounsellingDashboard() {
                         type="text"
                         required
                         maxLength={2}
+                        readOnly
                         value={newCountryForm.code}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, code: e.target.value.toUpperCase() })}
-                        placeholder="e.g. CH, IT, FR, AT"
+                        placeholder="Generated automatically"
                       />
                     </div>
                   </div>
@@ -995,9 +1031,9 @@ export function CounsellingDashboard() {
                       <input
                         type="text"
                         required
+                        readOnly
                         value={newCountryForm.currency}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, currency: e.target.value.toUpperCase() })}
-                        placeholder="e.g. EUR, CHF, GBP"
+                        placeholder="Generated automatically"
                       />
                     </div>
 
@@ -1006,36 +1042,22 @@ export function CounsellingDashboard() {
                       <input
                         type="text"
                         required
+                        readOnly
                         value={newCountryForm.dialCode}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, dialCode: e.target.value })}
-                        placeholder="e.g. +41, +39, +33"
+                        placeholder="Generated automatically"
                       />
                     </div>
                   </div>
 
-                  <div className="form-row-2">
-                    <div className="form-group">
-                      <label>Region *</label>
-                      <select
-                        value={newCountryForm.region}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, region: e.target.value as any })}
-                      >
-                        <option value="Europe & Schengen">Europe & Schengen</option>
-                        <option value="English Speaking">English Speaking</option>
-                        <option value="East Asia">East Asia</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Popular Intakes *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newCountryForm.popularIntakes}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, popularIntakes: e.target.value })}
-                        placeholder="e.g. September, February"
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label>Popular Intakes *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCountryForm.popularIntakes}
+                      onChange={e => setNewCountryForm({ ...newCountryForm, popularIntakes: e.target.value })}
+                      placeholder="e.g. September, February"
+                    />
                   </div>
 
                   <div className="form-row-2">
