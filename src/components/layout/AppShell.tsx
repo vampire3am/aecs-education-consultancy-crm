@@ -157,8 +157,8 @@ export function AppShell() {
             <img src="/abroad-logo-new.png" alt="AECS CRM" />
           </div>
           <div className="brand-text">
-            <strong>AECS CRM</strong>
-            <span>Education Consultancy Services</span>
+            <strong>Abroad Education<br />Consultancy Services</strong>
+            <span>Choose Abroad to Study Abroad</span>
           </div>
         </div>
 
@@ -477,11 +477,11 @@ export function AppShell() {
               <span className="search-kbd">Ctrl K</span>
             </button>
 
-            {/* Quick Add Student Button */}
+            {/* Quick lead capture */}
             <button
               type="button"
               className="quick-action-primary-btn"
-              onClick={() => navigate("/students/register")}
+              onClick={() => navigate("/leads", { state: { openLeadCapture: true } })}
             >
               <Plus size={15} />
               <span>New Lead</span>

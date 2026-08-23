@@ -56,52 +56,52 @@ export function RegistrationForm() {
   const [formData, setFormData] = useState({
     // Step 1: Personal
     fullName: "",
-    gender: "Female" as "Male" | "Female" | "Other",
-    dob: "2003-05-15",
-    phone: "+977 98",
+    gender: "" as "Male" | "Female" | "Other",
+    dob: "",
+    phone: "",
     email: "",
-    address: "Kathmandu, Nepal",
+    address: "",
     guardianName: "",
     guardianPhone: "",
 
     // Step 2: Academic
-    highestQualification: "Bachelor's Degree",
-    institutionName: "Kathmandu University",
-    boardUniversity: "Kathmandu University (KU)",
-    passedYear: "2025",
-    gpaOrPercentage: "3.45 CGPA",
-    studyGapYears: "None",
+    highestQualification: "",
+    institutionName: "",
+    boardUniversity: "",
+    passedYear: "",
+    gpaOrPercentage: "",
+    studyGapYears: "",
     gapExplanation: "",
 
     // Step 3: Study Preferences
-    targetCountry: "UK",
-    secondCountry: "Australia",
-    targetDegree: "Master's Degree (Postgraduate)",
-    targetCourse: "MSc International Business Management",
-    targetIntake: "September 2026",
-    budgetNpr: "25-35 Lakhs NPR",
-    counsellor: "Unassigned",
+    targetCountry: "",
+    secondCountry: "",
+    targetDegree: "",
+    targetCourse: "",
+    targetIntake: "",
+    budgetNpr: "",
+    counsellor: "",
 
     // Step 4: English Proficiency
-    testStatus: "Taken" as "Taken" | "Booked" | "Preparing" | "None",
-    testType: "IELTS Academic",
-    overallScore: "7.0",
-    listening: "7.5",
-    reading: "7.0",
-    writing: "6.5",
-    speaking: "7.0",
+    testStatus: "None" as "Taken" | "Booked" | "Preparing" | "None",
+    testType: "",
+    overallScore: "",
+    listening: "",
+    reading: "",
+    writing: "",
+    speaking: "",
     trfNumber: "",
 
     // Step 5: Passport & Travel History
-    hasPassport: true,
+    hasPassport: false,
     passportNumber: "",
-    passportExpiry: "2032-10-15",
+    passportExpiry: "",
     hasVisaRefusal: false,
     refusalDetails: "",
 
     // Step 6: Referral & Initial Note
-    leadSource: "Friend Referral",
-    counsellorNotes: "Student attended direct walk-in counselling at the AECS Bagbazar Main Office.",
+    leadSource: "",
+    counsellorNotes: "",
   });
 
   const handleChange = (field: string, value: any) => {
@@ -145,6 +145,18 @@ export function RegistrationForm() {
         targetIntake: formData.targetIntake,
         budget: formData.budgetNpr,
         counsellor: formData.counsellor,
+        secondCountry: formData.secondCountry,
+        highestQualification: formData.highestQualification,
+        academicStatus: formData.institutionName,
+        latestResult: formData.gpaOrPercentage,
+        studyGap: formData.studyGapYears,
+        employmentStatus: formData.gapExplanation,
+        testTaken: formData.testStatus === "Taken",
+        testType: formData.testType,
+        testScore: formData.overallScore,
+        hasPassport: formData.hasPassport,
+        leadSource: formData.leadSource,
+        message: formData.counsellorNotes,
         status: "NEW_LEAD",
       });
 
@@ -265,14 +277,14 @@ export function RegistrationForm() {
   }
 
   return (
-    <div className="page-container" style={{ maxWidth: "980px" }}>
+    <div className="page-container student-registration-page">
       {/* Header */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Front Desk & Admissions</span>
-          <h2>6-Step Comprehensive Student Registration</h2>
+          <span className="page-category-eyebrow">AECS Admissions Workspace</span>
+          <h2>Student Registration</h2>
           <p>
-            Capture verified identity, academic credentials, test bands, study preferences, and visa compliance info.
+            Build a complete student profile for counselling, applications, and admission processing.
           </p>
         </div>
         <div className="page-header-actions">
@@ -288,97 +300,63 @@ export function RegistrationForm() {
       </div>
 
       {/* Stepper Strip */}
-      <div
-        className="crm-panel"
-        style={{
-          padding: "16px 20px",
-          marginBottom: "20px",
-          display: "grid",
-          gridTemplateColumns: `repeat(${REGISTRATION_STEPS.length}, 1fr)`,
-          gap: "10px",
-          overflowX: "auto",
-        }}
-      >
+      <div className="crm-panel student-registration-progress">
+        <div className="student-registration-progress-heading">
+          <div>
+            <span>Registration progress</span>
+            <strong>Step {currentStep} of {REGISTRATION_STEPS.length}</strong>
+          </div>
+          <b>{Math.round((currentStep / REGISTRATION_STEPS.length) * 100)}%</b>
+        </div>
+        <div className="student-registration-progress-bar" aria-hidden="true">
+          <span style={{ width: `${(currentStep / REGISTRATION_STEPS.length) * 100}%` }} />
+        </div>
+        <div className="student-registration-steps">
         {REGISTRATION_STEPS.map(s => {
           const Icon = s.icon;
           const isActive = s.step === currentStep;
           const isDone = s.step < currentStep;
 
           return (
-            <div
+            <button
+              type="button"
               key={s.step}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "8px 12px",
-                borderRadius: "var(--radius-sm)",
-                background: isActive ? "var(--accent-blue-soft)" : "transparent",
-                border: isActive ? "1px solid var(--accent-blue)" : "1px solid transparent",
-                cursor: isDone ? "pointer" : "default",
-                opacity: !isActive && !isDone ? 0.6 : 1,
-              }}
+              className={`student-registration-step ${isActive ? "is-active" : ""} ${isDone ? "is-done" : ""}`}
+              disabled={!isDone}
               onClick={() => {
                 if (isDone) setCurrentStep(s.step);
               }}
             >
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  background: isDone
-                    ? "var(--success)"
-                    : isActive
-                    ? "var(--accent-blue)"
-                    : "var(--bg-card-subtle)",
-                  color: isDone || isActive ? "#FFFFFF" : "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {isDone ? <Check size={14} /> : s.step}
+              <div className="student-registration-step-icon">
+                {isDone ? <Check size={16} /> : <Icon size={16} />}
               </div>
-              <div style={{ overflow: "hidden" }}>
-                <strong
-                  style={{
-                    display: "block",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    color: isActive ? "var(--accent-blue)" : "var(--text-main)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {s.title}
-                </strong>
-                <span style={{ fontSize: "10px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                  {s.sub}
-                </span>
+              <div>
+                <span>Step {s.step}</span>
+                <strong>{s.title}</strong>
               </div>
-            </div>
+            </button>
           );
         })}
+        </div>
       </div>
 
       {/* Main Step Body Card */}
-      <div className="crm-panel">
-        <div className="panel-header-bar">
+      <div className="crm-panel student-registration-card">
+        <div className="panel-header-bar student-registration-card-header">
           <div>
-            <h3>
-              Step {currentStep} of 6: {REGISTRATION_STEPS[currentStep - 1].title}
-            </h3>
+            <span className="student-registration-section-label">Step {currentStep}</span>
+            <h3>{REGISTRATION_STEPS[currentStep - 1].title}</h3>
             <p>{REGISTRATION_STEPS[currentStep - 1].sub}</p>
           </div>
-          <span className="status-pill">
-            Progress: {Math.round((currentStep / 6) * 100)}% Complete
-          </span>
+          <div className="student-registration-current-icon">
+            {(() => {
+              const ActiveIcon = REGISTRATION_STEPS[currentStep - 1].icon;
+              return <ActiveIcon size={22} />;
+            })()}
+          </div>
         </div>
 
-        <div className="panel-body">
+        <div className="panel-body student-registration-fields">
           {/* STEP 1: PERSONAL & CONTACT */}
           {currentStep === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -649,7 +627,7 @@ export function RegistrationForm() {
                   >
                     <option value="IELTS Academic">IELTS Academic</option>
                     <option value="PTE Academic">PTE Academic</option>
-                    <option value="Duolingo (DET)">Duolingo English Test (DET)</option>
+                    <option value="Duolingo">Duolingo English Test (DET)</option>
                     <option value="TOEFL iBT">TOEFL iBT</option>
                     <option value="German Language (A1/A2)">German Language (A1/A2)</option>
                   </select>
@@ -874,7 +852,7 @@ export function RegistrationForm() {
         </div>
 
         {/* Footer Navigation Bar */}
-        <div className="modal-footer-clean" style={{ justifyContent: "space-between" }}>
+        <div className="modal-footer-clean student-registration-footer">
           <button
             type="button"
             className="btn-secondary"
@@ -882,7 +860,7 @@ export function RegistrationForm() {
             onClick={handleBack}
           >
             <ArrowLeft size={15} />
-            <span>Previous Step</span>
+            <span>Back</span>
           </button>
 
           {currentStep < 6 ? (
@@ -891,8 +869,7 @@ export function RegistrationForm() {
               className="btn-primary"
               onClick={handleNext}
             >
-              <span>Next: {REGISTRATION_STEPS[currentStep].title}</span>
-              <ArrowRight size={15} />
+              <span>Next</span>
             </button>
           ) : (
             <button

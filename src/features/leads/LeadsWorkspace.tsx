@@ -15,7 +15,8 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { LeadRecord, LeadService } from "../../services/studentService";
 import { PhoneInput } from "../../components/ui/PhoneInput";
 import { CountrySelect } from "../../components/ui/CountrySelect";
@@ -51,6 +52,7 @@ export function LeadsWorkspace() {
   const [followUp, setFollowUp] = useState({ dueAt: "", note: "" });
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Capture Lead Form
   const [form, setForm] = useState({
@@ -60,9 +62,9 @@ export function LeadsWorkspace() {
     source: "Facebook / Instagram Ads" as LeadRecord["source"],
     targetCountry: "UK" as LeadRecord["targetCountry"],
     targetCourse: "",
-    targetIntake: "September 2026",
-    budgetEstimate: "£15,000 / year",
-    assignedCounsellor: "Unassigned",
+    targetIntake: "",
+    budgetEstimate: "",
+    assignedCounsellor: "",
     stage: "NEW_INQUIRY" as LeadRecord["stage"],
     priority: "HIGH" as LeadRecord["priority"],
   });
@@ -84,6 +86,14 @@ export function LeadsWorkspace() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadLeads();
   }, []);
+
+  useEffect(() => {
+    const routeState = location.state as { openLeadCapture?: boolean } | null;
+    if (!routeState?.openLeadCapture) return;
+
+    setShowCaptureModal(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,9 +124,9 @@ export function LeadsWorkspace() {
       source: "Facebook / Instagram Ads",
       targetCountry: "UK",
       targetCourse: "",
-      targetIntake: "September 2026",
-      budgetEstimate: "£15,000 / year",
-      assignedCounsellor: "Unassigned",
+      targetIntake: "",
+      budgetEstimate: "",
+      assignedCounsellor: "",
       stage: "NEW_INQUIRY",
       priority: "HIGH",
       });
@@ -326,7 +336,7 @@ export function LeadsWorkspace() {
             </div>
           </div>
           <div className="metric-value">{totalInquiries} Leads</div>
-          <span className="metric-sub">Active raw prospect pipeline</span>
+          <KpiTrendIndicator metricKey="leads.total" value={totalInquiries} label="Active raw prospect pipeline" />
         </div>
 
         <div className="metric-box">
@@ -337,7 +347,7 @@ export function LeadsWorkspace() {
             </div>
           </div>
           <div className="metric-value">{hotProspects} High-Intent</div>
-          <span className="metric-sub">Ready for enrollment & offer</span>
+          <KpiTrendIndicator metricKey="leads.hot" value={hotProspects} label="Ready for enrollment & offer" />
         </div>
 
         <div className="metric-box">
@@ -348,7 +358,7 @@ export function LeadsWorkspace() {
             </div>
           </div>
           <div className="metric-value">{convertedCount} Enrolled</div>
-          <span className="metric-sub">Official AECS IDs assigned</span>
+          <KpiTrendIndicator metricKey="leads.converted" value={convertedCount} label="Official AECS IDs assigned" />
         </div>
 
         <div className="metric-box">
@@ -359,7 +369,7 @@ export function LeadsWorkspace() {
             </div>
           </div>
           <div className="metric-value">{conversionPct}%</div>
-          <span className="metric-sub">Inquiry-to-Admission ratio</span>
+          <KpiTrendIndicator metricKey="leads.conversion" value={conversionPct} label="Inquiry-to-Admission ratio" />
         </div>
       </div>
 
