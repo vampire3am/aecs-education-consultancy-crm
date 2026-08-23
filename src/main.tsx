@@ -29,6 +29,11 @@ import "./styles/leads-redesign.css";
 import "./styles/leads-typography.css";
 import "./styles/crm-skeleton.css";
 import "./styles/metric-indicators.css";
+import "./styles/case-task-panel.css";
+import "./styles/case-task-modal.css";
+import "./styles/student-registration-redesign.css";
+import "./styles/student-record-editor.css";
+import "./styles/student-document-vault.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 // Total purge of previous sample dataset keys on initial load
