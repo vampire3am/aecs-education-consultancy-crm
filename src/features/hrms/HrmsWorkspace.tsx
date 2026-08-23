@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Calendar,
   Check,
+  ChevronRight,
   Clock,
   FileText,
   Plus,
@@ -38,11 +39,14 @@ interface StaffMember {
 
 interface AttendanceRecord {
   id: string;
+  employeeId: string;
   empCode: string;
   fullName: string;
+  attendanceDate: string;
   date: string;
   checkIn: string;
   checkOut: string;
+  workedHours: string;
   status: "PRESENT" | "LATE" | "HALF_DAY" | "ON_LEAVE" | "ABSENT";
   lateMinutes?: number;
 }
@@ -111,17 +115,19 @@ export function HrmsWorkspace() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>(INITIAL_LEAVES);
   const [payroll, setPayroll] = useState<PayrollRecord[]>(INITIAL_PAYROLL);
   const [dataError, setDataError] = useState("");
+  const [myAttendance, setMyAttendance] = useState<Awaited<ReturnType<typeof HrmsService.getMyTodayAttendance>>>(null);
 
   const loadHrmsData = async () => {
     try {
       setDataError("");
-      const [staff, attendanceRows, leaveRows, payrollRows] = await Promise.all([
-        HrmsService.getStaff(), HrmsService.getAttendance(), HrmsService.getLeaves(), HrmsService.getPayroll(),
+      const [staff, attendanceRows, leaveRows, payrollRows, ownAttendance] = await Promise.all([
+        HrmsService.getStaff(), HrmsService.getAttendance(), HrmsService.getLeaves(), HrmsService.getPayroll(), HrmsService.getMyTodayAttendance(),
       ]);
       setStaffList(staff as StaffMember[]);
       setAttendance(attendanceRows as AttendanceRecord[]);
       setLeaves(leaveRows as LeaveRequest[]);
       setPayroll(payrollRows as PayrollRecord[]);
+      setMyAttendance(ownAttendance);
     } catch (error) {
       setDataError(error instanceof Error ? error.message : "HRMS records could not be loaded");
     }
@@ -139,7 +145,9 @@ export function HrmsWorkspace() {
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [activePayslip, setActivePayslip] = useState<PayrollRecord | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [clockInSuccess, setClockInSuccess] = useState(false);
+  const [clockOutSuccess, setClockOutSuccess] = useState(false);
 
   // New Staff Form
   const [newStaff, setNewStaff] = useState({
@@ -149,8 +157,8 @@ export function HrmsWorkspace() {
     branch: "AECS Bagbazar Main Office" as StaffMember["branch"],
     email: "",
     phone: "",
-    baseSalary: 45000,
-    bankAccount: "Nabil Bank · ",
+    baseSalary: 0,
+    bankAccount: "",
     panNumber: "",
   });
 
@@ -176,8 +184,16 @@ export function HrmsWorkspace() {
   };
 
   const handleClockIn = async () => {
+    if (myAttendance?.clockIn) { setDataError("Today's clock-in is already recorded."); return; }
     try { await HrmsService.clockIn(); await loadHrmsData(); setClockInSuccess(true); setTimeout(() => setClockInSuccess(false), 3000); }
     catch(error){setDataError(error instanceof Error?error.message:"Clock-in failed");}
+  };
+
+  const handleClockOut = async () => {
+    if (!myAttendance?.clockIn) { setDataError("Clock in before ending your shift."); return; }
+    if (myAttendance.clockOut) { setDataError("Today's shift is already completed."); return; }
+    try { await HrmsService.clockOut(); await loadHrmsData(); setClockOutSuccess(true); setTimeout(() => setClockOutSuccess(false), 3000); }
+    catch(error){setDataError(error instanceof Error?error.message:"Clock-out failed");}
   };
 
   const handleApproveLeave = async (id: string) => {
@@ -205,10 +221,12 @@ export function HrmsWorkspace() {
   });
 
   const totalMonthlyPayroll = payroll.reduce((sum, p) => sum + p.netSalary, 0);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayAttendance = attendance.filter(record => record.attendanceDate === todayIso);
 
   return (
     <div className="page-container">
-      {dataError&&<div className="alert-banner error" role="alert"><AlertCircle size={16}/>{dataError}</div>}
+      {dataError&&<div className="dashboard-error-banner" role="alert"><AlertCircle size={18}/><div><strong>Attendance action unavailable</strong><span>{dataError}</span></div><button type="button" onClick={() => setDataError("")}>Dismiss</button></div>}
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
@@ -224,9 +242,15 @@ export function HrmsWorkspace() {
             type="button"
             className="btn-secondary"
             onClick={handleClockIn}
+            disabled={Boolean(myAttendance?.clockIn)}
           >
             {clockInSuccess ? <Check size={15} style={{ color: "var(--success)" }} /> : <Clock size={15} />}
-            <span>{clockInSuccess ? "Clocked In Successfully!" : "Web Clock-In (Today)"}</span>
+            <span>{clockInSuccess ? "Clocked In Successfully!" : myAttendance?.clockIn ? "Clock-In Recorded" : "Web Clock-In (Today)"}</span>
+          </button>
+
+          <button type="button" className="btn-secondary" onClick={handleClockOut} disabled={!myAttendance?.clockIn || Boolean(myAttendance?.clockOut)}>
+            {clockOutSuccess ? <Check size={15} style={{ color: "var(--success)" }} /> : <Clock size={15} />}
+            <span>{clockOutSuccess ? "Clocked Out Successfully!" : myAttendance?.clockOut ? "Shift Completed" : "Web Clock-Out"}</span>
           </button>
 
           <button
@@ -261,7 +285,7 @@ export function HrmsWorkspace() {
             </div>
           </div>
           <div className="metric-value">
-            {attendance.filter(a => a.status === "PRESENT" || a.status === "LATE").length} Present
+            {todayAttendance.filter(a => a.status === "PRESENT" || a.status === "LATE").length} Present
           </div>
           <span className="metric-sub">91.6% punctuality clearance</span>
         </div>
@@ -379,6 +403,7 @@ export function HrmsWorkspace() {
                   <th>Contact Info</th>
                   <th>Base Gross</th>
                   <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Attendance</th>
                 </tr>
               </thead>
               <tbody>
@@ -454,6 +479,11 @@ export function HrmsWorkspace() {
                           {staff.status}
                         </span>
                       </td>
+                      <td style={{ textAlign: "right" }}>
+                        <button type="button" className="btn-secondary" onClick={() => setSelectedStaff(staff)} style={{ padding: "7px 10px" }}>
+                          <Clock size={14} /> View log <ChevronRight size={14} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -473,7 +503,7 @@ export function HrmsWorkspace() {
             </div>
             <span className="status-pill">
               <Clock size={13} style={{ color: "var(--accent-blue)" }} />
-              <span>Shift: 09:30 AM – 05:30 PM</span>
+              <span>Shift: 09:00 AM – 06:00 PM · Present cutoff 10:15 AM</span>
             </span>
           </div>
 
@@ -486,6 +516,7 @@ export function HrmsWorkspace() {
                   <th>Attendance Date</th>
                   <th>Punch-In Time</th>
                   <th>Punch-Out Time</th>
+                  <th>Worked Hours</th>
                   <th>Late Arrival</th>
                   <th>Status</th>
                 </tr>
@@ -506,6 +537,7 @@ export function HrmsWorkspace() {
                       </span>
                     </td>
                     <td>{att.checkOut}</td>
+                    <td><strong className="code-font">{att.workedHours}</strong></td>
                     <td>
                       {att.lateMinutes ? (
                         <span style={{ color: "var(--danger)", fontWeight: 700, fontSize: "11.5px" }}>
@@ -1141,6 +1173,44 @@ export function HrmsWorkspace() {
           </div>
         </div>
       )}
+
+      {selectedStaff && (() => {
+        const records = attendance.filter(row => row.empCode === selectedStaff.empCode);
+        const presentDays = records.filter(row => row.status === "PRESENT" || row.status === "LATE").length;
+        const lateDays = records.filter(row => row.status === "LATE").length;
+        return (
+          <div className="modal-backdrop-clean" onClick={() => setSelectedStaff(null)}>
+            <div className="modal-dialog-clean" style={{ maxWidth: "780px" }} onClick={event => event.stopPropagation()}>
+              <div className="modal-header-clean">
+                <div>
+                  <span className="page-category-eyebrow">Employee attendance profile</span>
+                  <h3>{selectedStaff.fullName}</h3>
+                  <p>{selectedStaff.empCode} · {selectedStaff.role} · {selectedStaff.branch}</p>
+                </div>
+                <button type="button" className="drawer-close-btn" onClick={() => setSelectedStaff(null)} aria-label="Close attendance profile"><X size={18} /></button>
+              </div>
+              <div className="modal-body-clean">
+                <div className="metrics-grid-4" style={{ marginBottom: "18px" }}>
+                  <div className="metric-box"><span className="metric-label">Recorded days</span><div className="metric-value">{records.length}</div></div>
+                  <div className="metric-box"><span className="metric-label">Present days</span><div className="metric-value">{presentDays}</div></div>
+                  <div className="metric-box"><span className="metric-label">Late arrivals</span><div className="metric-value">{lateDays}</div></div>
+                  <div className="metric-box"><span className="metric-label">Attendance rate</span><div className="metric-value">{records.length ? Math.round((presentDays / records.length) * 100) : 0}%</div></div>
+                </div>
+                <div className="table-wrapper">
+                  <table className="crm-table">
+                    <thead><tr><th>Date</th><th>Clock in</th><th>Clock out</th><th>Worked</th><th>Late</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {records.map(row => <tr key={row.id}><td>{row.date}</td><td>{row.checkIn}</td><td>{row.checkOut}</td><td><strong>{row.workedHours}</strong></td><td>{row.lateMinutes ? `${row.lateMinutes} min` : "On time"}</td><td><span className={`badge-status ${row.status === "PRESENT" ? "enrolled" : row.status === "LATE" ? "counselling" : "new-lead"}`}>{row.status}</span></td></tr>)}
+                      {!records.length && <tr><td colSpan={6} style={{ textAlign: "center", padding: "28px" }}>No attendance has been recorded for this employee yet.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer-clean"><button type="button" className="btn-secondary" onClick={() => setSelectedStaff(null)}>Close</button><button type="button" className="btn-primary" onClick={() => { setSelectedStaff(null); handleTabChange("attendance"); }}><Clock size={15} /> Open full attendance register</button></div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -12,6 +12,7 @@ import {
 import {
   AlertTriangle,
   BookOpen,
+  Clock,
   CheckCircle2,
   ChevronRight,
   CreditCard,
@@ -28,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { AECS_ORGANIZATION } from "../../config/organization";
+import { HrmsService } from "../../services/hrmsService";
 
 // Trend series for 30-day analytics
 const INTAKE_TREND_DATA: Array<{ day: string; leads: number; applications: number }> = [];
@@ -54,25 +56,31 @@ interface DashboardActivity {
 const TODAY_APPOINTMENTS: DashboardAppointment[] = [];
 const RECENT_ACTIVITIES: DashboardActivity[] = [];
 
-type DashboardMetrics = { students: number; counselling: number; offers: number; visaRatio: number; revenue: number };
-const DASHBOARD_SNAPSHOT_KEY = "aecs_dashboard_kpi_snapshot_v1";
-
-function storedDashboardMetrics(): DashboardMetrics | null {
-  try {
-    const value = localStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
-    return value ? JSON.parse(value) as DashboardMetrics : null;
-  } catch {
-    return null;
-  }
-}
-
 export function ManagementDashboard() {
   const navigate = useNavigate();
   const [totalStudents, setTotalStudents] = useState(0);
   const [summary, setSummary] = useState({ counselling: 0, offers: 0, visaRatio: 0, revenue: 0 });
-  const [previousMetrics, setPreviousMetrics] = useState<DashboardMetrics | null>(null);
   const [dashboardError, setDashboardError] = useState("");
-  const currentMetricsRef = useRef<DashboardMetrics | null>(null);
+  const [attendanceBusy, setAttendanceBusy] = useState(false);
+  const [attendanceMessage, setAttendanceMessage] = useState("");
+  const [attendanceLoadError, setAttendanceLoadError] = useState("");
+  const [, setAttendanceClock] = useState(0);
+  const [myAttendance, setMyAttendance] = useState<Awaited<ReturnType<typeof HrmsService.getMyTodayAttendance>>>(null);
+
+  const loadMyAttendance = async () => {
+    try { setMyAttendance(await HrmsService.getMyTodayAttendance()); setAttendanceLoadError(""); }
+    catch(error) { setMyAttendance(null); setAttendanceLoadError(error instanceof Error ? error.message : "Attendance profile could not be loaded"); }
+  };
+
+  const punchAttendance = async (action: "in" | "out") => {
+    setAttendanceBusy(true); setAttendanceMessage("");
+    try {
+      if(action === "in") await HrmsService.clockIn(); else await HrmsService.clockOut();
+      await loadMyAttendance();
+      setAttendanceMessage(action === "in" ? "Clock-in recorded successfully." : "Clock-out recorded successfully.");
+    } catch(error) { setAttendanceMessage(error instanceof Error ? error.message : "Attendance could not be recorded."); }
+    finally { setAttendanceBusy(false); }
+  };
 
   useEffect(() => {
     let active = true;
@@ -86,16 +94,13 @@ export function ManagementDashboard() {
         return;
       }
       const live=data as{students?:number;counselling?:number;offers?:number;visa_ratio?:number;month_revenue?:number};
-      const nextMetrics: DashboardMetrics = {
+      const nextMetrics = {
         students: live.students || 0,
         counselling: live.counselling || 0,
         offers: live.offers || 0,
         visaRatio: live.visa_ratio || 0,
         revenue: live.month_revenue || 0,
       };
-      setPreviousMetrics(currentMetricsRef.current ?? storedDashboardMetrics());
-      currentMetricsRef.current = nextMetrics;
-      try { localStorage.setItem(DASHBOARD_SNAPSHOT_KEY, JSON.stringify(nextMetrics)); } catch { /* Storage may be unavailable in privacy mode. */ }
       setTotalStudents(nextMetrics.students);
       setSummary({
         counselling: nextMetrics.counselling,
@@ -123,6 +128,15 @@ export function ManagementDashboard() {
     };
   }, []);
 
+  useEffect(() => { void loadMyAttendance(); }, []);
+  useEffect(() => { const timer=setInterval(() => setAttendanceClock(value => value + 1), 60000); return () => clearInterval(timer); }, []);
+
+  const workedToday = myAttendance?.clockIn ? (() => {
+    const end=myAttendance.clockOut ? new Date(myAttendance.clockOut) : new Date();
+    const minutes=Math.max(0,Math.floor((end.getTime()-new Date(myAttendance.clockIn).getTime())/60000));
+    return `${Math.floor(minutes/60)}h ${minutes%60}m`;
+  })() : "0h 0m";
+
   return (
     <div className="page-container">
       {/* Executive Welcome Header */}
@@ -144,12 +158,12 @@ export function ManagementDashboard() {
             onClick={() => navigate("/students/register")}
           >
             <UserPlus size={15} />
-            <span>6-Step Registration</span>
+            <span>Student Registration</span>
           </button>
           <button
             type="button"
             className="btn-primary"
-            onClick={() => navigate("/students")}
+            onClick={() => navigate("/leads", { state: { openLeadCapture: true } })}
           >
             <Plus size={15} />
             <span>Quick Lead</span>
@@ -168,6 +182,30 @@ export function ManagementDashboard() {
         </div>
       )}
 
+      <section className="dashboard-attendance-card" aria-label="My attendance today">
+        <div className="dashboard-attendance-icon"><Clock size={22} /></div>
+        <div className="dashboard-attendance-copy">
+          <span className="page-category-eyebrow">My Attendance Today</span>
+          <strong>{myAttendance ? myAttendance.fullName : "Employee attendance"}</strong>
+          <span>
+            {!myAttendance ? (attendanceLoadError || "No active employee profile is linked to this login.") :
+             !myAttendance.clockIn ? "Shift not started — clock in when you begin work." :
+             myAttendance.clockOut ? `Shift completed · Worked ${workedToday} · ${new Date(myAttendance.clockIn).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kathmandu"})}–${new Date(myAttendance.clockOut).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kathmandu"})}` :
+             `Working now · ${workedToday} worked · Clocked in at ${new Date(myAttendance.clockIn).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kathmandu"})}`}
+          </span>
+          {attendanceMessage && <small>{attendanceMessage}</small>}
+        </div>
+        <div className="dashboard-attendance-status">
+          <span className={`badge-status ${myAttendance?.clockOut ? "enrolled" : myAttendance?.clockIn ? "counselling" : "new-lead"}`}>
+            {myAttendance?.clockOut ? "SHIFT COMPLETE" : myAttendance?.clockIn ? "IN OFFICE" : "NOT CLOCKED IN"}
+          </span>
+        </div>
+        <div className="dashboard-attendance-actions">
+          <button type="button" className="btn-primary" disabled={attendanceBusy || !myAttendance || Boolean(myAttendance.clockIn)} onClick={() => void punchAttendance("in")}><Clock size={15}/> Clock In</button>
+          <button type="button" className="btn-secondary" disabled={attendanceBusy || !myAttendance?.clockIn || Boolean(myAttendance.clockOut)} onClick={() => void punchAttendance("out")}><CheckCircle2 size={15}/> Clock Out</button>
+        </div>
+      </section>
+
       {/* Flagship KPI Strip */}
       <div className="metrics-grid-4" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
         <div className="metric-box">
@@ -178,7 +216,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{totalStudents}</div>
-          <KpiTrendIndicator value={totalStudents} previousValue={previousMetrics?.students} label="Live registered records" />
+          <KpiTrendIndicator metricKey="dashboard.students" value={totalStudents} label="Live registered records" />
         </div>
 
         <div className="metric-box">
@@ -189,7 +227,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{summary.counselling}</div>
-          <KpiTrendIndicator value={summary.counselling} previousValue={previousMetrics?.counselling} label="Recorded counselling sessions" />
+          <KpiTrendIndicator metricKey="dashboard.counselling" value={summary.counselling} label="Recorded counselling sessions" />
         </div>
 
         <div className="metric-box">
@@ -200,7 +238,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{summary.offers}</div>
-          <KpiTrendIndicator value={summary.offers} previousValue={previousMetrics?.offers} label="Offer and post-offer stages" />
+          <KpiTrendIndicator metricKey="dashboard.offers" value={summary.offers} label="Offer and post-offer stages" />
         </div>
 
         <div className="metric-box">
@@ -211,7 +249,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">{summary.visaRatio.toFixed(1)}%</div>
-          <KpiTrendIndicator value={summary.visaRatio} previousValue={previousMetrics?.visaRatio} label="Based on recorded decisions" />
+          <KpiTrendIndicator metricKey="dashboard.visa-ratio" value={summary.visaRatio} label="Based on recorded decisions" />
         </div>
 
         <div className="metric-box">
@@ -222,7 +260,7 @@ export function ManagementDashboard() {
             </div>
           </div>
           <div className="metric-value">₨ {summary.revenue.toLocaleString("en-NP")}</div>
-          <KpiTrendIndicator value={summary.revenue} previousValue={previousMetrics?.revenue} label="Paid invoices this month" />
+          <KpiTrendIndicator metricKey="dashboard.month-revenue" value={summary.revenue} label="Paid invoices this month" />
         </div>
       </div>
 
