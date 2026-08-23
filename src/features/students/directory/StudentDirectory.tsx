@@ -355,10 +355,10 @@ export function StudentDirectory() {
       </div>
 
       {/* Main Panel */}
-      <div className="crm-panel">
+      <div className="crm-panel student-directory-panel">
         {/* Filter Toolbar */}
-        <div className="filter-toolbar">
-          <div className="search-input-wrap" style={{ width: "340px" }}>
+        <div className="filter-toolbar student-directory-toolbar">
+          <div className="search-input-wrap student-directory-search">
             <Search size={16} />
             <input
               type="text"
@@ -419,21 +419,10 @@ export function StudentDirectory() {
         </div>
 
         {/* Quick Filter Stage Badges Strip */}
-        <div
-          style={{
-            padding: "8px 20px",
-            borderBottom: "1px solid var(--border-subtle)",
-            background: "var(--bg-card-subtle)",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            overflowX: "auto",
-          }}
-        >
+        <div className="student-stage-filters">
           <button
             type="button"
             className={`coa-category-pill ${statusFilter === "ALL" ? "active" : ""}`}
-            style={{ padding: "4px 10px", fontSize: "11px" }}
             onClick={() => setStatusFilter("ALL")}
           >
             All Candidates ({students.length})
@@ -445,7 +434,6 @@ export function StudentDirectory() {
                 key={stage}
                 type="button"
                 className={`coa-category-pill ${statusFilter === stage ? "active" : ""}`}
-                style={{ padding: "4px 10px", fontSize: "11px" }}
                 onClick={() => setStatusFilter(statusFilter === stage ? "ALL" : stage)}
               >
                 <span>{STAGE_CONFIG[stage].label}</span>
@@ -457,16 +445,15 @@ export function StudentDirectory() {
 
         {/* VIEW 1: HIGH-DENSITY PROFESSIONAL DATA TABLE */}
         {viewMode === "table" && (
-          <div className="table-wrapper">
-            <table className="crm-table">
+          <div className="table-wrapper student-directory-table-wrap">
+            <table className="crm-table student-directory-table">
               <thead>
                 <tr>
-                  <th style={{ width: "135px" }}>Student Code</th>
-                  <th>Candidate Name & Contact</th>
+                  <th>Student</th>
                   <th>Destination & Course</th>
                   <th>English & Academics</th>
                   <th>Lifecycle Stage</th>
-                  <th>Doc Scrutiny</th>
+                  <th>Documents</th>
                   <th>Assigned Counsellor</th>
                   <th style={{ textAlign: "right", width: "120px" }}>Actions</th>
                 </tr>
@@ -488,13 +475,7 @@ export function StudentDirectory() {
                       style={{ cursor: "pointer" }}
                     >
                       <td>
-                        <span className="account-code-cell" style={{ background: "var(--bg-card-subtle)", padding: "3px 7px", borderRadius: "4px" }}>
-                          {std.code}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div className="student-directory-identity">
                           <div
                             style={{
                               width: "32px",
@@ -514,6 +495,7 @@ export function StudentDirectory() {
                           </div>
                           <div className="student-name-cell">
                             <strong style={{ fontSize: "13px" }}>{std.fullName}</strong>
+                            <span className="account-code-cell">{std.code}</span>
                             <small style={{ color: "var(--text-muted)", fontSize: "11px" }}>
                               {std.phone} · {std.email}
                             </small>
@@ -748,7 +730,7 @@ export function StudentDirectory() {
               {[
                 { key: "profile", label: "Profile & Identity", icon: Users },
                 { key: "academic", label: "Academics & Tests", icon: GraduationCap },
-                { key: "docs", label: "Doc Scrutiny", icon: FileCheck2 },
+                { key: "docs", label: "Documents", icon: FileCheck2 },
                 { key: "notes", label: "Counselling Notes", icon: MessageSquare },
               ].map(tab => {
                 const Icon = tab.icon;
