@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CountryFlag } from "../../components/ui/PhoneInput";
+import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import { AECS_AUTHORIZED_COUNTRIES } from "../../lib/destinationsData";
 import { B2BPartner, B2BService } from "../../services/b2bService";
 import { useAuth } from "../auth/AuthProvider";
@@ -862,7 +863,7 @@ export function B2BWorkspace() {
                       {activePartnerDetail.name}
                     </h3>
                     <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                      {activePartnerDetail.type} · {activePartnerDetail.country}
+                      {activePartnerDetail.type} · <CountryDisplay country={activePartnerDetail.country} size={13}/>
                     </span>
                   </div>
                 </div>
