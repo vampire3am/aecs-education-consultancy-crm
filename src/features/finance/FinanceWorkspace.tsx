@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
+import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -586,7 +587,7 @@ export function FinanceWorkspace() {
                       <strong style={{ fontSize: "13px" }}>{comm.universityName}</strong>
                     </td>
                     <td>
-                      <span className="badge-status application">{comm.country}</span>
+                      <CountryDisplay country={comm.country}/>
                     </td>
                     <td>
                       <div className="student-name-cell">
