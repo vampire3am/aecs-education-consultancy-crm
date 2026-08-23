@@ -49,15 +49,14 @@ import { notifyError, notifySuccess } from "../../../components/common/CrmNotifi
 
 export type StudentRecord = StudentDirectoryRecord;
 
-const COUNTRY_FLAGS: Record<string, string> = {
-  UK: "🇬🇧",
-  Australia: "🇦🇺",
-  Canada: "🇨🇦",
-  USA: "🇺🇸",
-  Germany: "🇩🇪",
-  Japan: "🇯🇵",
-  Finland: "🇫🇮",
+const COUNTRY_ALIASES: Record<string, string> = {
+  UK: "GB",
+  USA: "US",
+  "United Kingdom": "GB",
+  "United States": "US",
 };
+const countryCodeFor = (country: string) =>
+  COUNTRY_ALIASES[country] ?? AECS_AUTHORIZED_COUNTRIES.find(item => item.name === country)?.code ?? "";
 
 const STAGE_CONFIG: Record<StudentRecord["status"], { label: string; tone: string; colName: string }> = {
   NEW_LEAD: { label: "New Inquiry", tone: "new-lead", colName: "1. New Inquiries" },
@@ -467,7 +466,7 @@ export function StudentDirectory() {
                     .slice(0, 2)
                     .join("")
                     .toUpperCase();
-                  const flag = COUNTRY_FLAGS[std.targetCountry] || "🌐";
+                  const countryCode = countryCodeFor(std.targetCountry);
 
                   return (
                     <tr
@@ -506,7 +505,7 @@ export function StudentDirectory() {
 
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ fontSize: "15px" }}>{flag}</span>
+                          {countryCode ? <CountryFlag code={countryCode} size={17}/> : <span className="student-country-fallback">🌐</span>}
                           <div>
                             <strong>{std.targetCountry}</strong>
                             <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>
@@ -619,7 +618,7 @@ export function StudentDirectory() {
 
                   <div className="pipeline-cards-list">
                     {stageStudents.map(std => {
-                      const flag = COUNTRY_FLAGS[std.targetCountry] || "🌐";
+                      const countryCode = countryCodeFor(std.targetCountry);
                       return (
                         <div
                           key={std.id}
@@ -629,7 +628,7 @@ export function StudentDirectory() {
                           <div className="pcard-header">
                             <span className="pcard-code">{std.code}</span>
                             <span className="pcard-country">
-                              {flag} {std.targetCountry}
+                              {countryCode ? <CountryFlag code={countryCode} size={14}/> : <span>🌐</span>} {std.targetCountry}
                             </span>
                           </div>
 
@@ -812,7 +811,7 @@ export function StudentDirectory() {
                     <div className="drawer-data-grid">
                       <div className="data-item">
                         <label>Primary Destination</label>
-                        <span>{COUNTRY_FLAGS[activeStudent.targetCountry]} {activeStudent.targetCountry}</span>
+                        <span className="student-destination-with-flag">{countryCodeFor(activeStudent.targetCountry)?<CountryFlag code={countryCodeFor(activeStudent.targetCountry)} size={16}/>:<span>🌐</span>} {activeStudent.targetCountry}</span>
                       </div>
                       <div className="data-item">
                         <label>Intake Target</label>
