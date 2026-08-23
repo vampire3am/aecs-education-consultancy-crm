@@ -35,6 +35,7 @@ import "./styles/student-registration-redesign.css";
 import "./styles/student-record-editor.css";
 import "./styles/student-document-vault.css";
 import "./styles/student-directory-redesign.css";
+import "./styles/crm-notifications.css";
 import { ErrorBoundary } from "./core/error/ErrorBoundary";
 
 // Total purge of previous sample dataset keys on initial load

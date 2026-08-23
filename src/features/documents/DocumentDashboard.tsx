@@ -18,6 +18,7 @@ import {
 import { StudentService } from "../../services/studentService";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { DocumentService, type DocumentRecord } from "../../services/documentService";
+import { notifyError, notifySuccess } from "../../components/common/CrmNotifications";
 
 type DocItem = DocumentRecord;
 
@@ -99,7 +100,7 @@ export function DocumentDashboard() {
     e.preventDefault();
     if (!selectedFile||!uploadForm.fileName.trim()) return;
     setSaving(true);setErrorMessage("");
-    try{await DocumentService.upload({studentCode:uploadForm.studentCode,category:uploadForm.category,title:uploadForm.fileName,file:selectedFile,expiresOn:uploadForm.expiresOn,notes:uploadForm.notes});setDocs(await DocumentService.list());setShowUploadModal(false);setSelectedFile(null);setUploadForm({
+    try{await DocumentService.upload({studentCode:uploadForm.studentCode,category:uploadForm.category,title:uploadForm.fileName,file:selectedFile,expiresOn:uploadForm.expiresOn,notes:uploadForm.notes});setDocs(await DocumentService.list());setShowUploadModal(false);setSelectedFile(null);notifySuccess("Document uploaded","The file is secure and ready for verification.");setUploadForm({
       studentCode: students.length > 0 ? students[0].student_code : "",
       studentName: students.length > 0 ? students[0].full_name : "",
       fileName: "",
@@ -107,11 +108,11 @@ export function DocumentDashboard() {
       fileSize: "",
       status: "UNDER_REVIEW",
       expiresOn:"",notes:"",
-    });}catch(error){setErrorMessage(error instanceof Error?error.message:"Upload failed.")}finally{setSaving(false)}
+    });}catch(error){const message=error instanceof Error?error.message:"Upload failed.";setErrorMessage(message);notifyError("Document upload failed",message)}finally{setSaving(false)}
   };
 
   const handleUpdateStatus = async (id: string, newStatus: DocItem["status"]) => {
-    setSaving(true);setErrorMessage("");try{await DocumentService.review(id,newStatus);const updated=await DocumentService.list();setDocs(updated);setInspectDoc(updated.find(d=>d.id===id)??null)}catch(error){setErrorMessage(error instanceof Error?error.message:"Review failed.")}finally{setSaving(false)}
+    setSaving(true);setErrorMessage("");try{await DocumentService.review(id,newStatus);const updated=await DocumentService.list();setDocs(updated);setInspectDoc(updated.find(d=>d.id===id)??null);const labels:Record<DocItem["status"],string>={VERIFIED:"Document verified",ACTION_REQUIRED:"Action requested",REJECTED:"Document rejected",UNDER_REVIEW:"Review status updated",EXPIRED:"Document marked expired"};notifySuccess(labels[newStatus],"The verification audit and student record were updated successfully.")}catch(error){const message=error instanceof Error?error.message:"Review failed.";setErrorMessage(message);notifyError("Status update failed",message)}finally{setSaving(false)}
   };
 
   const exportCSV = () => {
@@ -624,6 +625,7 @@ export function DocumentDashboard() {
                   <button
                     type="button"
                     className="btn-secondary"
+                    disabled={saving}
                     style={{
                       borderColor: inspectDoc.status === "VERIFIED" ? "var(--success)" : undefined,
                       color: inspectDoc.status === "VERIFIED" ? "var(--success)" : undefined,
@@ -638,6 +640,7 @@ export function DocumentDashboard() {
                   <button
                     type="button"
                     className="btn-secondary"
+                    disabled={saving}
                     style={{
                       borderColor: inspectDoc.status === "ACTION_REQUIRED" ? "var(--warning)" : undefined,
                       color: inspectDoc.status === "ACTION_REQUIRED" ? "var(--warning)" : undefined,
@@ -646,12 +649,13 @@ export function DocumentDashboard() {
                     onClick={() => handleUpdateStatus(inspectDoc.id, "ACTION_REQUIRED")}
                   >
                     <AlertTriangle size={14} />
-                    <span>Action Req.</span>
+                    <span>Action Required</span>
                   </button>
 
                   <button
                     type="button"
                     className="btn-secondary"
+                    disabled={saving}
                     style={{
                       borderColor: inspectDoc.status === "REJECTED" ? "var(--danger)" : undefined,
                       color: inspectDoc.status === "REJECTED" ? "var(--danger)" : undefined,

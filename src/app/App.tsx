@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { CrmSkeleton } from "../components/common/CrmSkeleton";
+import { CrmNotificationCenter } from "../components/common/CrmNotifications";
 
 const AppShell = lazy(() => import("../components/layout/AppShell").then(m => ({ default: m.AppShell })));
 const LoginArea = lazy(() => import("../features/auth/AuthRoutes").then(m => ({ default: m.LoginArea })));
@@ -85,7 +86,7 @@ import { RoleRouteGuard } from "../features/auth/RoleRouteGuard";
 
 export default function App() {
   return (
-    <Suspense fallback={<CrmSkeleton />}>
+    <><CrmNotificationCenter/><Suspense fallback={<CrmSkeleton />}>
       <Routes>
         {/* Public & Login Routes */}
         <Route path="/login" element={<LoginArea />} />
@@ -289,6 +290,6 @@ export default function App() {
           </Route>
         </Route>
       </Routes>
-    </Suspense>
+    </Suspense></>
   );
 }

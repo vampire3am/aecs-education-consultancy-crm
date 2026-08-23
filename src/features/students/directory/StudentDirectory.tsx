@@ -45,6 +45,7 @@ import { StudentDirectoryRecord, StudentPayload, StudentService } from "../../..
 import { AECS_AUTHORIZED_COUNTRIES } from "../../../lib/destinationsData";
 import { CountryFlag } from "../../../components/ui/PhoneInput";
 import { DocumentRecord, DocumentService } from "../../../services/documentService";
+import { notifyError, notifySuccess } from "../../../components/common/CrmNotifications";
 
 export type StudentRecord = StudentDirectoryRecord;
 
@@ -139,12 +140,12 @@ export function StudentDirectory() {
       const failures=results.filter(result=>result.status==="rejected") as PromiseRejectedResult[];
       const records=await DocumentService.list();setStudentDocuments(records.filter(record=>record.studentCode===activeStudent.code));
       if(failures.length)throw new Error(`${results.length-failures.length} uploaded; ${failures.length} failed. ${failures[0].reason instanceof Error?failures[0].reason.message:"Check document permissions."}`);
-      setDocumentFiles([]);setDocumentForm({title:"",category:"Passport & Identity",expiresOn:"",notes:""});setShowDocumentUpload(false);
-    }catch(error){setDocumentError(error instanceof Error?error.message:"Document upload failed")}finally{setDocumentSaving(false)}
+      setDocumentFiles([]);setDocumentForm({title:"",category:"Passport & Identity",expiresOn:"",notes:""});setShowDocumentUpload(false);notifySuccess(`${results.length} document${results.length===1?"":"s"} uploaded`,`${activeStudent.fullName}'s secure document vault is now up to date.`);
+    }catch(error){const message=error instanceof Error?error.message:"Document upload failed";setDocumentError(message);notifyError("Document upload failed",message)}finally{setDocumentSaving(false)}
   };
 
   const openStudentDocument = async (document:DocumentRecord,download=false) => {
-    try{const url=await DocumentService.signedUrl(document.storagePath,download);if(download){window.location.assign(url)}else{window.open(url,"_blank","noopener,noreferrer")}}catch(error){setDocumentError(error instanceof Error?error.message:"Document could not be opened")}
+    try{const url=await DocumentService.signedUrl(document.storagePath,download);if(download){window.location.assign(url);notifySuccess("Download prepared",`${document.fileName} is downloading securely.`)}else{window.open(url,"_blank","noopener,noreferrer")}}catch(error){const message=error instanceof Error?error.message:"Document could not be opened";setDocumentError(message);notifyError("Document unavailable",message)}
   };
 
   const filteredStudents = students.filter(std => {
