@@ -22,6 +22,7 @@ import { PhoneInput } from "../../components/ui/PhoneInput";
 import { CountrySelect } from "../../components/ui/CountrySelect";
 import { IntakePicker } from "../../components/ui/IntakePicker";
 import { AECS_AUTHORIZED_COUNTRIES } from "../../lib/destinationsData";
+import { CountryDisplay } from "../../components/ui/CountryDisplay";
 
 const LEAD_STAGES = [
   { key: "NEW_INQUIRY", label: "New Inquiries", color: "blue" },
@@ -510,7 +511,7 @@ export function LeadsWorkspace() {
                       </td>
 
                       <td>
-                        <div className="lead-study-cell"><strong>{lead.targetCountry}</strong><span>{lead.targetCourse}</span><small>{lead.targetIntake}</small></div>
+                        <div className="lead-study-cell"><strong><CountryDisplay country={lead.targetCountry}/></strong><span>{lead.targetCourse}</span><small>{lead.targetIntake}</small></div>
                       </td>
 
                       <td>
@@ -622,7 +623,7 @@ export function LeadsWorkspace() {
                         </strong>
 
                         <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "8px" }}>
-                          <span>{lead.targetCountry} · {lead.targetCourse}</span>
+                          <span><CountryDisplay country={lead.targetCountry} size={14}/> · {lead.targetCourse}</span>
                         </div>
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-subtle)", paddingTop: "8px", fontSize: "11px" }}>
@@ -884,7 +885,7 @@ export function LeadsWorkspace() {
                   </div>
                   <div>
                     <span style={{ color: "var(--text-muted)", display: "block" }}>Target Country</span>
-                    <strong>{activeLead.targetCountry}</strong>
+                    <strong><CountryDisplay country={activeLead.targetCountry}/></strong>
                   </div>
                   <div>
                     <span style={{ color: "var(--text-muted)", display: "block" }}>Intake</span>
