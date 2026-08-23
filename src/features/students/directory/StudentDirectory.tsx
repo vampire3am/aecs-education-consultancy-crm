@@ -13,6 +13,7 @@ import {
   Clock,
   Copy,
   Download,
+  Edit3,
   Eye,
   FileCheck2,
   FileText,
@@ -30,40 +31,22 @@ import {
   Plus,
   RotateCcw,
   Search,
+  ShieldCheck,
   SlidersHorizontal,
   Table as TableIcon,
   Trash2,
   UserCheck,
   UserPlus,
   Users,
+  UploadCloud,
   X,
 } from "lucide-react";
-import { StudentService } from "../../../services/studentService";
+import { StudentDirectoryRecord, StudentPayload, StudentService } from "../../../services/studentService";
 import { AECS_AUTHORIZED_COUNTRIES } from "../../../lib/destinationsData";
 import { CountryFlag } from "../../../components/ui/PhoneInput";
+import { DocumentRecord, DocumentService } from "../../../services/documentService";
 
-export interface StudentRecord {
-  id: string;
-  code: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  dob: string;
-  gender: "Male" | "Female" | "Other";
-  address: string;
-  status: "NEW_LEAD" | "COUNSELLING" | "APPLICATION_SUBMITTED" | "OFFER_RECEIVED" | "VISA_PROCESSING" | "ENROLLED";
-  targetCountry: string;
-  targetCourse: string;
-  targetIntake: string;
-  budget: string;
-  counsellor: string;
-  englishTest: { test: string; score: string };
-  academicSummary: string;
-  documentsVerified: number;
-  documentsTotal: number;
-  notes: string[];
-  createdAt: string;
-}
+export type StudentRecord = StudentDirectoryRecord;
 
 const COUNTRY_FLAGS: Record<string, string> = {
   UK: "🇬🇧",
@@ -108,16 +91,27 @@ export function StudentDirectory() {
   // Inspector Drawer Active Tab
   const [inspectorTab, setInspectorTab] = useState<"profile" | "academic" | "docs" | "notes">("profile");
   const [newInspectorNote, setNewInspectorNote] = useState("");
+  const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
+  const [editForm, setEditForm] = useState<StudentPayload | null>(null);
+  const [isUpdatingStudent, setIsUpdatingStudent] = useState(false);
+  const [editorSection, setEditorSection] = useState<"identity"|"academics"|"study"|"tests">("identity");
+  const [studentDocuments, setStudentDocuments] = useState<DocumentRecord[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentSaving, setDocumentSaving] = useState(false);
+  const [documentError, setDocumentError] = useState("");
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [documentForm, setDocumentForm] = useState({ title:"", category:"Passport & Identity", expiresOn:"", notes:"" });
 
   // Quick Lead Modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [newLeadForm, setNewLeadForm] = useState({
     fullName: "",
     email: "",
-    phone: "+977 98",
-    dob: "2003-01-01",
-    gender: "Female" as "Male" | "Female" | "Other",
-    targetCountry: "UK",
+    phone: "",
+    dob: "",
+    gender: "" as "Male" | "Female" | "Other",
+    targetCountry: "",
     targetCourse: "",
     counsellor: "Unassigned",
   });
@@ -129,6 +123,29 @@ export function StudentDirectory() {
       }
     }).catch(error => setLoadError(error instanceof Error ? error.message : "Students could not be loaded"));
   }, []);
+
+  useEffect(() => {
+    if (!activeStudent || inspectorTab !== "docs") return;
+    setDocumentsLoading(true); setDocumentError("");
+    DocumentService.list().then(records=>setStudentDocuments(records.filter(record=>record.studentCode===activeStudent.code))).catch(error=>setDocumentError(error instanceof Error?error.message:"Documents could not be loaded")).finally(()=>setDocumentsLoading(false));
+  }, [activeStudent?.id, activeStudent?.code, inspectorTab]);
+
+  const uploadStudentDocument = async (event:React.FormEvent) => {
+    event.preventDefault();
+    if(!activeStudent||documentFiles.length===0)return;
+    setDocumentSaving(true);setDocumentError("");
+    try{
+      const results=await Promise.allSettled(documentFiles.map(file=>DocumentService.upload({studentCode:activeStudent.code,category:documentForm.category,title:file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' '),file,expiresOn:documentForm.expiresOn,notes:documentForm.notes})));
+      const failures=results.filter(result=>result.status==="rejected") as PromiseRejectedResult[];
+      const records=await DocumentService.list();setStudentDocuments(records.filter(record=>record.studentCode===activeStudent.code));
+      if(failures.length)throw new Error(`${results.length-failures.length} uploaded; ${failures.length} failed. ${failures[0].reason instanceof Error?failures[0].reason.message:"Check document permissions."}`);
+      setDocumentFiles([]);setDocumentForm({title:"",category:"Passport & Identity",expiresOn:"",notes:""});setShowDocumentUpload(false);
+    }catch(error){setDocumentError(error instanceof Error?error.message:"Document upload failed")}finally{setDocumentSaving(false)}
+  };
+
+  const openStudentDocument = async (document:DocumentRecord,download=false) => {
+    try{const url=await DocumentService.signedUrl(document.storagePath,download);if(download){window.location.assign(url)}else{window.open(url,"_blank","noopener,noreferrer")}}catch(error){setDocumentError(error instanceof Error?error.message:"Document could not be opened")}
+  };
 
   const filteredStudents = students.filter(std => {
     const matchesCountry = countryFilter === "ALL" || std.targetCountry === countryFilter;
@@ -158,10 +175,10 @@ export function StudentDirectory() {
     setNewLeadForm({
       fullName: "",
       email: "",
-      phone: "+977 98",
-      dob: "2003-01-01",
-      gender: "Female",
-      targetCountry: "UK",
+      phone: "",
+      dob: "",
+      gender: "" as "Male" | "Female" | "Other",
+      targetCountry: "",
       targetCourse: "",
       counsellor: "Unassigned",
     });
@@ -172,6 +189,43 @@ export function StudentDirectory() {
     const updated = await StudentService.deleteStudent(id);
     setStudents(updated as StudentRecord[]);
     if (activeStudent?.id === id) setActiveStudent(null);
+  };
+
+  const beginStudentEdit = (student: StudentRecord) => {
+    setEditorSection("identity");
+    setEditingStudent(student);
+    setEditForm({
+      fullName: student.fullName, email: student.email, phone: student.phone,
+      dob: student.dob, gender: student.gender, address: student.address,
+      targetCountry: student.targetCountry === "Undecided" ? "" : student.targetCountry,
+      secondCountry: student.secondCountry, targetCourse: student.targetCourse === "Undecided" ? "" : student.targetCourse,
+      targetIntake: student.targetIntake === "Undecided" ? "" : student.targetIntake,
+      budget: student.budget, highestQualification: student.highestQualification,
+      academicStatus: student.academicStatus, latestResult: student.latestResult,
+      studyGap: student.studyGap, employmentStatus: student.employmentStatus,
+      testTaken: student.englishTest.taken, testType: student.englishTest.taken ? student.englishTest.test : "",
+      testScore: student.englishTest.taken ? student.englishTest.score : "",
+      hasPassport: student.hasPassport, leadSource: student.leadSource, message: student.message,
+    });
+  };
+
+  const saveStudentEdit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingStudent || !editForm) return;
+    setIsUpdatingStudent(true);
+    setLoadError("");
+    try {
+      const updated = await StudentService.updateStudent(editingStudent.id, editForm);
+      setStudents(updated as StudentRecord[]);
+      const refreshed = (updated as StudentRecord[]).find(student => student.id === editingStudent.id) ?? null;
+      setActiveStudent(refreshed);
+      setEditingStudent(null);
+      setEditForm(null);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Student information could not be updated");
+    } finally {
+      setIsUpdatingStudent(false);
+    }
   };
 
   const handleAdvanceStage = async (std: StudentRecord) => {
@@ -659,7 +713,7 @@ export function StudentDirectory() {
       {/* MULTI-TAB SLIDE-OVER STUDENT INSPECTOR DRAWER */}
       {activeStudent && (
         <div className="drawer-overlay" onClick={() => setActiveStudent(null)}>
-          <div className="slide-over-panel" style={{ width: "min(620px, 100%)" }} onClick={e => e.stopPropagation()}>
+          <div className={`slide-over-panel ${inspectorTab==="docs"?"student-documents-drawer":""}`} style={{ width: inspectorTab==="docs"?"min(780px, 100%)":"min(620px, 100%)" }} onClick={e => e.stopPropagation()}>
             {/* Drawer Header */}
             <div className="drawer-header">
               <div className="drawer-header-info">
@@ -672,13 +726,14 @@ export function StudentDirectory() {
                 <strong>{activeStudent.fullName}</strong>
                 <span>Registered {activeStudent.createdAt} · Assigned to {activeStudent.counsellor}</span>
               </div>
-              <button
-                type="button"
-                className="drawer-close-btn"
-                onClick={() => setActiveStudent(null)}
-              >
-                <X size={18} />
-              </button>
+              <div className="student-drawer-actions">
+                <button type="button" className="btn-secondary" onClick={() => beginStudentEdit(activeStudent)}>
+                  <Edit3 size={15} /><span>Edit student</span>
+                </button>
+                <button type="button" className="drawer-close-btn" onClick={() => setActiveStudent(null)}>
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Inspector Navigation Tabs */}
@@ -827,37 +882,24 @@ export function StudentDirectory() {
               )}
 
               {inspectorTab === "docs" && (
-                <div>
-                  <h4 className="drawer-section-title">
-                    <FileCheck2 size={15} />
-                    <span>Visa Document Scrutiny ({activeStudent.documentsVerified}/{activeStudent.documentsTotal})</span>
-                  </h4>
-                  <div className="drawer-checklist">
-                    <div className="drawer-check-item">
-                      <span>Valid MRP / E-Passport (6+ Months)</span>
-                      <span className="badge-status enrolled">Verified</span>
-                    </div>
-                    <div className="drawer-check-item">
-                      <span>High School / Bachelor Transcripts</span>
-                      <span className="badge-status enrolled">Verified</span>
-                    </div>
-                    <div className="drawer-check-item">
-                      <span>English Proficiency TRF / Score Card</span>
-                      <span className="badge-status enrolled">Verified</span>
-                    </div>
-                    <div className="drawer-check-item">
-                      <span>Statement of Purpose (SOP)</span>
-                      <span className="badge-status counselling">Under Review</span>
-                    </div>
-                    <div className="drawer-check-item">
-                      <span>Bank Balance Certificate & Loan Sanction</span>
-                      <span className="badge-status new-lead">Awaiting</span>
-                    </div>
-                    <div className="drawer-check-item">
-                      <span>Relationship Verification Certificate</span>
-                      <span className="badge-status new-lead">Awaiting</span>
-                    </div>
+                <div className="student-document-workspace">
+                  <div className="student-document-heading">
+                    <div><span className="student-document-eyebrow">Private student vault</span><h4><FileCheck2 size={17}/>Documents & scrutiny</h4><p>Upload and review official documents for {activeStudent.fullName}.</p></div>
+                    <div className="student-document-heading-actions"><button type="button" className="btn-secondary" onClick={()=>navigate("/documents")}><FileText size={15}/>Open vault</button><button type="button" className="btn-primary" onClick={()=>setShowDocumentUpload(true)}><UploadCloud size={15}/>Upload documents</button></div>
                   </div>
+
+                  <div className="student-document-summary">
+                    <div><strong>{studentDocuments.length}</strong><span>Uploaded</span></div>
+                    <div><strong>{studentDocuments.filter(document=>document.status==="VERIFIED").length}</strong><span>Verified</span></div>
+                    <div><strong>{studentDocuments.filter(document=>document.status==="UNDER_REVIEW").length}</strong><span>Under review</span></div>
+                  </div>
+
+                  {documentError&&<div className="student-document-error"><AlertCircle size={15}/>{documentError}</div>}
+                  {documentsLoading?<div className="student-document-empty">Loading private documents…</div>:studentDocuments.length===0?<div className="student-document-empty"><FileText size={28}/><strong>No documents uploaded</strong><span>Use Upload document to start this student's verified document vault.</span></div>:<div className="student-document-list">{studentDocuments.map(document=><article key={document.id}>
+                    <div className="student-document-file-icon"><FileText size={19}/></div><div className="student-document-file-info"><strong>{document.fileName}</strong><span>{document.category} · {document.fileSize} · Version {document.version}</span><small>Uploaded {document.uploadedAt}{document.expiresOn?` · Expires ${document.expiresOn}`:""}</small></div>
+                    <span className={`student-document-status is-${document.status.toLowerCase().replace('_','-')}`}>{document.status.replace('_',' ')}</span>
+                    <div className="student-document-actions"><button type="button" onClick={()=>void openStudentDocument(document)} title="View document"><Eye size={15}/></button><button type="button" onClick={()=>void openStudentDocument(document,true)} title="Download document"><Download size={15}/></button></div>
+                  </article>)}</div>}
                 </div>
               )}
 
@@ -920,6 +962,73 @@ export function StudentDirectory() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {showDocumentUpload && activeStudent && (
+        <div className="modal-backdrop-clean student-document-modal-backdrop" onClick={()=>setShowDocumentUpload(false)}>
+          <div className="modal-dialog-clean student-document-upload-dialog" onClick={event=>event.stopPropagation()}>
+            <div className="student-document-modal-header"><div><span>Secure student vault</span><h3>Upload supporting documents</h3><p>{activeStudent.fullName} · {activeStudent.code}</p></div><button type="button" className="drawer-close-btn" onClick={()=>setShowDocumentUpload(false)}><X size={18}/></button></div>
+            <form className="student-document-upload" onSubmit={uploadStudentDocument}>
+              <section className="student-document-upload-stage"><header><b>1</b><div><strong>Select files</strong><span>Add up to 15 PDF, JPG, PNG, or DOCX files. Maximum 20 MB each.</span></div></header><div className="student-document-dropzone"><UploadCloud size={28}/><strong>{documentFiles.length?`${documentFiles.length} document${documentFiles.length===1?"":"s"} selected`:"Drop files here or browse"}</strong><span>Files stay private and are linked only to this student.</span><input type="file" multiple required accept=".pdf,.jpg,.jpeg,.png,.docx,application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={event=>{const files=Array.from(event.target.files??[]);if(files.length>15){setDocumentError("Select a maximum of 15 documents per upload batch.");setDocumentFiles(files.slice(0,15))}else{setDocumentError("");setDocumentFiles(files)}}}/></div>
+              {documentFiles.length>0&&<div className="student-document-queue">{documentFiles.map((file,index)=><div key={`${file.name}-${file.lastModified}`}><span>{index+1}</span><strong>{file.name}</strong><small>{file.size<1048576?`${Math.ceil(file.size/1024)} KB`:`${(file.size/1048576).toFixed(1)} MB`}</small><button type="button" aria-label={`Remove ${file.name}`} onClick={()=>setDocumentFiles(documentFiles.filter((_,position)=>position!==index))}><X size={13}/></button></div>)}</div>}</section>
+              <section className="student-document-upload-stage"><header><b>2</b><div><strong>Classify and submit</strong><span>Apply these scrutiny details to the selected upload batch.</span></div></header><div className="student-document-form-grid"><label>Document category<select value={documentForm.category} onChange={e=>setDocumentForm({...documentForm,category:e.target.value})}><option>Passport & Identity</option><option>Academic Transcripts</option><option>English Test Results</option><option>Financial Documents</option><option>Visa & Embassy Files</option><option>Recommendation Letters</option></select></label><label>Expiry date (optional)<input type="date" value={documentForm.expiresOn} onChange={e=>setDocumentForm({...documentForm,expiresOn:e.target.value})}/></label><label className="student-document-wide">Internal review note (optional)<textarea value={documentForm.notes} onChange={e=>setDocumentForm({...documentForm,notes:e.target.value})} placeholder="Add validity, translation, or scrutiny notes…"/></label></div></section>
+              {documentError&&<div className="student-document-error"><AlertCircle size={15}/>{documentError}</div>}
+              <div className="student-document-modal-footer"><div><ShieldCheck size={16}/><span>Encrypted private storage · audit logged</span></div><button type="button" className="btn-secondary" onClick={()=>setShowDocumentUpload(false)}>Cancel</button><button className="btn-primary" type="submit" disabled={documentSaving||documentFiles.length===0}>{documentSaving?`Uploading ${documentFiles.length}…`:`Upload ${documentFiles.length||""} document${documentFiles.length===1?"":"s"}`}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingStudent && editForm && (
+        <div className="modal-backdrop-clean" onClick={() => setEditingStudent(null)}>
+          <div className="modal-dialog-clean student-edit-dialog" onClick={event => event.stopPropagation()}>
+            <div className="modal-header-clean">
+              <div><small>Complete student record management</small><h3>Edit {editingStudent.fullName}</h3><p>Update identity, academics, study preferences, test results, and passport status.</p></div>
+              <button type="button" className="drawer-close-btn" onClick={() => setEditingStudent(null)}><X size={18}/></button>
+            </div>
+            <form onSubmit={saveStudentEdit}>
+              <nav className="student-edit-nav" aria-label="Student information sections">
+                {([
+                  ["identity","Identity & contact"], ["academics","Academics"],
+                  ["study","Study plan"], ["tests","Tests & compliance"],
+                ] as const).map(([key,label])=><button key={key} type="button" className={editorSection===key?"is-active":""} onClick={()=>setEditorSection(key)}>{label}</button>)}
+              </nav>
+              <div className="student-edit-body">
+                {editorSection==="identity"&&<fieldset><legend>Identity & contact</legend><p className="student-edit-section-copy">Official identity and direct contact information used across the CRM.</p><div className="student-edit-grid">
+                  <label>Full name *<input required value={editForm.fullName} onChange={e=>setEditForm({...editForm,fullName:e.target.value})}/></label>
+                  <label>Email *<input required type="email" value={editForm.email} onChange={e=>setEditForm({...editForm,email:e.target.value})}/></label>
+                  <label>WhatsApp / mobile *<input required value={editForm.phone} onChange={e=>setEditForm({...editForm,phone:e.target.value})}/></label>
+                  <label>Date of birth *<input required type="date" value={editForm.dob} onChange={e=>setEditForm({...editForm,dob:e.target.value})}/></label>
+                  <label>Gender *<select value={editForm.gender} onChange={e=>setEditForm({...editForm,gender:e.target.value as StudentPayload["gender"]})}><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+                  <label>Current address<input value={editForm.address??""} onChange={e=>setEditForm({...editForm,address:e.target.value})}/></label>
+                </div></fieldset>}
+                {editorSection==="academics"&&<fieldset><legend>Academic background</legend><p className="student-edit-section-copy">Record the latest verified education history and any study gap.</p><div className="student-edit-grid">
+                  <label>Highest qualification<input value={editForm.highestQualification??""} onChange={e=>setEditForm({...editForm,highestQualification:e.target.value})}/></label>
+                  <label>Institution / academic status<input value={editForm.academicStatus??""} onChange={e=>setEditForm({...editForm,academicStatus:e.target.value})}/></label>
+                  <label>Latest GPA / percentage<input value={editForm.latestResult??""} onChange={e=>setEditForm({...editForm,latestResult:e.target.value})}/></label>
+                  <label>Study gap<input value={editForm.studyGap??""} onChange={e=>setEditForm({...editForm,studyGap:e.target.value})}/></label>
+                  <label className="student-edit-wide">Gap explanation / employment status<textarea value={editForm.employmentStatus??""} onChange={e=>setEditForm({...editForm,employmentStatus:e.target.value})}/></label>
+                </div></fieldset>}
+                {editorSection==="study"&&<fieldset><legend>Study preferences</legend><p className="student-edit-section-copy">Maintain the candidate's current destination, program, intake, and budget plan.</p><div className="student-edit-grid">
+                  <label>Primary destination<select value={editForm.targetCountry} onChange={e=>setEditForm({...editForm,targetCountry:e.target.value})}><option value="">Select country</option>{AECS_AUTHORIZED_COUNTRIES.map(country=><option key={country.name} value={country.name}>{country.name}</option>)}</select></label>
+                  <label>Secondary destination<input value={editForm.secondCountry??""} onChange={e=>setEditForm({...editForm,secondCountry:e.target.value})}/></label>
+                  <label>Course / program<input value={editForm.targetCourse} onChange={e=>setEditForm({...editForm,targetCourse:e.target.value})}/></label>
+                  <label>Target intake<input value={editForm.targetIntake??""} onChange={e=>setEditForm({...editForm,targetIntake:e.target.value})}/></label>
+                  <label>Budget (NPR)<input inputMode="numeric" value={editForm.budget??""} onChange={e=>setEditForm({...editForm,budget:e.target.value})}/></label>
+                </div></fieldset>}
+                {editorSection==="tests"&&<fieldset><legend>English test & compliance</legend><p className="student-edit-section-copy">Choose the test status first. A completed test requires both its type and overall score.</p><div className="student-edit-grid">
+                  <label>English test status<select value={editForm.testTaken?"TAKEN":"NOT_TAKEN"} onChange={e=>setEditForm({...editForm,testTaken:e.target.value==="TAKEN",testType:e.target.value==="TAKEN"?editForm.testType:"",testScore:e.target.value==="TAKEN"?editForm.testScore:""})}><option value="NOT_TAKEN">Not taken</option><option value="TAKEN">Taken — score available</option></select></label>
+                  <label>Test type<select disabled={!editForm.testTaken} required={editForm.testTaken} value={editForm.testType??""} onChange={e=>setEditForm({...editForm,testType:e.target.value})}><option value="">Select test</option><option value="IELTS">IELTS</option><option value="PTE">PTE Academic</option><option value="Duolingo">Duolingo (DET)</option><option value="TOEFL">TOEFL</option><option value="GRE">GRE</option><option value="SAT">SAT</option></select></label>
+                  <label>Overall score<input disabled={!editForm.testTaken} value={editForm.testScore??""} onChange={e=>setEditForm({...editForm,testScore:e.target.value})}/></label>
+                  <label className="student-edit-check"><input type="checkbox" checked={Boolean(editForm.hasPassport)} onChange={e=>setEditForm({...editForm,hasPassport:e.target.checked})}/> Valid passport available</label>
+                  <label>Lead source<input value={editForm.leadSource??""} onChange={e=>setEditForm({...editForm,leadSource:e.target.value})}/></label>
+                  <label className="student-edit-wide">Registration note<textarea value={editForm.message??""} onChange={e=>setEditForm({...editForm,message:e.target.value})}/></label>
+                </div></fieldset>}
+              </div>
+              <div className="modal-footer-clean"><button type="button" className="btn-secondary" onClick={()=>setEditingStudent(null)}>Cancel</button><button type="submit" className="btn-primary" disabled={isUpdatingStudent}>{isUpdatingStudent?"Saving…":"Save all changes"}</button></div>
+            </form>
           </div>
         </div>
       )}
