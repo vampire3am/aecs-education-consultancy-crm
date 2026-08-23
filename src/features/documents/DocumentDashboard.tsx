@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { StudentService } from "../../services/studentService";
+import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { DocumentService, type DocumentRecord } from "../../services/documentService";
 
 type DocItem = DocumentRecord;
@@ -74,7 +75,7 @@ export function DocumentDashboard() {
     studentName: "",
     fileName: "",
     category: "Passport & Identity",
-    fileSize: "1.2 MB",
+    fileSize: "",
     status: "UNDER_REVIEW" as DocItem["status"],
     expiresOn: "",
     notes: "",
@@ -103,7 +104,7 @@ export function DocumentDashboard() {
       studentName: students.length > 0 ? students[0].full_name : "",
       fileName: "",
       category: "Passport & Identity",
-      fileSize: "1.2 MB",
+      fileSize: "",
       status: "UNDER_REVIEW",
       expiresOn:"",notes:"",
     });}catch(error){setErrorMessage(error instanceof Error?error.message:"Upload failed.")}finally{setSaving(false)}
@@ -184,7 +185,7 @@ export function DocumentDashboard() {
             </div>
           </div>
           <div className="metric-value">{docs.length}</div>
-          <span className="metric-sub">Across {students.length} registered candidates</span>
+          <KpiTrendIndicator metricKey="documents.total" value={docs.length} label={`Across ${students.length} registered candidates`} />
         </div>
 
         <div className="metric-box">
@@ -210,7 +211,7 @@ export function DocumentDashboard() {
             </div>
           </div>
           <div className="metric-value">{docs.filter(d => d.status === "UNDER_REVIEW").length}</div>
-          <span className="metric-sub">Admissions & Visa review</span>
+          <KpiTrendIndicator metricKey="documents.review" value={docs.filter(d => d.status === "UNDER_REVIEW").length} label="Admissions & Visa review" />
         </div>
 
         <div className="metric-box">
@@ -223,7 +224,7 @@ export function DocumentDashboard() {
           <div className="metric-value">
             {docs.filter(d => d.status === "ACTION_REQUIRED" || d.status === "EXPIRED" || d.status === "REJECTED").length}
           </div>
-          <span className="metric-sub">Expired TRF / Missing stamps</span>
+          <KpiTrendIndicator metricKey="documents.action-required" value={docs.filter(d => d.status === "ACTION_REQUIRED" || d.status === "EXPIRED" || d.status === "REJECTED").length} label="Expired TRF / Missing stamps" />
         </div>
       </div>
 
