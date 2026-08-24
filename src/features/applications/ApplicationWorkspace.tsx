@@ -48,6 +48,7 @@ export function ApplicationWorkspace() {
 
   // Modals & Drawers
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [applicationFormStep, setApplicationFormStep] = useState<1 | 2 | 3>(1);
   const [activeDossier, setActiveDossier] = useState<UniversityApplication | null>(null);
   const [stageChangeApp, setStageChangeApp] = useState<UniversityApplication | null>(null);
 
@@ -101,6 +102,7 @@ export function ApplicationWorkspace() {
       countryCode: routeState.countryCode || current.countryCode,
     }));
     setShowSubmitModal(true);
+    setApplicationFormStep(1);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -129,7 +131,7 @@ export function ApplicationWorkspace() {
       countryCode: destination?.code || "",
       universityName: "",
       course: "",
-      intake: destination?.intakeCycles?.[0] || destination?.popularIntakes?.[0] || "",
+      intake: (destination?.intakeCycles?.[0] || destination?.popularIntakes?.[0] || "").replace(/\b(20\d{2})\s+\1\b/, "$1"),
     }));
   };
 
@@ -282,7 +284,7 @@ export function ApplicationWorkspace() {
             type="button"
             className="btn-primary"
             style={{ background: "#F97316", borderColor: "#F97316", color: "#FFFFFF" }}
-            onClick={() => setShowSubmitModal(true)}
+            onClick={() => { setApplicationFormStep(1); setShowSubmitModal(true); }}
           >
             <Plus size={15} />
             <span>Submit New Application</span>
@@ -808,8 +810,11 @@ export function ApplicationWorkspace() {
               </div>
 
               <form onSubmit={handleSubmitNewApplication}>
+                <div className="application-wizard-progress" aria-label="Application progress">
+                  {["Student", "Study plan", "Details"].map((label, index) => <div key={label} className={applicationFormStep === index + 1 ? "active" : applicationFormStep > index + 1 ? "complete" : ""}><span>{applicationFormStep > index + 1 ? <Check size={13}/> : index + 1}</span><strong>{label}</strong></div>)}
+                </div>
                 <div className="modal-body-clean application-form-modern">
-                  <section className="application-form-section">
+                  {applicationFormStep === 1 && <section className="application-form-section application-wizard-page">
                     <header><span>1</span><div><strong>Select student</strong><small>Search the registered student directory. The AECS code fills automatically.</small></div></header>
                     <div className="form-row-2">
                       <div className="form-group">
@@ -822,9 +827,9 @@ export function ApplicationWorkspace() {
                         <input className="application-readonly-field" readOnly required value={newAppForm.studentCode} placeholder="Filled after selecting a student" />
                       </div>
                     </div>
-                  </section>
+                  </section>}
 
-                  <section className="application-form-section">
+                  {applicationFormStep === 2 && <section className="application-form-section application-wizard-page">
                     <header><span>2</span><div><strong>Study plan</strong><small>Options are connected to the active Abroad catalogue.</small></div></header>
                   <div className="form-row-2">
                     <div className="form-group">
@@ -882,9 +887,9 @@ export function ApplicationWorkspace() {
                       </select>
                     </div>
                   </div>
-                  </section>
+                  </section>}
 
-                  <section className="application-form-section">
+                  {applicationFormStep === 3 && <section className="application-form-section application-wizard-page">
                     <header><span>3</span><div><strong>Application details</strong><small>Record financial terms, ownership and submission controls.</small></div></header>
                   <div className="form-row-2">
                     <div className="form-group">
@@ -950,25 +955,32 @@ export function ApplicationWorkspace() {
                       placeholder="Include portal credentials, pending documents, or condition remarks…"
                     />
                   </div>
-                  </section>
+                  </section>}
                 </div>
 
                 <div className="modal-footer-clean">
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => setShowSubmitModal(false)}
+                    onClick={() => applicationFormStep === 1 ? setShowSubmitModal(false) : setApplicationFormStep((applicationFormStep - 1) as 1 | 2)}
                   >
-                    Cancel
+                    {applicationFormStep === 1 ? "Cancel" : "Back"}
                   </button>
-                  <button
+                  {applicationFormStep < 3 ? <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={applicationFormStep === 1 ? !newAppForm.studentCode : !newAppForm.country || !newAppForm.universityName.trim() || !newAppForm.course.trim() || !newAppForm.intake}
+                    onClick={() => setApplicationFormStep((applicationFormStep + 1) as 2 | 3)}
+                  >
+                    <span>Continue</span><ChevronRight size={15}/>
+                  </button> : <button
                     type="submit"
                     className="btn-primary"
                     style={{ background: "#F97316", borderColor: "#F97316" }}
                   >
                     <PlaneTakeoff size={15} />
                     <span>Submit Application</span>
-                  </button>
+                  </button>}
                 </div>
               </form>
             </motion.div>

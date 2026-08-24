@@ -377,7 +377,7 @@ export function CounsellingDashboard() {
       pswvWorkRights: newCountryForm.pswvWorkRights.trim(),
       acceptedEnglishTests: [],
       popularIntakes: intakesArray.length > 0 ? intakesArray : ["September", "February"],
-      intakeCycles: intakesArray.map(i => `${i} 2026`),
+      intakeCycles: intakesArray.map(intake => /\b20\d{2}\b/.test(intake) ? intake : `${intake} 2026`),
       keyHighlights: newCountryForm.keyHighlights.trim(),
     };
 
