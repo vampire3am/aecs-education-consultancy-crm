@@ -31,6 +31,7 @@ import {
   MessageSquare,
   MessageSquarePlus,
   Percent,
+  Pencil,
   PlaneTakeoff,
   Plus,
   RotateCcw,
@@ -55,6 +56,7 @@ import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import { AECS_AUTHORIZED_COUNTRIES, DestinationCountry } from "../../lib/destinationsData";
 import { COUNTRY_METADATA } from "../../lib/countryMetadata.generated";
 import { MultiIntakePicker } from "../../components/ui/MultiIntakePicker";
+import { notifySuccess } from "../../components/common/CrmNotifications";
 import { CounsellingService } from "../../services/counsellingService";
 import { DestinationCatalogService } from "../../services/destinationCatalogService";
 import { useAuth } from "../auth/AuthProvider";
@@ -88,6 +90,24 @@ export interface PartnerUniversity {
   scholarship: string;
   tuition: string;
   intake: string;
+  courses?: UniversityCourse[];
+}
+
+export interface UniversityCourse {
+  id: string;
+  name: string;
+  qualification: string;
+  faculty: string;
+  duration: string;
+  tuitionFee: string;
+  applicationFee: string;
+  intakes: string;
+  minGpa: string;
+  minIelts: string;
+  minPte: string;
+  scholarship: string;
+  status: "ACTIVE" | "INACTIVE";
+  requirements: string;
 }
 
 const INITIAL_DESTINATIONS_MASTER: DestinationCatalog[] = [];
@@ -190,6 +210,24 @@ export function CounsellingDashboard() {
   // Modal States
   const [showAddCountryModal, setShowAddCountryModal] = useState(false);
   const [showAddUniModal, setShowAddUniModal] = useState(false);
+  const [courseUniversityId, setCourseUniversityId] = useState<string | null>(null);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const emptyCourseForm: Omit<UniversityCourse, "id"> = {
+    name: "",
+    qualification: "Bachelor's Degree",
+    faculty: "",
+    duration: "",
+    tuitionFee: "",
+    applicationFee: "",
+    intakes: "",
+    minGpa: "",
+    minIelts: "",
+    minPte: "",
+    scholarship: "",
+    status: "ACTIVE",
+    requirements: "",
+  };
+  const [courseForm, setCourseForm] = useState<Omit<UniversityCourse, "id">>(emptyCourseForm);
 
   // New Country Form State
   const [newCountryForm, setNewCountryForm] = useState({
@@ -265,6 +303,73 @@ export function CounsellingDashboard() {
   const saveUniversities = (updated: PartnerUniversity[]) => {
     setUniversities(updated);
     localStorage.setItem(UNIVERSITIES_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const selectedCourseUniversity = universities.find(university => university.id === courseUniversityId) ?? null;
+
+  const universityCourses = (university: PartnerUniversity): UniversityCourse[] => {
+    if (Array.isArray(university.courses) && university.courses.length > 0) return university.courses;
+    return (university.popularCourses || []).map((name, index) => ({
+      id: `legacy-${university.id}-${index}`,
+      name,
+      qualification: "Not specified",
+      faculty: "",
+      duration: "",
+      tuitionFee: university.tuition || "",
+      applicationFee: "",
+      intakes: university.intake || "",
+      minGpa: university.minGpa || "",
+      minIelts: university.minIelts || "",
+      minPte: university.minPte || "",
+      scholarship: university.scholarship || "",
+      status: "ACTIVE",
+      requirements: "",
+    }));
+  };
+
+  const resetCourseEditor = () => {
+    setEditingCourseId(null);
+    setCourseForm(emptyCourseForm);
+  };
+
+  const openCourseManager = (university: PartnerUniversity) => {
+    setCourseUniversityId(university.id);
+    resetCourseEditor();
+  };
+
+  const editUniversityCourse = (course: UniversityCourse) => {
+    const { id, ...details } = course;
+    setEditingCourseId(id);
+    setCourseForm(details);
+  };
+
+  const saveUniversityCourse = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedCourseUniversity || !courseForm.name.trim()) return;
+    const currentCourses = universityCourses(selectedCourseUniversity);
+    const savedCourse: UniversityCourse = {
+      ...courseForm,
+      id: editingCourseId || `course-${Date.now()}`,
+      name: courseForm.name.trim(),
+    };
+    const courses = editingCourseId
+      ? currentCourses.map(course => course.id === editingCourseId ? savedCourse : course)
+      : [savedCourse, ...currentCourses];
+    saveUniversities(universities.map(university => university.id === selectedCourseUniversity.id
+      ? { ...university, courses, popularCourses: courses.filter(course => course.status === "ACTIVE").map(course => course.name) }
+      : university));
+    notifySuccess(editingCourseId ? "Course updated" : "Course added", `${savedCourse.name} is now available in ${selectedCourseUniversity.name}'s programme catalogue.`);
+    resetCourseEditor();
+  };
+
+  const deleteUniversityCourse = (course: UniversityCourse) => {
+    if (!selectedCourseUniversity || !window.confirm(`Remove ${course.name} from ${selectedCourseUniversity.name}?`)) return;
+    const courses = universityCourses(selectedCourseUniversity).filter(item => item.id !== course.id);
+    saveUniversities(universities.map(university => university.id === selectedCourseUniversity.id
+      ? { ...university, courses, popularCourses: courses.filter(item => item.status === "ACTIVE").map(item => item.name) }
+      : university));
+    notifySuccess("Course removed", `${course.name} was removed from ${selectedCourseUniversity.name}.`);
+    if (editingCourseId === course.id) resetCourseEditor();
   };
 
   const beginDestinationEdit = (destination: DestinationCatalog) => {
@@ -509,7 +614,7 @@ export function CounsellingDashboard() {
     destination.visasApproved > 0 ? destination.visaSuccessRate : "0%";
 
   const totalUniversitiesCount = universities.length;
-  const totalCoursesCount = new Set(universities.flatMap(university => university.popularCourses || [])).size;
+  const totalCoursesCount = new Set(universities.flatMap(university => universityCourses(university).map(course => course.name))).size;
   const totalApprovedCount = destinations.reduce((acc, curr) => acc + curr.visasApproved, 0);
 
   return (
@@ -952,8 +1057,9 @@ export function CounsellingDashboard() {
                     </td>
 
                     <td>
-                      <div style={{ fontSize: "12px", color: "var(--text-main)" }}>
-                        {Array.isArray(uni.popularCourses) ? uni.popularCourses.join(" · ") : uni.popularCourses}
+                      <div className="university-program-summary">
+                        <strong>{universityCourses(uni).length} course{universityCourses(uni).length === 1 ? "" : "s"}</strong>
+                        <span>{universityCourses(uni).slice(0, 2).map(course => course.name).join(" · ") || "No courses configured"}</span>
                       </div>
                     </td>
 
@@ -979,6 +1085,14 @@ export function CounsellingDashboard() {
 
                     <td style={{ textAlign: "right" }}>
                       <div className="catalog-row-actions">
+                        <button
+                          type="button"
+                          className="btn-secondary university-course-button"
+                          onClick={() => openCourseManager(uni)}
+                        >
+                          <BookOpen size={13} />
+                          <span>Courses</span>
+                        </button>
                         <button
                           type="button"
                           className="btn-secondary"
@@ -1271,6 +1385,80 @@ export function CounsellingDashboard() {
       {/* =========================================================================
           MODAL 2: ADD PARTNER UNIVERSITY MODAL
           ========================================================================= */}
+      <AnimatePresence>
+        {selectedCourseUniversity && (
+          <div className="modal-backdrop-clean" onClick={() => setCourseUniversityId(null)}>
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: .98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: .98 }}
+              className="modal-dialog-clean university-course-manager"
+              onClick={event => event.stopPropagation()}
+            >
+              <div className="modal-header-clean university-course-header">
+                <div>
+                  <span className="course-manager-eyebrow">University programme catalogue</span>
+                  <h3>{selectedCourseUniversity.name}</h3>
+                  <p><CountryDisplay country={selectedCourseUniversity.country} /> · {selectedCourseUniversity.city}</p>
+                </div>
+                <button type="button" className="drawer-close-btn" onClick={() => setCourseUniversityId(null)}><X size={18} /></button>
+              </div>
+
+              <div className="university-course-layout">
+                <section className="university-course-list-panel">
+                  <header>
+                    <div><strong>Courses & degrees</strong><span>{universityCourses(selectedCourseUniversity).length} configured</span></div>
+                    <button type="button" className="btn-secondary" onClick={resetCourseEditor}><Plus size={14} /> New course</button>
+                  </header>
+                  <div className="university-course-list">
+                    {universityCourses(selectedCourseUniversity).length === 0 ? (
+                      <div className="university-course-empty"><BookOpen size={25} /><strong>No courses configured</strong><span>Add the first programme offered by this university.</span></div>
+                    ) : universityCourses(selectedCourseUniversity).map(course => (
+                      <article key={course.id} className={editingCourseId === course.id ? "selected" : ""}>
+                        <div className="university-course-card-heading">
+                          <div><strong>{course.name}</strong><span>{course.qualification}{course.faculty ? ` · ${course.faculty}` : ""}</span></div>
+                          <span className={`university-course-status ${course.status.toLowerCase()}`}>{course.status === "ACTIVE" ? "Active" : "Inactive"}</span>
+                        </div>
+                        <dl>
+                          <div><dt>Duration</dt><dd>{course.duration || "—"}</dd></div>
+                          <div><dt>Tuition</dt><dd>{course.tuitionFee || "—"}</dd></div>
+                          <div><dt>Intakes</dt><dd>{course.intakes || "—"}</dd></div>
+                          <div><dt>Entry</dt><dd>{course.minGpa ? `GPA ${course.minGpa}` : "Not set"}</dd></div>
+                        </dl>
+                        <footer>
+                          <button type="button" onClick={() => editUniversityCourse(course)}><Pencil size={13} /> Edit details</button>
+                          <button type="button" className="danger" onClick={() => deleteUniversityCourse(course)}><Trash2 size={13} /> Remove</button>
+                        </footer>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <form className="university-course-form" onSubmit={saveUniversityCourse}>
+                  <header><div><strong>{editingCourseId ? "Edit course" : "Add a course"}</strong><span>Programme, fees, intakes and admission requirements</span></div>{editingCourseId && <button type="button" onClick={resetCourseEditor}>Cancel edit</button>}</header>
+                  <div className="university-course-form-body">
+                    <div className="form-group course-form-wide"><label>Course / programme name *</label><input required value={courseForm.name} onChange={e => setCourseForm({...courseForm,name:e.target.value})} placeholder="e.g. MSc International Business" /></div>
+                    <div className="form-group"><label>Qualification level *</label><select value={courseForm.qualification} onChange={e => setCourseForm({...courseForm,qualification:e.target.value})}><option>Bachelor's Degree</option><option>Master's Degree</option><option>PhD / Doctorate</option><option>Postgraduate Diploma</option><option>Graduate Certificate</option><option>Diploma</option><option>Foundation / Pathway</option><option>Certificate</option></select></div>
+                    <div className="form-group"><label>Faculty / school</label><input value={courseForm.faculty} onChange={e => setCourseForm({...courseForm,faculty:e.target.value})} placeholder="Business School" /></div>
+                    <div className="form-group"><label>Duration</label><input value={courseForm.duration} onChange={e => setCourseForm({...courseForm,duration:e.target.value})} placeholder="e.g. 2 years" /></div>
+                    <div className="form-group"><label>Intakes</label><input value={courseForm.intakes} onChange={e => setCourseForm({...courseForm,intakes:e.target.value})} placeholder="September, January" /></div>
+                    <div className="form-group"><label>Annual tuition</label><input value={courseForm.tuitionFee} onChange={e => setCourseForm({...courseForm,tuitionFee:e.target.value})} placeholder="e.g. GBP 18,500" /></div>
+                    <div className="form-group"><label>Application fee</label><input value={courseForm.applicationFee} onChange={e => setCourseForm({...courseForm,applicationFee:e.target.value})} placeholder="e.g. GBP 100" /></div>
+                    <div className="form-group"><label>Minimum GPA</label><input value={courseForm.minGpa} onChange={e => setCourseForm({...courseForm,minGpa:e.target.value})} placeholder="e.g. 3.0 / 4.0" /></div>
+                    <div className="form-group"><label>Minimum IELTS</label><input value={courseForm.minIelts} onChange={e => setCourseForm({...courseForm,minIelts:e.target.value})} placeholder="e.g. 6.5, no band below 6.0" /></div>
+                    <div className="form-group"><label>Minimum PTE</label><input value={courseForm.minPte} onChange={e => setCourseForm({...courseForm,minPte:e.target.value})} placeholder="e.g. 58" /></div>
+                    <div className="form-group"><label>Course status</label><select value={courseForm.status} onChange={e => setCourseForm({...courseForm,status:e.target.value as UniversityCourse["status"]})}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+                    <div className="form-group course-form-wide"><label>Scholarship information</label><input value={courseForm.scholarship} onChange={e => setCourseForm({...courseForm,scholarship:e.target.value})} placeholder="Scholarship value, eligibility or deadline" /></div>
+                    <div className="form-group course-form-wide"><label>Entry requirements & notes</label><textarea value={courseForm.requirements} onChange={e => setCourseForm({...courseForm,requirements:e.target.value})} placeholder="Academic prerequisites, portfolio, work experience and application notes..." /></div>
+                  </div>
+                  <footer><span>Active courses appear automatically in new university applications.</span><button type="submit" className="btn-primary"><Check size={15} /> {editingCourseId ? "Save changes" : "Add course"}</button></footer>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showAddUniModal && (
           <div className="modal-backdrop-clean" onClick={() => setShowAddUniModal(false)}>
