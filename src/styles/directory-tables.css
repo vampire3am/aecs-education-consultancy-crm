@@ -136,3 +136,35 @@
 
 .application-directory-table tbody td:first-child { border-radius: 10px 0 0 10px; }
 .application-directory-table tbody td:last-child { border-radius: 0 10px 10px 0; }
+
+.application-directory-table .application-university-cell,
+.application-directory-table .application-study-cell,
+.application-directory-table .application-finance-cell {
+  display: grid;
+  gap: 3px;
+}
+
+.application-directory-table .application-university-cell { min-width: 205px; }
+.application-directory-table .application-study-cell { min-width: 145px; }
+.application-directory-table .application-university-cell small,
+.application-directory-table .application-study-cell small,
+.application-directory-table .application-finance-cell small {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.application-directory-table .application-finance-cell small { color: #059669; }
+
+/* Keep every operational directory as calm and compact as the Leads directory. */
+.table-wrapper > .crm-table tbody td,
+.email-table-container > .email-table tbody td,
+.table-scroll > table tbody td {
+  line-height: 1.35;
+}
+
+.table-wrapper > .crm-table .badge-status,
+.table-wrapper > .crm-table [class*="status-badge"],
+.table-wrapper > .crm-table [class*="stage-badge"] {
+  white-space: nowrap;
+}

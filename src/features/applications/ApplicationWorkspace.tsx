@@ -589,9 +589,8 @@ export function ApplicationWorkspace() {
                 <tr>
                   <th>STUDENT CANDIDATE</th>
                   <th>TARGET UNIVERSITY & DESTINATION</th>
-                  <th>DEGREE / COURSE</th>
-                  <th>INTAKE CYCLE</th>
-                  <th>TUITION & SCHOLARSHIP</th>
+                  <th>STUDY PLAN</th>
+                  <th>FINANCE</th>
                   <th>STATUS STAGE</th>
                   <th>APPLICATION OFFICER</th>
                   <th style={{ textAlign: "right" }}>ACTIONS</th>
@@ -600,7 +599,7 @@ export function ApplicationWorkspace() {
               <tbody>
                 {filteredApplications.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
+                    <td colSpan={7} style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
                         <PlaneTakeoff size={32} style={{ opacity: 0.35 }} />
                         <strong style={{ fontSize: "14px", color: "var(--text-main)" }}>No applications found in this view</strong>
@@ -684,42 +683,32 @@ export function ApplicationWorkspace() {
 
                         {/* 2. Target University & Destination */}
                         <td>
-                          <div>
+                          <div className="application-university-cell">
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               <CountryDisplay country={app.country} size={16}/>
                               <strong style={{ fontSize: "12.5px", color: "var(--text-main)" }}>
                                 {app.universityName}
                               </strong>
                             </div>
-                            <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
-                              Destination: <CountryDisplay country={app.country} size={14}/>
-                            </div>
+                            <small>{app.country}</small>
                           </div>
                         </td>
 
-                        {/* 3. Degree / Course */}
+                        {/* 3. Study plan */}
                         <td>
-                          <span style={{ fontSize: "12.5px", fontWeight: 600, color: "var(--text-main)" }}>
-                            {app.course}
-                          </span>
+                          <div className="application-study-cell">
+                            <strong>{app.course}</strong>
+                            <small>{app.intake || "Intake not assigned"}</small>
+                          </div>
                         </td>
 
-                        {/* 4. Intake Cycle */}
+                        {/* 4. Finance */}
                         <td>
-                          <span style={{ fontSize: "12px", color: "var(--text-main)" }}>
-                            {app.intake}
-                          </span>
-                        </td>
-
-                        {/* 5. Tuition & Scholarship */}
-                        <td>
-                          <div>
+                          <div className="application-finance-cell">
                             <strong style={{ fontSize: "12.5px", color: "var(--text-main)" }}>
                               {app.tuitionFee}
                             </strong>
-                            <div style={{ fontSize: "11px", color: "#10B981", marginTop: "1px" }}>
-                              {app.scholarship}
-                            </div>
+                            <small>{app.scholarship && app.scholarship !== "None" ? `${app.scholarship} scholarship` : "No scholarship"}</small>
                           </div>
                         </td>
 
