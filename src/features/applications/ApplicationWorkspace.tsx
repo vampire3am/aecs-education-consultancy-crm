@@ -254,7 +254,7 @@ export function ApplicationWorkspace() {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container application-workspace">
       {loading && <div className="phase2-loading" role="status">Loading live applications…</div>}
       {/* 1. Header Row (Matching User Screenshot Layout) */}
       <div className="page-header-row">
@@ -293,7 +293,9 @@ export function ApplicationWorkspace() {
       </div>
 
       {/* 2. Top 4 Metric Boxes (Matching User Screenshot Layout) */}
-      <div className="metrics-grid-4" style={{ marginBottom: "20px" }}>
+      <section className="application-executive-summary">
+        <header><div><strong>Admissions snapshot</strong><span>Live operational position</span></div><small>{totalActive} total records</small></header>
+      <div className="metrics-grid-4 application-metrics-grid">
         <div className="metric-box">
           <div className="metric-header">
             <span className="metric-label">Applications Active</span>
@@ -338,20 +340,12 @@ export function ApplicationWorkspace() {
           <KpiTrendIndicator metricKey="applications.visas-approved" value={visasApproved} label={`${visaApprovalRate}% approval across recorded visa decisions`} />
         </div>
       </div>
+      </section>
 
       <CaseTaskPanel />
 
       {/* 3. Search & Toolbar Filter Row (Matching User Screenshot) */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          marginBottom: "14px",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="application-directory-toolbar">
         <div className="search-input-wrap" style={{ flex: 1, minWidth: "280px" }}>
           <Search size={15} />
           <input
@@ -371,15 +365,7 @@ export function ApplicationWorkspace() {
             style={{ width: "160px" }}
           >
             <option value="ALL">All Destinations</option>
-            <option value="UK">United Kingdom</option>
-            <option value="Australia">Australia</option>
-            <option value="Canada">Canada</option>
-            <option value="USA">United States</option>
-            <option value="Germany">Germany</option>
-            <option value="New Zealand">New Zealand</option>
-            <option value="Finland">Finland</option>
-            <option value="Ireland">Ireland</option>
-            <option value="Japan">Japan</option>
+            {catalogDestinations.map(destination => <option key={destination.code} value={destination.name}>{destination.name}</option>)}
           </select>
 
           {/* Stage dropdown */}
@@ -450,7 +436,7 @@ export function ApplicationWorkspace() {
       </div>
 
       {/* 4. Filter Tabs with Dynamic Counters (Matching User Screenshot) */}
-      <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
+      <div className="application-stage-tabs">
         {STAGES.map(st => {
           const count = getStageCount(st.key);
           const isSelected = activeTab === st.key;
