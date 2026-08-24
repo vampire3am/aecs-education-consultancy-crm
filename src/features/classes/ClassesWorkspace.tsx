@@ -19,10 +19,6 @@ interface BatchItem {
 
 const INITIAL_BATCHES: BatchItem[] = [];
 
-const TEACHERS_LIST = [
-  "Unassigned",
-];
-
 export function ClassesWorkspace() {
   const navigate = useNavigate();
 
@@ -38,8 +34,12 @@ export function ClassesWorkspace() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddBatchModal, setShowAddBatchModal] = useState(false);
   const [activeStudentDetail, setActiveStudentDetail] = useState<ClassStudent | null>(null);
-  const [attendance, setAttendance] = useState<Record<string,"PRESENT"|"ABSENT"|"LATE">>({});
+  const [attendanceDate,setAttendanceDate]=useState(new Date().toISOString().slice(0,10));
+  const [attendanceBatch,setAttendanceBatch]=useState("ALL");
+  const [attendance, setAttendance] = useState<Record<string,"PRESENT"|"ABSENT"|"LATE"|"EXCUSED">>({});
   const [errorMessage,setErrorMessage]=useState("");
+  const [successMessage,setSuccessMessage]=useState("");
+  const [isLoading,setIsLoading]=useState(true);
 
   // Exact Add Student Form State matching the user's uploaded screenshot!
   const [studentForm, setStudentForm] = useState({
@@ -83,8 +83,10 @@ export function ClassesWorkspace() {
 
   // Load students
   const loadStudents = async () => {
-    const [data,batchRows] = await Promise.all([ClassStudentService.getStudents(),ClassStudentService.getBatches()]);
-    setStudents(data);setBatches(batchRows as BatchItem[]);
+    try { const [data,batchRows] = await Promise.all([ClassStudentService.getStudents(),ClassStudentService.getBatches()]);
+      setStudents(data);setBatches(batchRows as BatchItem[]);setErrorMessage("");
+    } catch(error) { setErrorMessage(error instanceof Error?error.message:"Unable to load class operations"); }
+    finally { setIsLoading(false); }
   };
 
   useEffect(() => {
@@ -96,8 +98,7 @@ export function ClassesWorkspace() {
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentForm.fullName.trim() || !studentForm.phone.trim()) return;
-
-    await ClassStudentService.createStudent({
+    try { await ClassStudentService.createStudent({
       fullName: studentForm.fullName.trim(),
       phone: studentForm.phone.trim(),
       altPhone: studentForm.altPhone.trim(),
@@ -123,6 +124,7 @@ export function ClassesWorkspace() {
 
     await loadStudents();
     setShowAddStudentModal(false);
+    setSuccessMessage("Class student enrolled successfully.");
     setStudentForm({
       fullName: "",
       phone: "",
@@ -146,6 +148,7 @@ export function ClassesWorkspace() {
       enrolmentNotes: "",
       feePaid: "",
     });
+    } catch(error) { setErrorMessage(error instanceof Error?error.message:"Unable to enrol class student"); }
   };
 
   // Submit Handler for Add Batch
@@ -153,9 +156,10 @@ export function ClassesWorkspace() {
     e.preventDefault();
     if (!batchForm.batchCode.trim()) return;
 
-    await ClassStudentService.createBatch({...batchForm,batchCode:batchForm.batchCode.trim(),timing:batchForm.timing.trim(),maxCapacity:Number(batchForm.maxCapacity)||15,room:batchForm.room.trim()});
+    try { await ClassStudentService.createBatch({...batchForm,batchCode:batchForm.batchCode.trim(),timing:batchForm.timing.trim(),maxCapacity:Number(batchForm.maxCapacity)||15,room:batchForm.room.trim()});
     await loadStudents();
     setShowAddBatchModal(false);
+    setSuccessMessage("Course batch created successfully.");
     setBatchForm({
       batchCode: "",
       courseName: "IELTS Preparation",
@@ -166,9 +170,12 @@ export function ClassesWorkspace() {
       startDate: "",
       status: "ACTIVE",
     });
+    } catch(error) { setErrorMessage(error instanceof Error?error.message:"Unable to create course batch"); }
   };
 
-  const markAttendance=async(studentId:string,status:"PRESENT"|"ABSENT"|"LATE")=>{try{await ClassStudentService.markAttendance(studentId,status);setAttendance(current=>({...current,[studentId]:status}));setErrorMessage("")}catch(error){setErrorMessage(error instanceof Error?error.message:"Unable to mark attendance")}};
+  useEffect(()=>{let live=true;ClassStudentService.getAttendance(attendanceDate).then(rows=>{if(live)setAttendance(Object.fromEntries(rows.map(row=>[row.classStudentId,row.status])))}).catch(error=>{if(live)setErrorMessage(error instanceof Error?error.message:"Unable to load attendance")});return()=>{live=false}},[attendanceDate]);
+
+  const markAttendance=async(studentId:string,status:"PRESENT"|"ABSENT"|"LATE"|"EXCUSED")=>{try{await ClassStudentService.markAttendance(studentId,status,attendanceDate);setAttendance(current=>({...current,[studentId]:status}));setErrorMessage("");setSuccessMessage(`Attendance saved as ${status.toLowerCase()}.`)}catch(error){setErrorMessage(error instanceof Error?error.message:"Unable to mark attendance")}};
 
   // Filtered students
   const filteredStudents = useMemo(() => {
@@ -191,14 +198,18 @@ export function ClassesWorkspace() {
   }, [students, courseFilter, statusFilter, searchQuery]);
 
   // Aggregate metrics
-  const totalEnrolled = students.length;
+  const totalEnrolled = students.filter(student=>student.classStatus==="Active").length;
   const activeBatchesCount = batches.filter(b => b.status === "ACTIVE").length;
   const classroomSeats = batches.reduce((acc, b) => acc + b.maxCapacity, 0);
   const occupiedSeats = batches.reduce((acc, b) => acc + b.enrolledStudents, 0);
-  const occupancyRate = classroomSeats > 0 ? Math.round((occupiedSeats / classroomSeats) * 100) : 85;
+  const occupancyRate = classroomSeats > 0 ? Math.round((occupiedSeats / classroomSeats) * 100) : 0;
+  const faculty = useMemo(()=>Array.from(new Set(batches.map(batch=>batch.instructor.trim()).filter(name=>name&&name!=="Unassigned"))).map(name=>({name,batches:batches.filter(batch=>batch.instructor.trim()===name),students:batches.filter(batch=>batch.instructor.trim()===name).reduce((sum,batch)=>sum+batch.enrolledStudents,0)})),[batches]);
+  const teacherOptions=["Unassigned",...faculty.map(teacher=>teacher.name)];
+  const attendanceStudents=students.filter(student=>attendanceBatch==="ALL"||student.batchName===attendanceBatch);
+  const attendanceMarked=attendanceStudents.filter(student=>attendance[student.id]).length;
 
   return (
-    <div className="page-container">
+    <div className="page-container classes-workspace">
       {/* 1. Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
@@ -244,9 +255,12 @@ export function ClassesWorkspace() {
         </div>
       </div>
       {errorMessage&&<div className="phase2-alert phase2-alert-error"><AlertCircle size={16}/>{errorMessage}<button type="button" onClick={()=>setErrorMessage("")}><X size={14}/></button></div>}
+      {successMessage&&<div className="classes-success"><Check size={16}/><span>{successMessage}</span><button type="button" onClick={()=>setSuccessMessage("")}><X size={14}/></button></div>}
 
       {/* 2. Top 4 Metric Strip */}
-      <div className="metrics-grid-4" style={{ marginBottom: "20px" }}>
+      <section className="classes-summary">
+        <header><div><strong>Live operations summary</strong><span>Calculated from active class records</span></div><small>{isLoading?"Synchronising…":"Database connected"}</small></header>
+      <div className="metrics-grid-4 classes-metrics">
         <div className="metric-box">
           <div className="metric-header">
             <span className="metric-label">Enrolled Students</span>
@@ -254,8 +268,8 @@ export function ClassesWorkspace() {
               <Users size={17} />
             </div>
           </div>
-          <div className="metric-value">{totalEnrolled} Active</div>
-          <span className="metric-sub">IELTS, PTE & Language batches</span>
+          <div className="metric-value">{totalEnrolled}</div>
+          <span className="metric-sub">Active enrolments</span>
         </div>
 
         <div className="metric-box">
@@ -265,19 +279,19 @@ export function ClassesWorkspace() {
               <BookOpen size={17} />
             </div>
           </div>
-          <div className="metric-value">{activeBatchesCount} Running</div>
-          <span className="metric-sub">Morning, Day & Evening tracks</span>
+          <div className="metric-value">{activeBatchesCount}</div>
+          <span className="metric-sub">Batches currently running</span>
         </div>
 
         <div className="metric-box">
           <div className="metric-header">
-            <span className="metric-label">Lab Occupancy Rate</span>
+          <span className="metric-label">Seat Utilisation</span>
             <div className="metric-icon-wrap purple">
               <TrendingUp size={17} />
             </div>
           </div>
-          <div className="metric-value">{occupancyRate}% Full</div>
-          <span className="metric-sub">{occupiedSeats} / {classroomSeats} Total Capacity</span>
+          <div className="metric-value">{occupancyRate}%</div>
+          <span className="metric-sub">{occupiedSeats} of {classroomSeats} configured seats</span>
         </div>
 
         <div className="metric-box">
@@ -287,10 +301,11 @@ export function ClassesWorkspace() {
               <GraduationCap size={17} />
             </div>
           </div>
-          <div className="metric-value">6 Trainers</div>
-          <span className="metric-sub">British Council & Pearson verified</span>
+          <div className="metric-value">{faculty.length}</div>
+          <span className="metric-sub">Assigned instructors</span>
         </div>
       </div>
+      </section>
 
       {/* 3. Navigation Tabs */}
       <div className="document-tabs">
@@ -538,6 +553,7 @@ export function ClassesWorkspace() {
           ========================================================================= */}
       {activeTab === "batches" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="classes-section-heading"><div><strong>Batch schedule</strong><span>Capacity, faculty ownership, room and delivery timing</span></div><button type="button" className="btn-primary" onClick={()=>setShowAddBatchModal(true)}><Plus size={14}/>Create batch</button></div>
           <div
             style={{
               display: "grid",
@@ -545,6 +561,7 @@ export function ClassesWorkspace() {
               gap: "18px",
             }}
           >
+            {batches.length===0&&<div className="classes-empty"><BookOpen size={26}/><strong>No course batches configured</strong><span>Create the first batch before enrolling class students.</span><button type="button" className="btn-primary" onClick={()=>setShowAddBatchModal(true)}><Plus size={14}/>Create first batch</button></div>}
             {batches.map(b => {
               const fillPct = Math.round((b.enrolledStudents / b.maxCapacity) * 100);
 
@@ -630,13 +647,13 @@ export function ClassesWorkspace() {
           TAB 3: DAILY ROLL CALL REGISTER
           ========================================================================= */}
       {activeTab === "attendance" && (
-        <div className="crm-panel">
+        <div className="crm-panel classes-register">
           <div className="panel-header-bar">
             <div>
-              <h3>Daily Class Attendance & Punch Register</h3>
-              <p>Mark presence for morning and afternoon test preparation sessions</p>
+              <h3>Daily Roll Call Register</h3>
+              <p>Saved attendance by class date and active batch</p>
             </div>
-            <span className="status-pill">Date: {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            <div className="classes-register-controls"><label><span>Class date</span><input type="date" value={attendanceDate} onChange={event=>setAttendanceDate(event.target.value)}/></label><label><span>Batch</span><select value={attendanceBatch} onChange={event=>setAttendanceBatch(event.target.value)}><option value="ALL">All active batches</option>{batches.map(batch=><option key={batch.id} value={batch.batchCode}>{batch.batchCode} · {batch.courseName}</option>)}</select></label><div><strong>{attendanceMarked}/{attendanceStudents.length}</strong><span>Marked</span></div></div>
           </div>
 
           <div className="table-wrapper">
@@ -652,15 +669,16 @@ export function ClassesWorkspace() {
                 </tr>
               </thead>
               <tbody>
-                {students.map(s => (
+                {attendanceStudents.length===0&&<tr><td colSpan={6}><div className="classes-empty compact"><CalendarCheck2 size={24}/><strong>No students available for this register</strong><span>Enroll students in a batch to begin daily roll call.</span></div></td></tr>}
+                {attendanceStudents.map(s => (
                   <tr key={s.id}>
                     <td><strong className="code-font">{s.studentCode}</strong></td>
                     <td><strong style={{ color: "var(--text-main)" }}>{s.fullName}</strong></td>
                     <td><span className="badge-status counselling">{s.batchName}</span></td>
                     <td><span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{s.schedule}</span></td>
                     <td>
-                      <span className={`badge-status ${attendance[s.id]==="ABSENT"?"visa":attendance[s.id]==="LATE"?"counselling":"enrolled"}`}>
-                        <Check size={11} style={{ display: "inline", marginRight: "3px" }} />
+                      <span className={`badge-status ${attendance[s.id]==="ABSENT"?"visa":attendance[s.id]==="LATE"?"counselling":attendance[s.id]?"enrolled":"purple"}`}>
+                        {attendance[s.id]&&<Check size={11} style={{ display: "inline", marginRight: "3px" }} />}
                         {attendance[s.id]??"Not marked"}
                       </span>
                     </td>
@@ -669,6 +687,7 @@ export function ClassesWorkspace() {
                         <button type="button" onClick={()=>markAttendance(s.id,"PRESENT")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--success, #059669)" }}>P</button>
                         <button type="button" onClick={()=>markAttendance(s.id,"ABSENT")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--danger, #DC2626)" }}>A</button>
                         <button type="button" onClick={()=>markAttendance(s.id,"LATE")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px", color: "var(--accent-orange, #EA580C)" }}>L</button>
+                        <button type="button" onClick={()=>markAttendance(s.id,"EXCUSED")} className="btn-secondary" style={{ padding: "4px 8px", fontSize: "11px" }}>E</button>
                       </div>
                     </td>
                   </tr>
@@ -683,15 +702,16 @@ export function ClassesWorkspace() {
           TAB 4: FACULTY & INSTRUCTORS
           ========================================================================= */}
       {activeTab === "faculty" && (
-        <div
+        <div className="classes-faculty-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
             gap: "18px",
           }}
         >
-          {TEACHERS_LIST.filter(t => t !== "Unassigned").map((teacher, idx) => (
-            <div key={idx} className="crm-panel" style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          {faculty.length===0&&<div className="classes-empty"><GraduationCap size={26}/><strong>No faculty assigned yet</strong><span>Assign an instructor while creating a batch. Faculty workload will appear here automatically.</span><button type="button" className="btn-primary" onClick={()=>setShowAddBatchModal(true)}><Plus size={14}/>Create staffed batch</button></div>}
+          {faculty.map((teacher) => (
+            <div key={teacher.name} className="crm-panel classes-faculty-card">
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <div
                   style={{
@@ -706,12 +726,12 @@ export function ClassesWorkspace() {
                     fontWeight: 700,
                   }}
                 >
-                  {teacher.charAt(0)}
+                  {teacher.name.split(" ").map(part=>part[0]).slice(0,2).join("")}
                 </div>
                 <div>
-                  <strong style={{ fontSize: "14px", color: "var(--text-main)" }}>{teacher}</strong>
+                  <strong style={{ fontSize: "14px", color: "var(--text-main)" }}>{teacher.name}</strong>
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>
-                    Official Faculty Member
+                    Assigned class instructor
                   </span>
                 </div>
               </div>
@@ -719,13 +739,14 @@ export function ClassesWorkspace() {
               <div style={{ fontSize: "12px", background: "var(--bg-card-subtle)", padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                   <span style={{ color: "var(--text-muted)" }}>Active Batches:</span>
-                  <strong>2 Batches Running</strong>
+                  <strong>{teacher.batches.filter(batch=>batch.status==="ACTIVE").length} running</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text-muted)" }}>Total Students:</span>
-                  <strong>32 Students</strong>
+                  <strong>{teacher.students} enrolled</strong>
                 </div>
               </div>
+              <div className="classes-faculty-tags">{teacher.batches.map(batch=><span key={batch.id}>{batch.batchCode} · {batch.courseName}</span>)}</div>
             </div>
           ))}
         </div>
@@ -998,7 +1019,7 @@ export function ClassesWorkspace() {
                         value={studentForm.teacher}
                         onChange={e => setStudentForm({ ...studentForm, teacher: e.target.value })}
                       >
-                        {TEACHERS_LIST.map((t, idx) => (
+                        {teacherOptions.map((t, idx) => (
                           <option key={idx} value={t}>{t}</option>
                         ))}
                       </select>
@@ -1197,14 +1218,13 @@ export function ClassesWorkspace() {
 
                     <div className="form-group">
                       <label>Instructor *</label>
-                      <select
+                      <input
+                        type="text"
+                        required
                         value={batchForm.instructor}
                         onChange={e => setBatchForm({ ...batchForm, instructor: e.target.value })}
-                      >
-                        {TEACHERS_LIST.map((t, idx) => (
-                          <option key={idx} value={t}>{t}</option>
-                        ))}
-                      </select>
+                        placeholder="Enter assigned instructor"
+                      />
                     </div>
                   </div>
 
