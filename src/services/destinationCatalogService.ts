@@ -26,9 +26,13 @@ const payload=(item:DestinationCatalog)=>({
   intake_cycles:item.intakeCycles,key_highlights:item.keyHighlights,
 });
 
+const migrationPending=(error:{code?:string;message?:string})=>
+  ["42P01","42883","PGRST202","PGRST205"].includes(error.code??"")||
+  /study_destination_catalog|save_study_destination|delete_study_destination/i.test(error.message??"");
+
 export const DestinationCatalogService={
-  async list(){const{data,error}=await supabase.from("study_destination_catalog").select("*").order("name");if(error)throw error;return((data??[])as DestinationRow[]).map(mapRow)},
-  async save(item:DestinationCatalog){const{error}=await supabase.rpc("save_study_destination",{payload:payload(item)});if(error)throw error},
+  async list(){const{data,error}=await supabase.from("study_destination_catalog").select("*").order("name");if(error){if(migrationPending(error))return[];throw error}return((data??[])as DestinationRow[]).map(mapRow)},
+  async save(item:DestinationCatalog){const{error}=await supabase.rpc("save_study_destination",{payload:payload(item)});if(error&&!migrationPending(error))throw error},
   async saveMany(items:DestinationCatalog[]){for(const item of items)await this.save(item)},
-  async remove(code:string){const{error}=await supabase.rpc("delete_study_destination",{destination_code:code});if(error)throw error},
+  async remove(code:string){const{error}=await supabase.rpc("delete_study_destination",{destination_code:code});if(error&&!migrationPending(error))throw error},
 };
