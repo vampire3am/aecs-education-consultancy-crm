@@ -584,7 +584,7 @@ export function ApplicationWorkspace() {
       {viewMode === "table" ? (
         <div className="application-table-body">
           <div className="table-wrapper">
-            <table className="crm-table">
+            <table className="crm-table application-directory-table">
               <thead>
                 <tr>
                   <th>STUDENT CANDIDATE</th>

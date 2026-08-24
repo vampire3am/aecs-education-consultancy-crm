@@ -97,3 +97,42 @@
   .email-table-container,
   .table-scroll:has(> table) { padding: 8px; }
 }
+
+/* Applications has its own dense legacy rules; force the same visual contract as Leads. */
+.application-directory-panel .table-wrapper {
+  padding: 10px 14px 16px !important;
+  background: #f8fafc !important;
+}
+
+.application-directory-table {
+  min-width: 1120px;
+  border-collapse: separate !important;
+  border-spacing: 0 8px !important;
+}
+
+.application-directory-table thead th {
+  padding: 6px 12px !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 10px !important;
+}
+
+.application-directory-table tbody tr {
+  background: #fff !important;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--border-subtle) !important;
+}
+
+.application-directory-table tbody tr:hover {
+  background: #fff !important;
+  box-shadow: 0 0 0 1px #fb923c, 0 6px 18px rgba(15, 23, 42, .07) !important;
+}
+
+.application-directory-table tbody td {
+  padding: 14px 12px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.application-directory-table tbody td:first-child { border-radius: 10px 0 0 10px; }
+.application-directory-table tbody td:last-child { border-radius: 0 10px 10px 0; }
