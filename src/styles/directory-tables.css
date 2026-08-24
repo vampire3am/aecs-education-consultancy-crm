@@ -10,18 +10,18 @@
 .email-table-container > .email-table,
 .table-scroll > table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 8px;
+  border-collapse: separate !important;
+  border-spacing: 0 8px !important;
 }
 
 .table-wrapper > .crm-table thead th,
 .email-table-container > .email-table thead th,
 .table-scroll > table thead th {
-  padding: 6px 12px;
-  border: 0;
-  background: transparent;
+  padding: 8px 14px !important;
+  border: 0 !important;
+  background: transparent !important;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 10px !important;
   font-weight: 750;
   letter-spacing: .045em;
   text-transform: uppercase;
@@ -31,25 +31,26 @@
 .table-wrapper > .crm-table tbody tr:not(.skeleton-row),
 .email-table-container > .email-table tbody tr:not(.skeleton-row),
 .table-scroll > table tbody tr:not(.skeleton-row) {
-  background: var(--bg-card);
+  background: #fff !important;
   border-radius: 10px;
-  box-shadow: 0 0 0 1px var(--border-subtle);
+  box-shadow: 0 0 0 1px var(--border-subtle) !important;
   transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
 .table-wrapper > .crm-table tbody tr:not(.skeleton-row):hover,
 .email-table-container > .email-table tbody tr:not(.skeleton-row):hover,
 .table-scroll > table tbody tr:not(.skeleton-row):hover {
-  background: var(--bg-card);
-  box-shadow: 0 0 0 1px #fb923c, 0 6px 18px rgba(15, 23, 42, .07);
+  background: #fff !important;
+  box-shadow: 0 0 0 1px #fb923c, 0 6px 18px rgba(15, 23, 42, .07) !important;
   transform: translateY(-1px);
 }
 
 .table-wrapper > .crm-table tbody td,
 .email-table-container > .email-table tbody td,
 .table-scroll > table tbody td {
-  padding: 13px 12px;
-  border: 0;
+  padding: 14px !important;
+  border: 0 !important;
+  background: transparent !important;
   vertical-align: middle;
 }
 
@@ -69,6 +70,7 @@
 .email-table-container > .email-table tbody td strong,
 .table-scroll > table tbody td strong {
   font-weight: 700;
+  font-size: 12px;
 }
 
 .table-wrapper > .crm-table tbody td small,
@@ -77,6 +79,26 @@
   margin-top: 3px;
   color: var(--text-muted);
   line-height: 1.35;
+  font-size: 10.5px;
+}
+
+.crm-panel:has(> .table-wrapper > .crm-table),
+.crm-panel:has(.table-wrapper > .crm-table) {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.table-wrapper > .crm-table tbody td > div,
+.email-table-container > .email-table tbody td > div,
+.table-scroll > table tbody td > div {
+  min-width: 0;
+}
+
+.table-wrapper > .crm-table tbody td:last-child,
+.email-table-container > .email-table tbody td:last-child,
+.table-scroll > table tbody td:last-child {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .table-wrapper > .crm-table .table-actions,
