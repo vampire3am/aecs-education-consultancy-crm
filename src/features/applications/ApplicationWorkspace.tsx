@@ -436,6 +436,14 @@ export function ApplicationWorkspace() {
 
       <CaseTaskPanel />
 
+      <section className="crm-panel application-directory-panel">
+      <div className="application-directory-heading">
+        <div>
+          <h3>Application Directory</h3>
+          <p>{filteredApplications.length} of {applications.length} applications match the current view</p>
+        </div>
+      </div>
+
       {/* 3. Search & Toolbar Filter Row (Matching User Screenshot) */}
       <div className="application-directory-toolbar">
         <div className="search-input-wrap" style={{ flex: 1, minWidth: "280px" }}>
@@ -574,7 +582,7 @@ export function ApplicationWorkspace() {
           VIEW MODE 1: DATA TABLE (MATCHING USER SCREENSHOT COLUMNS & CARDS)
           ========================================================================= */}
       {viewMode === "table" ? (
-        <div className="crm-panel" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="application-table-body">
           <div className="table-wrapper">
             <table className="crm-table">
               <thead>
@@ -854,6 +862,7 @@ export function ApplicationWorkspace() {
           })}
         </div>
       )}
+      </section>
 
       {/* =========================================================================
           MODAL: SUBMIT NEW UNIVERSITY APPLICATION
