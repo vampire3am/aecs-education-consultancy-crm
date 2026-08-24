@@ -275,6 +275,15 @@ export function CounsellingDashboard() {
     intake: "",
   });
 
+  const openUniversityForm = (destination?: DestinationCatalog) => {
+    setNewUniForm(current => ({
+      ...current,
+      country: destination?.name ?? destinations[0]?.name ?? "",
+      countryCode: destination?.code ?? destinations[0]?.code ?? "",
+    }));
+    setShowAddUniModal(true);
+  };
+
   // Student Consultations State
   const [records, setRecords] = useState<any[]>([]);
   const [consultForm, setConsultForm] = useState({
@@ -646,7 +655,7 @@ export function CounsellingDashboard() {
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => setShowAddUniModal(true)}
+            onClick={() => openUniversityForm()}
           >
             <Building2 size={15} />
             <span>Add University</span>
@@ -918,7 +927,7 @@ export function CounsellingDashboard() {
                   </div>
                 </div>
 
-                {/* Action Buttons (Manage Destination) */}
+                {/* Country-scoped catalogue actions */}
                 <div
                   style={{
                     padding: "12px 18px",
@@ -930,8 +939,17 @@ export function CounsellingDashboard() {
                 >
                   <button
                     type="button"
+                    className="btn-secondary"
+                    style={{ flex: 1, padding: "8px 12px", fontSize: "12.5px" }}
+                    onClick={() => openUniversityForm(dest)}
+                  >
+                    <Building2 size={14} />
+                    <span>Add university</span>
+                  </button>
+                  <button
+                    type="button"
                     className="btn-primary"
-                    style={{ width: "100%", padding: "8px 12px", fontSize: "12.5px" }}
+                    style={{ flex: 1, padding: "8px 12px", fontSize: "12.5px" }}
                     onClick={() => setActiveCountryDetail(dest)}
                   >
                     <Compass size={14} />
@@ -1008,7 +1026,7 @@ export function CounsellingDashboard() {
                 type="button"
                 className="btn-primary"
                 style={{ padding: "6px 14px", fontSize: "12px" }}
-                onClick={() => setShowAddUniModal(true)}
+                onClick={() => openUniversityForm()}
               >
                 <Building2 size={14} />
                 <span>Add University</span>
@@ -1517,7 +1535,10 @@ export function CounsellingDashboard() {
                       <label>Destination Country *</label>
                       <select
                         value={newUniForm.country}
-                        onChange={e => setNewUniForm({ ...newUniForm, country: e.target.value })}
+                        onChange={e => {
+                          const destination = destinations.find(item => item.name === e.target.value);
+                          setNewUniForm({ ...newUniForm, country: e.target.value, countryCode: destination?.code ?? "" });
+                        }}
                       >
                         {destinations.map(d => (
                           <option key={d.code} value={d.name}>
