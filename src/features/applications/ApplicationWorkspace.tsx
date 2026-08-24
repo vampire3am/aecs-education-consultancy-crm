@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Check, CheckCircle2, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, Pencil, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
+import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, Pencil, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -16,6 +16,27 @@ type ApplicationDestination = { name: string; code: string; popularIntakes?: str
 type ApplicationUniversity = { name: string; country: string; countryCode: string; popularCourses?: string[]; tuition?: string; intake?: string };
 const APPLICATION_DESTINATIONS_KEY = "aecs_destinations_catalog_v2";
 const APPLICATION_UNIVERSITIES_KEY = "aecs_partner_universities_v2";
+
+function CatalogCombobox({ value, options, placeholder, disabled, emptyText, onChange }: {
+  value: string; options: string[]; placeholder: string; disabled?: boolean; emptyText: string; onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const filtered = options.filter(option => option.toLowerCase().includes(query.trim().toLowerCase()));
+  return <div className={`catalog-combobox${open ? " open" : ""}`} onBlur={event => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+  }}>
+    <button type="button" className="catalog-combobox-trigger" disabled={disabled} onClick={() => setOpen(current => !current)}>
+      <span className={value ? "" : "placeholder"}>{value || placeholder}</span><ChevronDown size={15}/>
+    </button>
+    {open && <div className="catalog-combobox-menu">
+      <div className="catalog-combobox-search"><Search size={14}/><input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Search catalogue…" /></div>
+      <div className="catalog-combobox-options">
+        {filtered.length ? filtered.map(option => <button type="button" key={option} className={option === value ? "selected" : ""} onClick={() => { onChange(option); setOpen(false); setQuery(""); }}><span>{option}</span>{option === value && <Check size={14}/>}</button>) : <div className="catalog-combobox-empty">{emptyText}</div>}
+      </div>
+    </div>}
+  </div>;
+}
 
 type ApplicationStage = UniversityApplication["stage"];
 
@@ -45,6 +66,8 @@ export function ApplicationWorkspace() {
   const [studentSearch, setStudentSearch] = useState("");
   const [catalogDestinations, setCatalogDestinations] = useState<ApplicationDestination[]>([]);
   const [catalogUniversities, setCatalogUniversities] = useState<ApplicationUniversity[]>([]);
+  const [useUnlistedUniversity, setUseUnlistedUniversity] = useState(false);
+  const [useUnlistedCourse, setUseUnlistedCourse] = useState(false);
 
   // Modals & Drawers
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -60,8 +83,8 @@ export function ApplicationWorkspace() {
     studentCode: "",
     studentName: "",
     universityName: "",
-    country: "UK" as UniversityApplication["country"],
-    countryCode: "GB" as UniversityApplication["countryCode"],
+    country: "" as UniversityApplication["country"],
+    countryCode: "" as UniversityApplication["countryCode"],
     course: "",
     intake: "",
     stage: "SUBMITTED" as ApplicationStage,
@@ -74,7 +97,7 @@ export function ApplicationWorkspace() {
 
   const resetApplicationForm = () => {
     setNewAppForm({
-      studentCode: "", studentName: "", universityName: "", country: "UK", countryCode: "GB",
+      studentCode: "", studentName: "", universityName: "", country: "", countryCode: "",
       course: "", intake: "", stage: "SUBMITTED", deadline: "", officer: profile?.full_name || "",
       tuitionFee: "", scholarship: "", notes: "",
     });
@@ -82,6 +105,8 @@ export function ApplicationWorkspace() {
     setApplicationFormStep(1);
     setEditingApplicationId(null);
     setApplicationFormError("");
+    setUseUnlistedUniversity(false);
+    setUseUnlistedCourse(false);
   };
 
   const closeApplicationForm = () => {
@@ -122,6 +147,8 @@ export function ApplicationWorkspace() {
       notes: application.notes || "",
     });
     setApplicationFormStep(1);
+    setUseUnlistedUniversity(!catalogUniversities.some(university => university.name === application.universityName));
+    setUseUnlistedCourse(false);
     setActiveDossier(null);
     setShowSubmitModal(true);
   };
@@ -158,6 +185,8 @@ export function ApplicationWorkspace() {
       country: routeState.country || current.country,
       countryCode: routeState.countryCode || current.countryCode,
     }));
+    setUseUnlistedUniversity(false);
+    setUseUnlistedCourse(false);
     setShowSubmitModal(true);
     setApplicationFormStep(1);
     navigate(location.pathname, { replace: true, state: null });
@@ -190,6 +219,8 @@ export function ApplicationWorkspace() {
       course: "",
       intake: (destination?.intakeCycles?.[0] || destination?.popularIntakes?.[0] || "").replace(/\b(20\d{2})\s+\1\b/, "$1"),
     }));
+    setUseUnlistedUniversity(false);
+    setUseUnlistedCourse(false);
   };
 
   const selectUniversity = (universityName: string) => {
@@ -890,34 +921,16 @@ export function ApplicationWorkspace() {
                     </div>
                     <div className="form-group">
                       <label>Target University *</label>
-                      <input
-                        list="application-universities"
-                        required
-                        value={newAppForm.universityName}
-                        disabled={!newAppForm.country}
-                        onChange={e => selectUniversity(e.target.value)}
-                        placeholder={newAppForm.country ? "Search or add a university" : "Select a destination first"}
-                        autoComplete="off"
-                      />
-                      <datalist id="application-universities">{universitiesForCountry.map(university => <option key={`${university.countryCode}-${university.name}`} value={university.name}>{university.country}</option>)}</datalist>
-                      <small className="application-field-hint">Only universities linked to {newAppForm.country || "the selected destination"} are suggested. Type a new name to add one to this application.</small>
+                      {useUnlistedUniversity ? <input required value={newAppForm.universityName} onChange={event => setNewAppForm(current => ({ ...current, universityName: event.target.value, course: "" }))} placeholder="Enter the official university name" autoFocus /> : <CatalogCombobox value={newAppForm.universityName} options={universitiesForCountry.map(university => university.name)} disabled={!newAppForm.country} placeholder={newAppForm.country ? "Select a university" : "Select a destination first"} emptyText={`No universities are registered for ${newAppForm.country || "this destination"}.`} onChange={selectUniversity} />}
+                      <div className="catalog-field-footer"><small>{useUnlistedUniversity ? "This university will be saved only on this application." : `Showing universities registered under ${newAppForm.country || "the selected destination"}.`}</small>{newAppForm.country && <button type="button" onClick={() => { setUseUnlistedUniversity(current => !current); setNewAppForm(form => ({ ...form, universityName: "", course: "" })); }}>{useUnlistedUniversity ? "Use catalogue" : "Add unlisted"}</button>}</div>
                     </div>
                   </div>
 
                   <div className="form-row-2">
                     <div className="form-group">
                       <label>Degree / Course *</label>
-                      <input
-                        list="application-courses"
-                        required
-                        value={newAppForm.course}
-                        onChange={e => setNewAppForm({ ...newAppForm, course: e.target.value })}
-                        disabled={!newAppForm.country}
-                        placeholder={newAppForm.country ? "Search or add a degree / course" : "Select a destination first"}
-                        autoComplete="off"
-                      />
-                      <datalist id="application-courses">{coursesForSelection.map(course => <option key={course} value={course} />)}</datalist>
-                      <small className="application-field-hint">Suggestions update when you select a university. A new course name can also be entered.</small>
+                      {useUnlistedCourse ? <input required value={newAppForm.course} onChange={event => setNewAppForm(current => ({ ...current, course: event.target.value }))} placeholder="Enter the official degree or course" autoFocus /> : <CatalogCombobox value={newAppForm.course} options={coursesForSelection} disabled={!newAppForm.universityName} placeholder={newAppForm.universityName ? "Select a degree or course" : "Select a university first"} emptyText="No courses are registered for this university." onChange={course => setNewAppForm(current => ({ ...current, course }))} />}
+                      <div className="catalog-field-footer"><small>{useUnlistedCourse ? "This course will be saved only on this application." : "Courses are filtered by the selected university."}</small>{newAppForm.universityName && <button type="button" onClick={() => { setUseUnlistedCourse(current => !current); setNewAppForm(form => ({ ...form, course: "" })); }}>{useUnlistedCourse ? "Use catalogue" : "Add unlisted"}</button>}</div>
                     </div>
 
                     <div className="form-group">
