@@ -39,6 +39,7 @@ import {
   ShieldCheck,
   Sparkles,
   TrendingUp,
+  Trash2,
   UserCheck,
   UserPlus,
   Users,
@@ -52,6 +53,7 @@ import { CountryFlag } from "../../components/ui/PhoneInput";
 import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import { AECS_AUTHORIZED_COUNTRIES, DestinationCountry } from "../../lib/destinationsData";
 import { COUNTRY_METADATA } from "../../lib/countryMetadata.generated";
+import { MultiIntakePicker } from "../../components/ui/MultiIntakePicker";
 import { CounsellingService } from "../../services/counsellingService";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -80,6 +82,7 @@ export interface PartnerUniversity {
   popularCourses: string[];
   minPte: string;
   minIelts: string;
+  minGpa?: string;
   scholarship: string;
   tuition: string;
   intake: string;
@@ -184,6 +187,7 @@ export function CounsellingDashboard() {
     popularCourses: "",
     minPte: "",
     minIelts: "",
+    minGpa: "",
     scholarship: "",
     tuition: "",
     intake: "",
@@ -217,6 +221,43 @@ export function CounsellingDashboard() {
   const saveUniversities = (updated: PartnerUniversity[]) => {
     setUniversities(updated);
     localStorage.setItem(UNIVERSITIES_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const handleDeleteUniversity = (university: PartnerUniversity) => {
+    const confirmed = window.confirm(
+      `End the partnership with ${university.name}?\n\nThe university will be removed from the active partner catalogue. Existing student and application records will remain unchanged.`
+    );
+    if (!confirmed) return;
+
+    saveUniversities(universities.filter(item => item.id !== university.id));
+    saveDestinations(
+      destinations.map(destination =>
+        destination.code === university.countryCode || destination.name === university.country
+          ? { ...destination, universitiesCount: Math.max(0, destination.universitiesCount - 1) }
+          : destination
+      )
+    );
+  };
+
+  const handleDeleteDestination = (destination: DestinationCatalog) => {
+    const linkedUniversities = universities.filter(
+      university => university.countryCode === destination.code || university.country === destination.name
+    );
+
+    if (linkedUniversities.length > 0) {
+      window.alert(
+        `${destination.name} cannot be removed yet. End its ${linkedUniversities.length} active university partnership${linkedUniversities.length === 1 ? "" : "s"} first.`
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Remove ${destination.name} from the study destination catalogue?\n\nExisting student and application records will remain unchanged.`
+    );
+    if (!confirmed) return;
+
+    saveDestinations(destinations.filter(item => item.code !== destination.code));
+    setActiveCountryDetail(null);
   };
 
   // Add Country Handler
@@ -285,6 +326,7 @@ export function CounsellingDashboard() {
       popularCourses: coursesArray.length > 0 ? coursesArray : ["Undergraduate & Postgraduate Degrees"],
       minPte: newUniForm.minPte.trim() || "58+",
       minIelts: newUniForm.minIelts.trim() || "6.0",
+      minGpa: newUniForm.minGpa.trim() || "Not specified",
       scholarship: newUniForm.scholarship.trim() || "Merit & Early Entry Grants",
       tuition: newUniForm.tuition.trim() || "Competitive Fee Structure",
       intake: newUniForm.intake.trim() || "September & January",
@@ -309,6 +351,7 @@ export function CounsellingDashboard() {
       popularCourses: "",
       minPte: "",
       minIelts: "",
+      minGpa: "",
       scholarship: "",
       tuition: "",
       intake: "",
@@ -624,13 +667,6 @@ export function CounsellingDashboard() {
                 <div style={{ padding: "14px 18px", flex: 1, display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
                   <div>
                     <span style={{ color: "var(--text-muted)", display: "block", fontSize: "10.5px", fontWeight: 700, textTransform: "uppercase" }}>
-                      Estimated Annual Tuition:
-                    </span>
-                    <strong style={{ color: "var(--text-main)" }}>{dest.avgTuition}</strong>
-                  </div>
-
-                  <div>
-                    <span style={{ color: "var(--text-muted)", display: "block", fontSize: "10.5px", fontWeight: 700, textTransform: "uppercase" }}>
                       Work Rights (PSWV):
                     </span>
                     <span style={{ color: "var(--accent-blue)", fontWeight: 600 }}>{dest.pswvWorkRights}</span>
@@ -726,7 +762,7 @@ export function CounsellingDashboard() {
               </div>
               <strong style={{ fontSize: "15px", color: "var(--text-main)" }}>Add New Study Destination</strong>
               <p style={{ fontSize: "12px", color: "var(--text-muted)", maxWidth: "240px", margin: 0 }}>
-                Configure new country catalog, currency, tuition ranges, and partner institutions.
+                Configure country details, intake periods, work rights, and partner institutions.
               </p>
             </div>
           </div>
@@ -806,6 +842,7 @@ export function CounsellingDashboard() {
 
                     <td>
                       <div style={{ fontSize: "11.5px" }}>
+                        <div><strong>GPA:</strong> {uni.minGpa || "Not specified"}</div>
                         <div><strong>PTE:</strong> {uni.minPte}</div>
                         <div><strong>IELTS:</strong> {uni.minIelts}</div>
                       </div>
@@ -824,15 +861,26 @@ export function CounsellingDashboard() {
                     </td>
 
                     <td style={{ textAlign: "right" }}>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        style={{ padding: "4px 10px", fontSize: "11.5px" }}
-                        onClick={() => navigate("/applications")}
-                      >
-                        <span>Apply</span>
-                        <ChevronRight size={13} />
-                      </button>
+                      <div className="catalog-row-actions">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{ padding: "4px 10px", fontSize: "11.5px" }}
+                          onClick={() => navigate("/applications")}
+                        >
+                          <span>Apply</span>
+                          <ChevronRight size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="catalog-delete-icon"
+                          aria-label={`End partnership with ${uni.name}`}
+                          title="End university partnership"
+                          onClick={() => handleDeleteUniversity(uni)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -984,7 +1032,7 @@ export function CounsellingDashboard() {
                     Add New Study Destination Catalog
                   </h3>
                   <p style={{ fontSize: "11.5px", color: "var(--text-muted)", margin: "2px 0 0" }}>
-                    Configure country code, currency, tuition ranges, and work rights
+                    Configure country code, currency, intake periods, and work rights
                   </p>
                 </div>
                 <button
@@ -1051,37 +1099,22 @@ export function CounsellingDashboard() {
 
                   <div className="form-group">
                     <label>Popular Intakes *</label>
-                    <input
-                      type="text"
-                      required
+                    <MultiIntakePicker
                       value={newCountryForm.popularIntakes}
-                      onChange={e => setNewCountryForm({ ...newCountryForm, popularIntakes: e.target.value })}
-                      placeholder="e.g. September, February"
+                      onChange={popularIntakes => setNewCountryForm({ ...newCountryForm, popularIntakes })}
+                      required
                     />
                   </div>
 
-                  <div className="form-row-2">
-                    <div className="form-group">
-                      <label>Estimated Annual Tuition *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newCountryForm.avgTuition}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, avgTuition: e.target.value })}
-                        placeholder="e.g. €7,000 – €14,000 / yr"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Post-Study Work Rights *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newCountryForm.pswvWorkRights}
-                        onChange={e => setNewCountryForm({ ...newCountryForm, pswvWorkRights: e.target.value })}
-                        placeholder="e.g. 1.5 Years Stay-Back Visa"
-                      />
-                    </div>
+                  <div className="form-group">
+                    <label>Post-Study Work Rights *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCountryForm.pswvWorkRights}
+                      onChange={e => setNewCountryForm({ ...newCountryForm, pswvWorkRights: e.target.value })}
+                      placeholder="e.g. 1.5 Years Stay-Back Visa"
+                    />
                   </div>
 
                   <div className="form-group">
@@ -1236,6 +1269,16 @@ export function CounsellingDashboard() {
                   </div>
 
                   <div className="form-group">
+                    <label>Minimum GPA / Academic Requirement</label>
+                    <input
+                      type="text"
+                      value={newUniForm.minGpa}
+                      onChange={e => setNewUniForm({ ...newUniForm, minGpa: e.target.value })}
+                      placeholder="e.g. 3.0/4.0, 2.8/4.0, or 60% aggregate"
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label>Available Scholarships</label>
                     <input
                       type="text"
@@ -1357,10 +1400,6 @@ export function CounsellingDashboard() {
                     <strong>{activeCountryDetail.universitiesCount} Institutions</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--text-muted)" }}>Average Tuition Cost:</span>
-                    <strong>{activeCountryDetail.avgTuition}</strong>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ color: "var(--text-muted)" }}>Statutory Living Expenses:</span>
                     <strong>{activeCountryDetail.avgLivingCost}</strong>
                   </div>
@@ -1396,6 +1435,14 @@ export function CounsellingDashboard() {
                 </div>
 
                 <div style={{ marginTop: "auto", display: "flex", gap: "10px" }}>
+                  <button
+                    type="button"
+                    className="catalog-delete-button"
+                    onClick={() => handleDeleteDestination(activeCountryDetail)}
+                  >
+                    <Trash2 size={15} />
+                    <span>Remove destination</span>
+                  </button>
                   <button
                     type="button"
                     className="btn-primary"

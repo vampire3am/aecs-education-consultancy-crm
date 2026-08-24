@@ -6,6 +6,7 @@ export interface B2BPartner {
   country: string;
   countryCode: string;
   city?: string;
+  photoUrl?: string;
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;

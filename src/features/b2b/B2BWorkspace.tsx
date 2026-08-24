@@ -10,6 +10,7 @@ import {
   CalendarClock,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
   Copy,
@@ -22,6 +23,7 @@ import {
   Filter,
   Globe,
   Handshake,
+  ImagePlus,
   Mail,
   MapPin,
   MessageCircle,
@@ -46,12 +48,13 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { CountryFlag } from "../../components/ui/PhoneInput";
 import { CountryDisplay } from "../../components/ui/CountryDisplay";
-import { AECS_AUTHORIZED_COUNTRIES } from "../../lib/destinationsData";
+import { COUNTRY_METADATA } from "../../lib/countryMetadata.generated";
 import { B2BPartner, B2BService } from "../../services/b2bService";
 import { useAuth } from "../auth/AuthProvider";
 
 type FilterTab = "All partners" | "Active" | "In progress" | "Follow-ups" | "Inactive";
 
+const WORLD_COUNTRIES = [...COUNTRY_METADATA].sort((a, b) => a[0].localeCompare(b[0]));
 export function B2BWorkspace() {
   const { profile } = useAuth();
 
@@ -66,6 +69,8 @@ export function B2BWorkspace() {
   const [activePartnerDetail, setActivePartnerDetail] = useState<B2BPartner | null>(null);
   const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
 
   // Add Partner Form State
   const [partnerForm, setPartnerForm] = useState({
@@ -74,6 +79,7 @@ export function B2BWorkspace() {
     country: "",
     countryCode: "",
     city: "",
+    photoUrl: "",
     contactPerson: "",
     contactEmail: "",
     contactPhone: "",
@@ -95,6 +101,41 @@ export function B2BWorkspace() {
     summary: "",
     nextFollowUp: "",
   });
+
+  const handlePartnerPhoto = (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      window.alert("Please choose an image file (JPG, PNG, WEBP, or GIF).");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      window.alert("University photos must be 2 MB or smaller.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => setPartnerForm(current => ({ ...current, photoUrl: String(reader.result || "") }));
+    reader.readAsDataURL(file);
+  };
+
+  const updateActivePartnerPhoto = async (file?: File) => {
+    if (!file || !activePartnerDetail) return;
+    if (!file.type.startsWith("image/") || file.size > 2 * 1024 * 1024) {
+      window.alert("Choose a JPG, PNG, WEBP, or GIF image no larger than 2 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const photoUrl = String(reader.result || "");
+      const updated = await B2BService.updatePartner(activePartnerDetail.id, { photoUrl });
+      if (updated) {
+        setActivePartnerDetail(updated);
+        await loadPartners();
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Load partners from service
   const loadPartners = async () => {
@@ -153,8 +194,8 @@ export function B2BWorkspace() {
     if (!partnerForm.name.trim() || !partnerForm.contactPerson.trim()) return;
 
     // Find country code
-    const matchedDest = AECS_AUTHORIZED_COUNTRIES.find(c => c.name === partnerForm.country);
-    const countryCode = matchedDest ? matchedDest.code : partnerForm.country === "Nepal" ? "NP" : partnerForm.country === "India" ? "IN" : "GB";
+    const matchedCountry = WORLD_COUNTRIES.find(country => country[0] === partnerForm.country);
+    const countryCode = matchedCountry?.[1] || partnerForm.countryCode || "";
 
     await B2BService.createPartner({
       name: partnerForm.name.trim(),
@@ -162,6 +203,7 @@ export function B2BWorkspace() {
       country: partnerForm.country,
       countryCode: countryCode,
       city: partnerForm.city.trim(),
+      photoUrl: partnerForm.photoUrl,
       contactPerson: partnerForm.contactPerson.trim(),
       contactEmail: partnerForm.contactEmail.trim(),
       contactPhone: partnerForm.contactPhone.trim(),
@@ -184,6 +226,7 @@ export function B2BWorkspace() {
       country: "",
       countryCode: "",
       city: "",
+      photoUrl: "",
       contactPerson: "",
       contactEmail: "",
       contactPhone: "",
@@ -317,18 +360,7 @@ export function B2BWorkspace() {
       {/* 3. Main Data Panel (Matching Screenshot layout) */}
       <div className="crm-panel" style={{ padding: 0, overflow: "hidden" }}>
         {/* Filter Navigation Strip */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 18px",
-            borderBottom: "1px solid var(--border-subtle)",
-            background: "var(--bg-card-subtle)",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
+        <div className="partner-directory-toolbar">
           {/* Filter Pills (All partners, Active, In progress, Follow-ups, Inactive) */}
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {(["All partners", "Active", "In progress", "Follow-ups", "Inactive"] as FilterTab[]).map(tab => (
@@ -355,8 +387,8 @@ export function B2BWorkspace() {
           </div>
 
           {/* Search bar + Statuses select + Search button */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <div className="search-input-wrap" style={{ width: "240px" }}>
+          <div className="partner-directory-searches">
+            <div className="search-input-wrap">
               <Search size={15} />
               <input
                 type="text"
@@ -379,14 +411,6 @@ export function B2BWorkspace() {
               <option value="Agreement Pending">Agreement Pending</option>
               <option value="Inactive">Inactive</option>
             </select>
-
-            <button
-              type="button"
-              className="btn-primary"
-              style={{ background: "#0F172A", borderColor: "#0F172A", padding: "6px 16px", fontSize: "12px" }}
-            >
-              Search
-            </button>
           </div>
         </div>
 
@@ -395,22 +419,19 @@ export function B2BWorkspace() {
           <table className="crm-table">
             <thead>
               <tr>
-                <th style={{ width: "90px" }}>ID</th>
-                <th>PARTNER</th>
-                <th>TYPE</th>
-                <th>COUNTRY</th>
-                <th>CONTACT</th>
-                <th>COMMISSION / TERMS</th>
-                <th>STATUS</th>
-                <th>NEXT FOLLOW-UP</th>
-                <th>STAFF</th>
-                <th style={{ textAlign: "right" }}>ACTION</th>
+                <th>Partner organization</th>
+                <th>Partnership</th>
+                <th>Location</th>
+                <th>Primary contact</th>
+                <th>Status & follow-up</th>
+                <th>Relationship owner</th>
+                <th style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredPartners.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "48px 20px", color: "var(--text-muted)" }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                       <Handshake size={32} style={{ opacity: 0.35 }} />
                       <strong style={{ fontSize: "14px", color: "var(--text-main)" }}>No partners match this view.</strong>
@@ -456,34 +477,18 @@ export function B2BWorkspace() {
                       style={{ cursor: "pointer" }}
                       onClick={() => setActivePartnerDetail(partner)}
                     >
-                      {/* ID */}
-                      <td>
-                        <span className="account-code-cell" style={{ fontWeight: 700 }}>
-                          {partner.code}
-                        </span>
-                      </td>
-
                       {/* Partner Name & City */}
                       <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "8px",
-                              background: "var(--primary-navy)",
-                              color: "#FFFFFF",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {initials}
+                        <div className="partner-identity-cell">
+                          <div className="partner-table-photo">
+                            {partner.photoUrl ? (
+                              <img src={partner.photoUrl} alt={`${partner.name} campus`} />
+                            ) : (
+                              <span>{initials}</span>
+                            )}
                           </div>
                           <div>
+                            <span className="partner-code-label">{partner.code}</span>
                             <strong style={{ fontSize: "13px", color: "var(--text-main)" }}>
                               {partner.name}
                             </strong>
@@ -497,20 +502,12 @@ export function B2BWorkspace() {
                         </div>
                       </td>
 
-                      {/* Type */}
+                      {/* Partnership */}
                       <td>
-                        <span
-                          style={{
-                            fontSize: "11.5px",
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            background: "var(--bg-card-subtle)",
-                            border: "1px solid var(--border-subtle)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {partner.type}
-                        </span>
+                        <div className="partner-relationship-cell">
+                          <span>{partner.type}</span>
+                          <strong>{partner.commissionTerms}</strong>
+                        </div>
                       </td>
 
                       {/* Country */}
@@ -529,25 +526,16 @@ export function B2BWorkspace() {
                         </div>
                       </td>
 
-                      {/* Commission */}
+                      {/* Status & Next Follow-Up */}
                       <td>
-                        <div style={{ fontSize: "11.5px", color: "var(--text-main)", maxWidth: "180px", lineHeight: 1.3 }}>
-                          <strong>{partner.commissionTerms}</strong>
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td>
-                        <span className={`badge-status ${statusClass}`}>
-                          {partner.status}
-                        </span>
-                      </td>
-
-                      {/* Next Follow-Up */}
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11.5px", fontFamily: "var(--font-mono)" }}>
-                          <Calendar size={13} style={{ color: "var(--accent-blue)" }} />
-                          <span>{partner.nextFollowUp || "—"}</span>
+                        <div className="partner-status-cell">
+                          <span className={`badge-status ${statusClass}`}>
+                            {partner.status}
+                          </span>
+                          <span>
+                            <Calendar size={13} />
+                            {partner.nextFollowUp || "No follow-up set"}
+                          </span>
                         </div>
                       </td>
 
@@ -655,21 +643,111 @@ export function B2BWorkspace() {
                     </div>
                   </div>
 
+                  <div className="form-group">
+                    <label>University / Organization Photo (Optional)</label>
+                    <div className="partner-photo-uploader">
+                      <div className="partner-photo-preview">
+                        {partnerForm.photoUrl ? (
+                          <img src={partnerForm.photoUrl} alt="Selected university" />
+                        ) : (
+                          <ImagePlus size={22} />
+                        )}
+                      </div>
+                      <div>
+                        <label className="partner-photo-select">
+                          <ImagePlus size={14} />
+                          <span>{partnerForm.photoUrl ? "Replace photo" : "Upload photo"}</span>
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            onChange={event => handlePartnerPhoto(event.target.files?.[0])}
+                          />
+                        </label>
+                        <p>JPG, PNG, WEBP or GIF · maximum 2 MB</p>
+                      </div>
+                      {partnerForm.photoUrl && (
+                        <button
+                          type="button"
+                          className="partner-photo-remove"
+                          onClick={() => setPartnerForm(current => ({ ...current, photoUrl: "" }))}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="form-row-2">
                     <div className="form-group">
                       <label>Country *</label>
-                      <select
-                        value={partnerForm.country}
-                        onChange={e => setPartnerForm({ ...partnerForm, country: e.target.value })}
-                      >
-                        <option value="Nepal">Nepal 🇳🇵</option>
-                        <option value="India">India 🇮🇳</option>
-                        {AECS_AUTHORIZED_COUNTRIES.map(c => (
-                          <option key={c.code} value={c.name}>
-                            {c.name} ({c.code})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="world-country-picker">
+                        <button
+                          type="button"
+                          className={`world-country-trigger ${showCountryPicker ? "open" : ""}`}
+                          aria-expanded={showCountryPicker}
+                          onClick={() => {
+                            setShowCountryPicker(open => !open);
+                            setCountrySearch("");
+                          }}
+                        >
+                          {partnerForm.country ? (
+                            <span>
+                              <CountryFlag
+                                code={WORLD_COUNTRIES.find(country => country[0] === partnerForm.country)?.[1] || ""}
+                                size={17}
+                              />
+                              <strong>{partnerForm.country}</strong>
+                            </span>
+                          ) : (
+                            <span className="world-country-placeholder">Select a country</span>
+                          )}
+                          <ChevronDown size={15} />
+                        </button>
+                        {showCountryPicker && (
+                          <div className="world-country-menu">
+                            <div className="world-country-search">
+                              <Search size={14} />
+                              <input
+                                autoFocus
+                                type="search"
+                                value={countrySearch}
+                                onChange={event => setCountrySearch(event.target.value)}
+                                placeholder="Search country or ISO code..."
+                              />
+                            </div>
+                            {WORLD_COUNTRIES.filter(country => {
+                              const query = countrySearch.trim().toLowerCase();
+                              return !query || country[0].toLowerCase().includes(query) || country[1].toLowerCase().includes(query);
+                            }).map(country => (
+                              <button
+                                type="button"
+                                key={country[1]}
+                                className={partnerForm.country === country[0] ? "selected" : ""}
+                                onClick={() => {
+                                  setPartnerForm(current => ({
+                                    ...current,
+                                    country: country[0],
+                                    countryCode: country[1],
+                                    contactPhone: `${country[3]} `,
+                                  }));
+                                  setShowCountryPicker(false);
+                                }}
+                              >
+                                <CountryFlag code={country[1]} size={17} />
+                                <span>{country[0]}</span>
+                                <small>{country[1]}</small>
+                              </button>
+                            ))}
+                            {WORLD_COUNTRIES.filter(country => {
+                              const query = countrySearch.trim().toLowerCase();
+                              return !query || country[0].toLowerCase().includes(query) || country[1].toLowerCase().includes(query);
+                            }).length === 0 && (
+                              <div className="world-country-empty">No matching country found.</div>
+                            )}
+                          </div>
+                        )}
+                        <input className="world-country-required" tabIndex={-1} required value={partnerForm.country} onChange={() => {}} />
+                      </div>
                     </div>
 
                     <div className="form-group">
@@ -842,21 +920,12 @@ export function B2BWorkspace() {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "8px",
-                      background: "var(--primary-navy)",
-                      color: "#FFFFFF",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 800,
-                      fontSize: "13px",
-                    }}
-                  >
-                    {activePartnerDetail.code}
+                  <div className="partner-drawer-photo">
+                    {activePartnerDetail.photoUrl ? (
+                      <img src={activePartnerDetail.photoUrl} alt={activePartnerDetail.name} />
+                    ) : (
+                      activePartnerDetail.code
+                    )}
                   </div>
                   <div>
                     <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>
@@ -879,6 +948,21 @@ export function B2BWorkspace() {
 
               {/* Drawer Content */}
               <div style={{ padding: "22px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div className="partner-photo-management">
+                  <div>
+                    <strong>University profile photo</strong>
+                    <span>Upload or replace the official campus or institution image.</span>
+                  </div>
+                  <label className="partner-photo-select">
+                    <ImagePlus size={14} />
+                    <span>{activePartnerDetail.photoUrl ? "Replace photo" : "Upload photo"}</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={event => updateActivePartnerPhoto(event.target.files?.[0])}
+                    />
+                  </label>
+                </div>
                 {/* 3 KPIs */}
                 <div
                   style={{

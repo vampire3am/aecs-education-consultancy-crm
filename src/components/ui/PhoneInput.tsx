@@ -363,10 +363,22 @@ export function CountryFlag({ code, size = 18 }: { code: string; size?: number }
 
     default:
       return (
-        <svg width={width} height={height} viewBox="0 0 24 16" fill="none" style={{ borderRadius: "2px", border: "1px solid rgba(0,0,0,0.1)" }}>
-          <rect width="24" height="16" fill="#64748B" />
-          <text x="12" y="11" fill="#FFFFFF" fontSize="9" fontWeight="bold" textAnchor="middle">{code}</text>
-        </svg>
+        <img
+          src={`https://flagcdn.com/${code.toLowerCase()}.svg`}
+          width={width}
+          height={height}
+          alt={`${code.toUpperCase()} flag`}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          style={{
+            width,
+            height,
+            display: "block",
+            objectFit: "cover",
+            borderRadius: "2px",
+            border: "1px solid rgba(0,0,0,0.1)",
+          }}
+        />
       );
   }
 }
