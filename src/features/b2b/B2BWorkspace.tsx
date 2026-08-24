@@ -30,6 +30,7 @@ import {
   MessageSquare,
   MessageSquarePlus,
   Phone,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
@@ -68,6 +69,9 @@ export function B2BWorkspace() {
   // Drawer / Detail Modal
   const [activePartnerDetail, setActivePartnerDetail] = useState<B2BPartner | null>(null);
   const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
+  const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null);
+  const [savingPartner, setSavingPartner] = useState(false);
+  const [partnerFormError, setPartnerFormError] = useState("");
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [savingInteraction, setSavingInteraction] = useState(false);
   const [interactionError, setInteractionError] = useState("");
@@ -96,6 +100,69 @@ export function B2BWorkspace() {
     totalPayoutClaimed: "",
     notes: "",
   });
+
+  const emptyPartnerForm = () => ({
+    name: "",
+    type: "Sub-Agent / Channel Partner" as B2BPartner["type"],
+    country: "",
+    countryCode: "",
+    city: "",
+    photoUrl: "",
+    contactPerson: "",
+    contactEmail: "",
+    contactPhone: "",
+    status: "Active" as B2BPartner["status"],
+    commissionTerms: "",
+    agreementStatus: "Signed MOU" as B2BPartner["agreementStatus"],
+    agreementExpiry: "",
+    assignedStaff: profile?.full_name || "",
+    nextFollowUp: "",
+    referredStudentsCount: 0,
+    totalPayoutClaimed: "",
+    notes: "",
+  });
+
+  const closePartnerModal = () => {
+    setShowAddPartnerModal(false);
+    setEditingPartnerId(null);
+    setPartnerFormError("");
+    setShowCountryPicker(false);
+    setCountrySearch("");
+    setPartnerForm(emptyPartnerForm());
+  };
+
+  const openCreatePartnerModal = () => {
+    setEditingPartnerId(null);
+    setPartnerFormError("");
+    setPartnerForm(emptyPartnerForm());
+    setShowAddPartnerModal(true);
+  };
+
+  const openEditPartnerModal = (partner: B2BPartner) => {
+    setEditingPartnerId(partner.id);
+    setPartnerFormError("");
+    setPartnerForm({
+      name: partner.name,
+      type: partner.type,
+      country: partner.country,
+      countryCode: partner.countryCode,
+      city: partner.city || "",
+      photoUrl: partner.photoUrl || "",
+      contactPerson: partner.contactPerson,
+      contactEmail: partner.contactEmail,
+      contactPhone: partner.contactPhone,
+      status: partner.status,
+      commissionTerms: partner.commissionTerms,
+      agreementStatus: partner.agreementStatus,
+      agreementExpiry: partner.agreementExpiry || "",
+      assignedStaff: partner.assignedStaff,
+      nextFollowUp: partner.nextFollowUp || "",
+      referredStudentsCount: partner.referredStudentsCount,
+      totalPayoutClaimed: partner.totalPayoutClaimed,
+      notes: partner.notes,
+    });
+    setShowAddPartnerModal(true);
+  };
 
   // Interaction / Meeting Log Form
   const [interactionNote, setInteractionNote] = useState({
@@ -201,13 +268,19 @@ export function B2BWorkspace() {
   // Handle Add Partner Submit
   const handleAddPartner = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!partnerForm.name.trim() || !partnerForm.contactPerson.trim()) return;
+    if (!partnerForm.name.trim() || !partnerForm.contactPerson.trim()) {
+      setPartnerFormError("Partner name and primary contact are required.");
+      return;
+    }
+
+    setSavingPartner(true);
+    setPartnerFormError("");
 
     // Find country code
     const matchedCountry = WORLD_COUNTRIES.find(country => country[0] === partnerForm.country);
     const countryCode = matchedCountry?.[1] || partnerForm.countryCode || "";
 
-    await B2BService.createPartner({
+    const payload = {
       name: partnerForm.name.trim(),
       type: partnerForm.type,
       country: partnerForm.country,
@@ -226,30 +299,25 @@ export function B2BWorkspace() {
       referredStudentsCount: Number(partnerForm.referredStudentsCount) || 0,
       totalPayoutClaimed: partnerForm.totalPayoutClaimed,
       notes: partnerForm.notes.trim(),
-    });
+    };
 
-    await loadPartners();
-    setShowAddPartnerModal(false);
-    setPartnerForm({
-      name: "",
-      type: "Sub-Agent / Channel Partner",
-      country: "",
-      countryCode: "",
-      city: "",
-      photoUrl: "",
-      contactPerson: "",
-      contactEmail: "",
-      contactPhone: "",
-      status: "Active",
-      commissionTerms: "",
-      agreementStatus: "Signed MOU",
-      agreementExpiry: "",
-      assignedStaff: profile?.full_name || "",
-      nextFollowUp: "",
-      referredStudentsCount: 0,
-      totalPayoutClaimed: "",
-      notes: "",
-    });
+    try {
+      if (editingPartnerId) {
+        const updated = await B2BService.updatePartner(editingPartnerId, payload);
+        if (!updated) throw new Error("The partner record could not be found.");
+        setPartners(current => current.map(partner => partner.id === updated.id ? updated : partner));
+        setActivePartnerDetail(updated);
+        setInteractionSuccess("Partner details updated successfully.");
+      } else {
+        const created = await B2BService.createPartner(payload);
+        setPartners(current => [created, ...current]);
+      }
+      closePartnerModal();
+    } catch (cause) {
+      setPartnerFormError(cause instanceof Error ? cause.message : "Unable to save this partner.");
+    } finally {
+      setSavingPartner(false);
+    }
   };
 
   // Handle Log Interaction Submit
@@ -321,7 +389,7 @@ export function B2BWorkspace() {
             type="button"
             className="btn-primary"
             style={{ background: "#0F172A", borderColor: "#0F172A", color: "#FFFFFF" }}
-            onClick={() => setShowAddPartnerModal(true)}
+            onClick={openCreatePartnerModal}
           >
             <Plus size={15} />
             <span>Add partner</span>
@@ -603,7 +671,7 @@ export function B2BWorkspace() {
           ========================================================================= */}
       <AnimatePresence>
         {showAddPartnerModal && (
-          <div className="modal-backdrop-clean" onClick={() => setShowAddPartnerModal(false)}>
+          <div className="modal-backdrop-clean" onClick={closePartnerModal}>
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -615,16 +683,18 @@ export function B2BWorkspace() {
               <div className="modal-header-clean">
                 <div>
                   <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>
-                    Register New B2B Partner / Associate
+                    {editingPartnerId ? "Edit B2B Partner / Associate" : "Register New B2B Partner / Associate"}
                   </h3>
                   <p style={{ fontSize: "11.5px", color: "var(--text-muted)", margin: "2px 0 0" }}>
-                    Configure recruitment channels, commercial commission structures, and MOU terms
+                    {editingPartnerId
+                      ? "Update the partner profile, commercial terms, ownership, and follow-up schedule"
+                      : "Configure recruitment channels, commercial commission structures, and MOU terms"}
                   </p>
                 </div>
                 <button
                   type="button"
                   className="drawer-close-btn"
-                  onClick={() => setShowAddPartnerModal(false)}
+                  onClick={closePartnerModal}
                 >
                   <X size={18} />
                 </button>
@@ -876,10 +946,16 @@ export function B2BWorkspace() {
                 </div>
 
                 <div className="modal-footer-clean">
+                  {partnerFormError && (
+                    <div style={{ color: "var(--danger, #DC2626)", fontSize: "12px", marginRight: "auto" }}>
+                      {partnerFormError}
+                    </div>
+                  )}
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => setShowAddPartnerModal(false)}
+                    onClick={closePartnerModal}
+                    disabled={savingPartner}
                   >
                     Cancel
                   </button>
@@ -887,9 +963,10 @@ export function B2BWorkspace() {
                     type="submit"
                     className="btn-primary"
                     style={{ background: "#0F172A", borderColor: "#0F172A" }}
+                    disabled={savingPartner}
                   >
                     <Handshake size={15} />
-                    <span>Save B2B Partner</span>
+                    <span>{savingPartner ? "Saving…" : editingPartnerId ? "Save Changes" : "Save B2B Partner"}</span>
                   </button>
                 </div>
               </form>
@@ -953,13 +1030,24 @@ export function B2BWorkspace() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="drawer-close-btn"
-                  onClick={() => setActivePartnerDetail(null)}
-                >
-                  <X size={18} />
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: "7px 11px", fontSize: "12px" }}
+                    onClick={() => openEditPartnerModal(activePartnerDetail)}
+                  >
+                    <Pencil size={14} />
+                    <span>Edit partner</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="drawer-close-btn"
+                    onClick={() => setActivePartnerDetail(null)}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
               {/* Drawer Content */}
