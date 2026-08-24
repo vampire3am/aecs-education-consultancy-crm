@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Check, CheckCircle2, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
+import { BookOpen, Check, CheckCircle2, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, Pencil, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -48,6 +48,9 @@ export function ApplicationWorkspace() {
 
   // Modals & Drawers
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
+  const [savingApplication, setSavingApplication] = useState(false);
+  const [applicationFormError, setApplicationFormError] = useState("");
   const [applicationFormStep, setApplicationFormStep] = useState<1 | 2 | 3>(1);
   const [activeDossier, setActiveDossier] = useState<UniversityApplication | null>(null);
   const [stageChangeApp, setStageChangeApp] = useState<UniversityApplication | null>(null);
@@ -68,6 +71,60 @@ export function ApplicationWorkspace() {
     scholarship: "",
     notes: "",
   });
+
+  const resetApplicationForm = () => {
+    setNewAppForm({
+      studentCode: "", studentName: "", universityName: "", country: "UK", countryCode: "GB",
+      course: "", intake: "", stage: "SUBMITTED", deadline: "", officer: profile?.full_name || "",
+      tuitionFee: "", scholarship: "", notes: "",
+    });
+    setStudentSearch("");
+    setApplicationFormStep(1);
+    setEditingApplicationId(null);
+    setApplicationFormError("");
+  };
+
+  const closeApplicationForm = () => {
+    setShowSubmitModal(false);
+    resetApplicationForm();
+  };
+
+  const cancelApplicationEdit = () => {
+    const original = editingApplicationId
+      ? applications.find(application => application.id === editingApplicationId) || null
+      : null;
+    closeApplicationForm();
+    if (original) setActiveDossier(original);
+  };
+
+  const openNewApplicationForm = () => {
+    resetApplicationForm();
+    setShowSubmitModal(true);
+  };
+
+  const openApplicationEdit = (application: UniversityApplication) => {
+    setEditingApplicationId(application.id);
+    setApplicationFormError("");
+    setStudentSearch(`${application.studentName} · ${application.studentCode}`);
+    setNewAppForm({
+      studentCode: application.studentCode,
+      studentName: application.studentName,
+      universityName: application.universityName,
+      country: application.country,
+      countryCode: application.countryCode,
+      course: application.course,
+      intake: application.intake,
+      stage: application.stage,
+      deadline: application.deadline,
+      officer: application.officer,
+      tuitionFee: application.tuitionFee === "Not recorded" ? "" : application.tuitionFee,
+      scholarship: application.scholarship === "None" ? "" : application.scholarship,
+      notes: application.notes || "",
+    });
+    setApplicationFormStep(1);
+    setActiveDossier(null);
+    setShowSubmitModal(true);
+  };
 
   const loadApplications = async () => {
     setLoading(true);
@@ -197,7 +254,12 @@ export function ApplicationWorkspace() {
   // Submit Handler
   const handleSubmitNewApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAppForm.studentName.trim() || !newAppForm.universityName.trim()) return;
+    if (!newAppForm.studentName.trim() || !newAppForm.universityName.trim()) {
+      setApplicationFormError("Select a student and university before saving.");
+      return;
+    }
+    setSavingApplication(true);
+    setApplicationFormError("");
 
     let cCode: UniversityApplication["countryCode"] = newAppForm.countryCode || "GB";
     if (newAppForm.country === "Australia") cCode = "AU";
@@ -209,7 +271,7 @@ export function ApplicationWorkspace() {
     else if (newAppForm.country === "Ireland") cCode = "IE";
     else if (newAppForm.country === "Japan") cCode = "JP";
 
-    await ApplicationService.createApplication({
+    const payload = {
       studentCode: newAppForm.studentCode.trim(),
       studentName: newAppForm.studentName.trim(),
       universityName: newAppForm.universityName.trim(),
@@ -224,25 +286,24 @@ export function ApplicationWorkspace() {
       scholarship: newAppForm.scholarship.trim(),
       appliedDate: new Date().toISOString().split("T")[0],
       notes: newAppForm.notes.trim(),
-    });
+    };
 
-    await loadApplications();
-    setShowSubmitModal(false);
-    setNewAppForm({
-      studentCode: "",
-      studentName: "",
-      universityName: "",
-      country: "UK",
-      countryCode: "GB",
-      course: "",
-      intake: "",
-      stage: "SUBMITTED",
-      deadline: "",
-      officer: profile?.full_name || "",
-      tuitionFee: "",
-      scholarship: "",
-      notes: "",
-    });
+    try {
+      if (editingApplicationId) {
+        const updatedApplications = await ApplicationService.updateApplication(editingApplicationId, payload);
+        const updated = updatedApplications.find(application => application.id === editingApplicationId) || null;
+        setApplications(updatedApplications);
+        setActiveDossier(updated);
+      } else {
+        await ApplicationService.createApplication(payload);
+        await loadApplications();
+      }
+      closeApplicationForm();
+    } catch (cause) {
+      setApplicationFormError(cause instanceof Error ? cause.message : "Unable to save this application.");
+    } finally {
+      setSavingApplication(false);
+    }
   };
 
   // Quick Stage Update Handler
@@ -284,7 +345,7 @@ export function ApplicationWorkspace() {
             type="button"
             className="btn-primary"
             style={{ background: "#F97316", borderColor: "#F97316", color: "#FFFFFF" }}
-            onClick={() => { setApplicationFormStep(1); setShowSubmitModal(true); }}
+            onClick={openNewApplicationForm}
           >
             <Plus size={15} />
             <span>Submit New Application</span>
@@ -768,7 +829,7 @@ export function ApplicationWorkspace() {
           ========================================================================= */}
       <AnimatePresence>
         {showSubmitModal && (
-          <div className="modal-backdrop-clean" onClick={() => setShowSubmitModal(false)}>
+          <div className="modal-backdrop-clean" onClick={cancelApplicationEdit} style={{ zIndex: 1700 }}>
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -780,16 +841,18 @@ export function ApplicationWorkspace() {
               <div className="modal-header-clean">
                 <div>
                   <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>
-                    Submit New University Application
+                    {editingApplicationId ? "Edit University Application" : "Submit New University Application"}
                   </h3>
                   <p style={{ fontSize: "11.5px", color: "var(--text-muted)", margin: "2px 0 0" }}>
-                    Record formal application lodgement, offer deadlines, and scholarship assessments
+                    {editingApplicationId
+                      ? "Update the student, study plan, financial details, deadline, and compliance notes"
+                      : "Record formal application lodgement, offer deadlines, and scholarship assessments"}
                   </p>
                 </div>
                 <button
                   type="button"
                   className="drawer-close-btn"
-                  onClick={() => setShowSubmitModal(false)}
+                  onClick={cancelApplicationEdit}
                 >
                   <X size={18} />
                 </button>
@@ -945,10 +1008,12 @@ export function ApplicationWorkspace() {
                 </div>
 
                 <div className="modal-footer-clean">
+                  {applicationFormError && <div className="form-error" style={{ marginRight: "auto" }}>{applicationFormError}</div>}
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => applicationFormStep === 1 ? setShowSubmitModal(false) : setApplicationFormStep((applicationFormStep - 1) as 1 | 2)}
+                    onClick={() => applicationFormStep === 1 ? cancelApplicationEdit() : setApplicationFormStep((applicationFormStep - 1) as 1 | 2)}
+                    disabled={savingApplication}
                   >
                     {applicationFormStep === 1 ? "Cancel" : "Back"}
                   </button>
@@ -963,9 +1028,10 @@ export function ApplicationWorkspace() {
                     type="submit"
                     className="btn-primary"
                     style={{ background: "#F97316", borderColor: "#F97316" }}
+                    disabled={savingApplication}
                   >
                     <PlaneTakeoff size={15} />
-                    <span>Submit Application</span>
+                    <span>{savingApplication ? "Saving…" : editingApplicationId ? "Save Application" : "Submit Application"}</span>
                   </button>}
                 </div>
               </form>
@@ -1107,13 +1173,14 @@ export function ApplicationWorkspace() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="drawer-close-btn"
-                  onClick={() => setActiveDossier(null)}
-                >
-                  <X size={18} />
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button type="button" className="btn-secondary" style={{ padding: "7px 11px", fontSize: "12px" }} onClick={() => openApplicationEdit(activeDossier)}>
+                    <Pencil size={14}/><span>Edit application</span>
+                  </button>
+                  <button type="button" className="drawer-close-btn" onClick={() => setActiveDossier(null)}>
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
               <div style={{ padding: "22px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
