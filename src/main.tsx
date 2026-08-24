@@ -58,8 +58,6 @@ if (!localStorage.getItem(PURGE_FLAG)) {
     "aecs_documents_v2",
     "aecs_course_batches_v2",
     "aecs_persistent_batches",
-    "aecs_destinations_catalog_v2",
-    "aecs_partner_universities_v2",
     "aecs_active_chat_channel",
     "aecs_active_chat_recipient",
   ];

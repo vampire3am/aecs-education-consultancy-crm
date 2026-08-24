@@ -56,6 +56,7 @@ import { AECS_AUTHORIZED_COUNTRIES, DestinationCountry } from "../../lib/destina
 import { COUNTRY_METADATA } from "../../lib/countryMetadata.generated";
 import { MultiIntakePicker } from "../../components/ui/MultiIntakePicker";
 import { CounsellingService } from "../../services/counsellingService";
+import { DestinationCatalogService } from "../../services/destinationCatalogService";
 import { useAuth } from "../auth/AuthProvider";
 
 export interface DestinationCatalog extends DestinationCountry {
@@ -149,6 +150,8 @@ export function CounsellingDashboard() {
   const [destinationDocuments, setDestinationDocuments] = useState<Record<string, DestinationDocument[]>>(() => {
     try { return JSON.parse(localStorage.getItem(DESTINATION_DOCUMENTS_STORAGE_KEY) || "{}"); } catch { return {}; }
   });
+  const [catalogError,setCatalogError]=useState("");
+  const [catalogLoading,setCatalogLoading]=useState(true);
 
   // Persistent Destination & University Catalogs
   const [destinations, setDestinations] = useState<DestinationCatalog[]>(() => {
@@ -171,9 +174,18 @@ export function CounsellingDashboard() {
     return INITIAL_PARTNER_UNIVERSITIES;
   });
 
-  useEffect(() => {
-    localStorage.setItem(DESTINATIONS_STORAGE_KEY, JSON.stringify(destinations));
-  }, [destinations]);
+  useEffect(() => { let live=true;
+    const local=destinations;
+    DestinationCatalogService.list().then(async remote=>{
+      if(!live)return;
+      if(remote.length){setDestinations(remote.map(removeSyntheticDestinationData));localStorage.setItem(DESTINATIONS_STORAGE_KEY,JSON.stringify(remote));}
+      else if(local.length){await DestinationCatalogService.saveMany(local);if(live)setDestinations(local);}
+      setCatalogError("");
+    }).catch(error=>{if(live)setCatalogError(error instanceof Error?error.message:"Unable to load the destination catalogue")}).finally(()=>{if(live)setCatalogLoading(false)});
+    return()=>{live=false};
+    // Initial migration intentionally runs once; subsequent changes use explicit database writes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Modal States
   const [showAddCountryModal, setShowAddCountryModal] = useState(false);
@@ -269,7 +281,7 @@ export function CounsellingDashboard() {
     setIsEditingDestination(true);
   };
 
-  const saveDestinationEdit = () => {
+  const saveDestinationEdit = async () => {
     if (!activeCountryDetail || !destinationEdit.name.trim()) return;
     const updatedDestination: DestinationCatalog = {
       ...activeCountryDetail,
@@ -282,9 +294,9 @@ export function CounsellingDashboard() {
       acceptedEnglishTests: destinationEdit.acceptedEnglishTests.split(",").map(value => value.trim()).filter(Boolean),
       keyHighlights: destinationEdit.keyHighlights.trim(),
     };
-    saveDestinations(destinations.map(item => item.code === activeCountryDetail.code ? updatedDestination : item));
-    setActiveCountryDetail(updatedDestination);
-    setIsEditingDestination(false);
+    try { await DestinationCatalogService.save(updatedDestination);saveDestinations(destinations.map(item => item.code === activeCountryDetail.code ? updatedDestination : item));
+      setActiveCountryDetail(updatedDestination);setIsEditingDestination(false);setCatalogError("");
+    } catch(error){setCatalogError(error instanceof Error?error.message:"Unable to save destination changes")}
   };
 
   const saveDestinationDocuments = (updated: Record<string, DestinationDocument[]>) => {
@@ -316,23 +328,23 @@ export function CounsellingDashboard() {
     saveDestinationDocuments({ ...destinationDocuments, [code]: (destinationDocuments[code] || []).filter(document => document.id !== id) });
   };
 
-  const handleDeleteUniversity = (university: PartnerUniversity) => {
+  const handleDeleteUniversity = async (university: PartnerUniversity) => {
     const confirmed = window.confirm(
       `End the partnership with ${university.name}?\n\nThe university will be removed from the active partner catalogue. Existing student and application records will remain unchanged.`
     );
     if (!confirmed) return;
 
     saveUniversities(universities.filter(item => item.id !== university.id));
-    saveDestinations(
-      destinations.map(destination =>
+    const updatedDestinations=destinations.map(destination =>
         destination.code === university.countryCode || destination.name === university.country
           ? { ...destination, universitiesCount: Math.max(0, destination.universitiesCount - 1) }
           : destination
-      )
-    );
+      );
+    const affected=updatedDestinations.find(destination=>destination.code===university.countryCode||destination.name===university.country);
+    try{if(affected)await DestinationCatalogService.save(affected);saveDestinations(updatedDestinations)}catch(error){setCatalogError(error instanceof Error?error.message:"Unable to update the destination catalogue")}
   };
 
-  const handleDeleteDestination = (destination: DestinationCatalog) => {
+  const handleDeleteDestination = async (destination: DestinationCatalog) => {
     const linkedUniversities = universities.filter(
       university => university.countryCode === destination.code || university.country === destination.name
     );
@@ -349,12 +361,12 @@ export function CounsellingDashboard() {
     );
     if (!confirmed) return;
 
-    saveDestinations(destinations.filter(item => item.code !== destination.code));
-    setActiveCountryDetail(null);
+    try { await DestinationCatalogService.remove(destination.code);saveDestinations(destinations.filter(item => item.code !== destination.code));setActiveCountryDetail(null);setCatalogError(""); }
+    catch(error){setCatalogError(error instanceof Error?error.message:"Unable to remove destination")}
   };
 
   // Add Country Handler
-  const handleCreateCountry = (e: React.FormEvent) => {
+  const handleCreateCountry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCountryForm.name.trim() || !newCountryForm.code.trim()) return;
 
@@ -381,9 +393,8 @@ export function CounsellingDashboard() {
       keyHighlights: newCountryForm.keyHighlights.trim(),
     };
 
-    const updated = [newDest, ...destinations.filter(d => d.code !== formattedCode)];
-    saveDestinations(updated);
-    setShowAddCountryModal(false);
+    try { await DestinationCatalogService.save(newDest);const updated = [newDest, ...destinations.filter(d => d.code !== formattedCode)];
+    saveDestinations(updated);setShowAddCountryModal(false);setCatalogError("");
     setNewCountryForm({
       name: "",
       code: "",
@@ -398,10 +409,11 @@ export function CounsellingDashboard() {
       popularIntakes: "",
       keyHighlights: "",
     });
+    } catch(error){setCatalogError(error instanceof Error?error.message:"Unable to save destination")}
   };
 
   // Add University Handler
-  const handleCreateUniversity = (e: React.FormEvent) => {
+  const handleCreateUniversity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUniForm.name.trim() || !newUniForm.city.trim()) return;
 
@@ -432,7 +444,9 @@ export function CounsellingDashboard() {
     const updatedDests = destinations.map(d =>
       d.name === newUniForm.country ? { ...d, universitiesCount: d.universitiesCount + 1 } : d
     );
-    saveDestinations(updatedDests);
+    const affected=updatedDests.find(destination=>destination.name===newUniForm.country);
+    try{if(affected)await DestinationCatalogService.save(affected);saveDestinations(updatedDests);setCatalogError("");}
+    catch(error){setCatalogError(error instanceof Error?error.message:"Unable to update the destination catalogue")}
 
     setShowAddUniModal(false);
     setNewUniForm({
@@ -534,6 +548,8 @@ export function CounsellingDashboard() {
           </button>
         </div>
       </div>
+      {catalogError&&<div className="phase2-alert phase2-alert-error"><AlertCircle size={16}/><span><strong>Destination catalogue unavailable.</strong> {catalogError}</span><button type="button" onClick={()=>setCatalogError("")} aria-label="Dismiss"><X size={14}/></button></div>}
+      {catalogLoading&&<div className="catalog-sync-status"><RotateCcw size={14}/><span>Synchronising the shared destination catalogue…</span></div>}
 
       {/* 2. Flagship Metric Strip (Top 4 KPIs) */}
       <div className="metrics-grid-4" style={{ marginBottom: "24px" }}>
