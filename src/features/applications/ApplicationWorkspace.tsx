@@ -10,6 +10,12 @@ import { useAuth } from "../auth/AuthProvider";
 import { CaseTaskPanel } from "./CaseTaskPanel";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { CountryDisplay } from "../../components/ui/CountryDisplay";
+import { StudentDirectoryRecord, StudentService } from "../../services/studentService";
+
+type ApplicationDestination = { name: string; code: string; popularIntakes?: string[]; intakeCycles?: string[] };
+type ApplicationUniversity = { name: string; country: string; countryCode: string; popularCourses?: string[]; tuition?: string; intake?: string };
+const APPLICATION_DESTINATIONS_KEY = "aecs_destinations_catalog_v2";
+const APPLICATION_UNIVERSITIES_KEY = "aecs_partner_universities_v2";
 
 type ApplicationStage = UniversityApplication["stage"];
 
@@ -35,6 +41,10 @@ export function ApplicationWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [destinationFilter, setDestinationFilter] = useState("ALL");
   const [stageFilter, setStageFilter] = useState("ALL");
+  const [students, setStudents] = useState<StudentDirectoryRecord[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [catalogDestinations, setCatalogDestinations] = useState<ApplicationDestination[]>([]);
+  const [catalogUniversities, setCatalogUniversities] = useState<ApplicationUniversity[]>([]);
 
   // Modals & Drawers
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -72,6 +82,17 @@ export function ApplicationWorkspace() {
   }, []);
 
   useEffect(() => {
+    void StudentService.getStudents().then(setStudents).catch(() => setStudents([]));
+    try {
+      setCatalogDestinations(JSON.parse(localStorage.getItem(APPLICATION_DESTINATIONS_KEY) || "[]"));
+      setCatalogUniversities(JSON.parse(localStorage.getItem(APPLICATION_UNIVERSITIES_KEY) || "[]"));
+    } catch {
+      setCatalogDestinations([]);
+      setCatalogUniversities([]);
+    }
+  }, [showSubmitModal]);
+
+  useEffect(() => {
     const routeState = location.state as { openApplicationForm?: boolean; country?: string; countryCode?: string } | null;
     if (!routeState?.openApplicationForm) return;
     setNewAppForm(current => ({
@@ -82,6 +103,46 @@ export function ApplicationWorkspace() {
     setShowSubmitModal(true);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+
+  const universitiesForCountry = useMemo(() => catalogUniversities.filter(university =>
+    university.country === newAppForm.country || university.countryCode === newAppForm.countryCode
+  ), [catalogUniversities, newAppForm.country, newAppForm.countryCode]);
+
+  const coursesForSelection = useMemo(() => {
+    const selectedUniversity = universitiesForCountry.find(university => university.name === newAppForm.universityName);
+    const source = selectedUniversity ? [selectedUniversity] : universitiesForCountry;
+    return Array.from(new Set(source.flatMap(university => university.popularCourses || []).filter(Boolean))).sort();
+  }, [newAppForm.universityName, universitiesForCountry]);
+
+  const selectStudent = (value: string) => {
+    setStudentSearch(value);
+    const selected = students.find(student => `${student.fullName} · ${student.code}` === value || student.code === value);
+    if (!selected) return;
+    setNewAppForm(current => ({ ...current, studentName: selected.fullName, studentCode: selected.code }));
+  };
+
+  const selectDestination = (countryName: string) => {
+    const destination = catalogDestinations.find(item => item.name === countryName);
+    setNewAppForm(current => ({
+      ...current,
+      country: countryName,
+      countryCode: destination?.code || "",
+      universityName: "",
+      course: "",
+      intake: destination?.intakeCycles?.[0] || destination?.popularIntakes?.[0] || "",
+    }));
+  };
+
+  const selectUniversity = (universityName: string) => {
+    const university = universitiesForCountry.find(item => item.name === universityName);
+    setNewAppForm(current => ({
+      ...current,
+      universityName,
+      course: university?.popularCourses?.[0] || "",
+      tuitionFee: university?.tuition || current.tuitionFee,
+      intake: university?.intake || current.intake,
+    }));
+  };
 
   // Compute 4 Top Metrics (Matching User Screenshot)
   const totalActive = applications.length;
@@ -742,62 +803,45 @@ export function ApplicationWorkspace() {
               </div>
 
               <form onSubmit={handleSubmitNewApplication}>
-                <div className="modal-body-clean">
+                <div className="modal-body-clean application-form-modern">
+                  <section className="application-form-section">
+                    <header><span>1</span><div><strong>Select student</strong><small>Search the registered student directory. The AECS code fills automatically.</small></div></header>
+                    <div className="form-row-2">
+                      <div className="form-group">
+                        <label>Search student *</label>
+                        <input list="application-students" required value={studentSearch} onChange={event => selectStudent(event.target.value)} placeholder="Search by student name or AECS code" autoComplete="off" />
+                        <datalist id="application-students">{students.map(student => <option key={student.id} value={`${student.fullName} · ${student.code}`}>{student.email}</option>)}</datalist>
+                      </div>
+                      <div className="form-group">
+                        <label>Student Code / ID</label>
+                        <input className="application-readonly-field" readOnly required value={newAppForm.studentCode} placeholder="Filled after selecting a student" />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="application-form-section">
+                    <header><span>2</span><div><strong>Study plan</strong><small>Options are connected to the active Abroad catalogue.</small></div></header>
                   <div className="form-row-2">
                     <div className="form-group">
-                      <label>Student Full Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newAppForm.studentName}
-                        onChange={e => setNewAppForm({ ...newAppForm, studentName: e.target.value })}
-                        placeholder="Candidate Full Name"
-                      />
+                      <label>Destination Country *</label>
+                      <select required value={newAppForm.country} onChange={event => selectDestination(event.target.value)}>
+                        <option value="">Select an active destination</option>
+                        {catalogDestinations.map(destination => <option key={destination.code} value={destination.name}>{destination.name}</option>)}
+                      </select>
                     </div>
-
-                    <div className="form-group">
-                      <label>Student Code / ID *</label>
-                      <input
-                        type="text"
-                        required
-                        value={newAppForm.studentCode}
-                        onChange={e => setNewAppForm({ ...newAppForm, studentCode: e.target.value })}
-                        placeholder="Student ID / Code"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row-2">
                     <div className="form-group">
                       <label>Target University *</label>
                       <input
-                        type="text"
+                        list="application-universities"
                         required
                         value={newAppForm.universityName}
-                        onChange={e => setNewAppForm({ ...newAppForm, universityName: e.target.value })}
-                        placeholder="e.g. University of Greenwich, London"
+                        disabled={!newAppForm.country}
+                        onChange={e => selectUniversity(e.target.value)}
+                        placeholder={newAppForm.country ? "Search or add a university" : "Select a destination first"}
+                        autoComplete="off"
                       />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Destination Country *</label>
-                      <select
-                        value={newAppForm.country}
-                        onChange={e => setNewAppForm({ ...newAppForm, country: e.target.value })}
-                      >
-                        {!['UK','Australia','Canada','USA','Germany','New Zealand','Finland','Ireland','Japan'].includes(newAppForm.country) && (
-                          <option value={newAppForm.country}>{newAppForm.country}</option>
-                        )}
-                        <option value="UK">United Kingdom</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Canada">Canada</option>
-                        <option value="USA">United States</option>
-                        <option value="Germany">Germany</option>
-                        <option value="New Zealand">New Zealand</option>
-                        <option value="Finland">Finland</option>
-                        <option value="Ireland">Ireland</option>
-                        <option value="Japan">Japan</option>
-                      </select>
+                      <datalist id="application-universities">{universitiesForCountry.map(university => <option key={`${university.countryCode}-${university.name}`} value={university.name}>{university.country}</option>)}</datalist>
+                      <small className="application-field-hint">Only universities linked to {newAppForm.country || "the selected destination"} are suggested. Type a new name to add one to this application.</small>
                     </div>
                   </div>
 
@@ -805,12 +849,16 @@ export function ApplicationWorkspace() {
                     <div className="form-group">
                       <label>Degree / Course *</label>
                       <input
-                        type="text"
+                        list="application-courses"
                         required
                         value={newAppForm.course}
                         onChange={e => setNewAppForm({ ...newAppForm, course: e.target.value })}
-                        placeholder="e.g. MSc International Business"
+                        disabled={!newAppForm.country}
+                        placeholder={newAppForm.country ? "Search or add a degree / course" : "Select a destination first"}
+                        autoComplete="off"
                       />
+                      <datalist id="application-courses">{coursesForSelection.map(course => <option key={course} value={course} />)}</datalist>
+                      <small className="application-field-hint">Suggestions update when you select a university. A new course name can also be entered.</small>
                     </div>
 
                     <div className="form-group">
@@ -819,6 +867,7 @@ export function ApplicationWorkspace() {
                         value={newAppForm.intake}
                         onChange={e => setNewAppForm({ ...newAppForm, intake: e.target.value })}
                       >
+                        {newAppForm.intake && !["September 2026","July 2026","Fall 2026","Winter 2026","January 2027","Spring 2027"].includes(newAppForm.intake) && <option value={newAppForm.intake}>{newAppForm.intake}</option>}
                         <option value="September 2026">September 2026</option>
                         <option value="July 2026">July 2026</option>
                         <option value="Fall 2026">Fall 2026</option>
@@ -828,7 +877,10 @@ export function ApplicationWorkspace() {
                       </select>
                     </div>
                   </div>
+                  </section>
 
+                  <section className="application-form-section">
+                    <header><span>3</span><div><strong>Application details</strong><small>Record financial terms, ownership and submission controls.</small></div></header>
                   <div className="form-row-2">
                     <div className="form-group">
                       <label>Annual Tuition Fee *</label>
@@ -893,6 +945,7 @@ export function ApplicationWorkspace() {
                       placeholder="Include portal credentials, pending documents, or condition remarks…"
                     />
                   </div>
+                  </section>
                 </div>
 
                 <div className="modal-footer-clean">
