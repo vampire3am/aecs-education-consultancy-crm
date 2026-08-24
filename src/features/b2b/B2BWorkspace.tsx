@@ -131,6 +131,14 @@ export function B2BWorkspace() {
     setPartnerForm(emptyPartnerForm());
   };
 
+  const cancelPartnerModal = () => {
+    const partnerBeingEdited = editingPartnerId
+      ? partners.find(partner => partner.id === editingPartnerId) || null
+      : null;
+    closePartnerModal();
+    if (partnerBeingEdited) setActivePartnerDetail(partnerBeingEdited);
+  };
+
   const openCreatePartnerModal = () => {
     setEditingPartnerId(null);
     setPartnerFormError("");
@@ -161,6 +169,7 @@ export function B2BWorkspace() {
       totalPayoutClaimed: partner.totalPayoutClaimed,
       notes: partner.notes,
     });
+    setActivePartnerDetail(null);
     setShowAddPartnerModal(true);
   };
 
@@ -673,7 +682,7 @@ export function B2BWorkspace() {
         {showAddPartnerModal && (
           <div
             className="modal-backdrop-clean"
-            onClick={closePartnerModal}
+            onClick={cancelPartnerModal}
             style={{ zIndex: editingPartnerId ? 1700 : 100 }}
           >
             <motion.div
@@ -698,7 +707,7 @@ export function B2BWorkspace() {
                 <button
                   type="button"
                   className="drawer-close-btn"
-                  onClick={closePartnerModal}
+                  onClick={cancelPartnerModal}
                 >
                   <X size={18} />
                 </button>
@@ -958,7 +967,7 @@ export function B2BWorkspace() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={closePartnerModal}
+                    onClick={cancelPartnerModal}
                     disabled={savingPartner}
                   >
                     Cancel
