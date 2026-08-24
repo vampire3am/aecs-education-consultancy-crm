@@ -671,7 +671,11 @@ export function B2BWorkspace() {
           ========================================================================= */}
       <AnimatePresence>
         {showAddPartnerModal && (
-          <div className="modal-backdrop-clean" onClick={closePartnerModal}>
+          <div
+            className="modal-backdrop-clean"
+            onClick={closePartnerModal}
+            style={{ zIndex: editingPartnerId ? 1700 : 100 }}
+          >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
