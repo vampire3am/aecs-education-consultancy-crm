@@ -190,3 +190,161 @@
 .table-wrapper > .crm-table [class*="stage-badge"] {
   white-space: nowrap;
 }
+
+/* Applications is intentionally last in the cascade: legacy feature rules must
+   not collapse the workspace back into the old dense strip layout. */
+.application-workspace {
+  width: min(100%, 1480px) !important;
+  max-width: 1480px !important;
+  display: grid !important;
+  gap: 24px !important;
+  margin-inline: auto !important;
+  padding: 28px 32px 52px !important;
+}
+
+.application-workspace .page-header-row {
+  align-items: flex-end !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+}
+
+.application-workspace .page-header-titles h2 {
+  margin: 8px 0 7px !important;
+  font-size: 28px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -.03em !important;
+}
+
+.application-workspace .page-header-titles p {
+  max-width: 760px !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+
+.application-executive-summary {
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.application-executive-summary > header {
+  padding: 0 2px 12px !important;
+  border: 0 !important;
+}
+
+.application-executive-summary > header strong { font-size: 14px !important; }
+.application-executive-summary > header span,
+.application-executive-summary > header small { font-size: 11px !important; }
+
+.application-metrics-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin: 0 !important;
+}
+
+.application-metrics-grid .metric-box {
+  min-height: 158px !important;
+  padding: 21px !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 15px !important;
+  background: #fff !important;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .055) !important;
+}
+
+.application-metrics-grid .metric-box:not(:last-child) {
+  border-right: 1px solid var(--border-subtle) !important;
+}
+
+.application-metrics-grid .metric-header { margin-bottom: 16px !important; }
+.application-metrics-grid .metric-label { font-size: 12.5px !important; font-weight: 650 !important; }
+.application-metrics-grid .metric-value { margin-bottom: 9px !important; font-size: 32px !important; }
+.application-metrics-grid .metric-icon-wrap { width: 40px !important; height: 40px !important; border-radius: 11px !important; }
+.application-metrics-grid [class*="kpi-trend"] { margin-top: 0 !important; font-size: 11px !important; line-height: 1.45 !important; }
+
+.application-workspace .case-task-panel {
+  margin: 0 !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 15px !important;
+  background: #fff !important;
+  box-shadow: 0 7px 22px rgba(15, 23, 42, .045) !important;
+}
+
+.application-workspace .case-task-header {
+  min-height: 82px !important;
+  padding: 17px 22px !important;
+  background: linear-gradient(90deg, #fff 0%, #fff 72%, #fff7ed 100%) !important;
+}
+
+.application-workspace .case-task-list { min-height: 82px !important; }
+
+.application-directory-panel {
+  margin: 0 !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, .055) !important;
+}
+
+.application-directory-heading {
+  display: block !important;
+  padding: 22px 24px 10px !important;
+  background: #fff !important;
+}
+
+.application-directory-heading h3 { font-size: 18px !important; }
+.application-directory-heading p { margin-top: 5px !important; font-size: 12px !important; }
+
+.application-directory-panel .application-directory-toolbar {
+  gap: 12px !important;
+  padding: 12px 24px 16px !important;
+  border: 0 !important;
+}
+
+.application-directory-panel .application-directory-toolbar > .search-input-wrap {
+  min-width: 380px !important;
+  min-height: 42px !important;
+}
+
+.application-directory-panel .application-stage-tabs {
+  gap: 8px !important;
+  padding: 13px 24px !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  background: #f8fafc !important;
+}
+
+.application-directory-panel .application-stage-tabs button {
+  min-height: 32px !important;
+  padding: 6px 13px !important;
+  font-size: 11px !important;
+}
+
+.application-directory-panel > .application-table-body .table-wrapper {
+  padding: 14px 18px 20px !important;
+}
+
+.application-directory-table {
+  min-width: 980px !important;
+}
+
+.application-directory-table tbody td {
+  padding: 17px 13px !important;
+}
+
+@media (max-width: 1180px) {
+  .application-workspace { padding-inline: 22px !important; }
+  .application-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .application-directory-panel .application-directory-toolbar > .search-input-wrap { min-width: 100% !important; }
+}
+
+@media (max-width: 720px) {
+  .application-workspace { gap: 16px !important; padding: 18px 14px 36px !important; }
+  .application-workspace .page-header-row { align-items: flex-start !important; }
+  .application-metrics-grid { grid-template-columns: 1fr !important; }
+  .application-directory-heading,
+  .application-directory-panel .application-directory-toolbar,
+  .application-directory-panel .application-stage-tabs { padding-left: 15px !important; padding-right: 15px !important; }
+}
