@@ -40,6 +40,7 @@ import {
   Sparkles,
   TrendingUp,
   Trash2,
+  Upload,
   UserCheck,
   UserPlus,
   Users,
@@ -124,6 +125,16 @@ const COUNTRY_NAME_ALIASES: Record<string, string> = {
   "REPUBLIC OF KOREA": "South Korea",
 };
 const UNIVERSITIES_STORAGE_KEY = "aecs_partner_universities_v2";
+const DESTINATION_DOCUMENTS_STORAGE_KEY = "aecs_destination_documents_v1";
+
+interface DestinationDocument {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl: string;
+  uploadedAt: string;
+}
 
 export function CounsellingDashboard() {
   const { profile } = useAuth();
@@ -133,6 +144,11 @@ export function CounsellingDashboard() {
   const [selectedRegion, setSelectedRegion] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCountryDetail, setActiveCountryDetail] = useState<DestinationCatalog | null>(null);
+  const [isEditingDestination, setIsEditingDestination] = useState(false);
+  const [destinationEdit, setDestinationEdit] = useState({ name: "", currency: "", dialCode: "", avgLivingCost: "", pswvWorkRights: "", popularIntakes: "", acceptedEnglishTests: "", keyHighlights: "" });
+  const [destinationDocuments, setDestinationDocuments] = useState<Record<string, DestinationDocument[]>>(() => {
+    try { return JSON.parse(localStorage.getItem(DESTINATION_DOCUMENTS_STORAGE_KEY) || "{}"); } catch { return {}; }
+  });
 
   // Persistent Destination & University Catalogs
   const [destinations, setDestinations] = useState<DestinationCatalog[]>(() => {
@@ -237,6 +253,67 @@ export function CounsellingDashboard() {
   const saveUniversities = (updated: PartnerUniversity[]) => {
     setUniversities(updated);
     localStorage.setItem(UNIVERSITIES_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const beginDestinationEdit = (destination: DestinationCatalog) => {
+    setDestinationEdit({
+      name: destination.name,
+      currency: destination.currency,
+      dialCode: destination.dialCode,
+      avgLivingCost: destination.avgLivingCost,
+      pswvWorkRights: destination.pswvWorkRights,
+      popularIntakes: destination.popularIntakes.join(", "),
+      acceptedEnglishTests: destination.acceptedEnglishTests.join(", "),
+      keyHighlights: destination.keyHighlights,
+    });
+    setIsEditingDestination(true);
+  };
+
+  const saveDestinationEdit = () => {
+    if (!activeCountryDetail || !destinationEdit.name.trim()) return;
+    const updatedDestination: DestinationCatalog = {
+      ...activeCountryDetail,
+      name: destinationEdit.name.trim(),
+      currency: destinationEdit.currency.trim().toUpperCase(),
+      dialCode: destinationEdit.dialCode.trim(),
+      avgLivingCost: destinationEdit.avgLivingCost.trim(),
+      pswvWorkRights: destinationEdit.pswvWorkRights.trim(),
+      popularIntakes: destinationEdit.popularIntakes.split(",").map(value => value.trim()).filter(Boolean),
+      acceptedEnglishTests: destinationEdit.acceptedEnglishTests.split(",").map(value => value.trim()).filter(Boolean),
+      keyHighlights: destinationEdit.keyHighlights.trim(),
+    };
+    saveDestinations(destinations.map(item => item.code === activeCountryDetail.code ? updatedDestination : item));
+    setActiveCountryDetail(updatedDestination);
+    setIsEditingDestination(false);
+  };
+
+  const saveDestinationDocuments = (updated: Record<string, DestinationDocument[]>) => {
+    setDestinationDocuments(updated);
+    localStorage.setItem(DESTINATION_DOCUMENTS_STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const handleDestinationDocuments = async (files: FileList | null) => {
+    if (!files || !activeCountryDetail) return;
+    const allowed = Array.from(files).slice(0, 10).filter(file => file.size <= 5 * 1024 * 1024);
+    const additions = await Promise.all(allowed.map(file => new Promise<DestinationDocument>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ id: crypto.randomUUID(), name: file.name, size: file.size, type: file.type, dataUrl: String(reader.result), uploadedAt: new Date().toISOString() });
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    })));
+    const code = activeCountryDetail.code;
+    try {
+      saveDestinationDocuments({ ...destinationDocuments, [code]: [...(destinationDocuments[code] || []), ...additions] });
+      window.alert(`${additions.length} destination document${additions.length === 1 ? "" : "s"} uploaded successfully.`);
+    } catch {
+      window.alert("The browser could not store these files. Upload fewer or smaller documents and try again.");
+    }
+  };
+
+  const removeDestinationDocument = (id: string) => {
+    if (!activeCountryDetail) return;
+    const code = activeCountryDetail.code;
+    saveDestinationDocuments({ ...destinationDocuments, [code]: (destinationDocuments[code] || []).filter(document => document.id !== id) });
   };
 
   const handleDeleteUniversity = (university: PartnerUniversity) => {
@@ -1399,12 +1476,28 @@ export function CounsellingDashboard() {
 
               <div style={{ padding: "22px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "18px" }}>
                 <div>
-                  <h4 style={{ fontSize: "13px", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "8px" }}>
-                    Destination Overview & Highlights
-                  </h4>
-                  <p style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--text-main)", margin: 0 }}>
-                    {activeCountryDetail.keyHighlights}
-                  </p>
+                  <div className="destination-dossier-heading">
+                    <h4>Destination profile</h4>
+                    {!isEditingDestination && <button type="button" className="btn-secondary" onClick={() => beginDestinationEdit(activeCountryDetail)}>Edit details</button>}
+                  </div>
+                  {isEditingDestination ? (
+                    <div className="destination-edit-grid">
+                      <label>Destination name<input value={destinationEdit.name} onChange={event => setDestinationEdit({ ...destinationEdit, name: event.target.value })} /></label>
+                      <label>ISO code<input value={activeCountryDetail.code} disabled /></label>
+                      <label>Currency<input value={destinationEdit.currency} onChange={event => setDestinationEdit({ ...destinationEdit, currency: event.target.value })} /></label>
+                      <label>Dialling code<input value={destinationEdit.dialCode} onChange={event => setDestinationEdit({ ...destinationEdit, dialCode: event.target.value })} /></label>
+                      <label>Living expenses<input value={destinationEdit.avgLivingCost} onChange={event => setDestinationEdit({ ...destinationEdit, avgLivingCost: event.target.value })} /></label>
+                      <label>Post-study work rights<input value={destinationEdit.pswvWorkRights} onChange={event => setDestinationEdit({ ...destinationEdit, pswvWorkRights: event.target.value })} /></label>
+                      <label className="destination-edit-wide">Popular intakes<input value={destinationEdit.popularIntakes} onChange={event => setDestinationEdit({ ...destinationEdit, popularIntakes: event.target.value })} placeholder="September 2026, February 2027" /></label>
+                      <label className="destination-edit-wide">Accepted English tests<input value={destinationEdit.acceptedEnglishTests} onChange={event => setDestinationEdit({ ...destinationEdit, acceptedEnglishTests: event.target.value })} placeholder="IELTS 6.0+, PTE 58+" /></label>
+                      <label className="destination-edit-wide">Overview & highlights<textarea rows={4} value={destinationEdit.keyHighlights} onChange={event => setDestinationEdit({ ...destinationEdit, keyHighlights: event.target.value })} /></label>
+                      <div className="destination-edit-actions"><button type="button" className="btn-secondary" onClick={() => setIsEditingDestination(false)}>Cancel</button><button type="button" className="btn-primary" onClick={saveDestinationEdit}><Check size={15} /> Save changes</button></div>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--text-main)", margin: 0 }}>
+                      {activeCountryDetail.keyHighlights || "No destination overview has been added yet."}
+                    </p>
+                  )}
                 </div>
 
                 <div
@@ -1464,7 +1557,29 @@ export function CounsellingDashboard() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: "auto", display: "flex", gap: "10px" }}>
+                <section className="destination-documents-panel">
+                  <div className="destination-dossier-heading">
+                    <div><h4>Destination documents</h4><p>Brochures, fee sheets, intake guides and partnership files.</p></div>
+                    <label className="btn-secondary destination-upload-button"><Upload size={15} /> Upload<input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={event => { void handleDestinationDocuments(event.target.files); event.currentTarget.value = ""; }} /></label>
+                  </div>
+                  {(destinationDocuments[activeCountryDetail.code] || []).length === 0 ? (
+                    <div className="destination-documents-empty"><FileText size={22} /><span>No files attached to this destination yet.</span></div>
+                  ) : (
+                    <div className="destination-document-list">
+                      {(destinationDocuments[activeCountryDetail.code] || []).map(document => (
+                        <div className="destination-document-row" key={document.id}>
+                          <FileText size={18} />
+                          <div><strong>{document.name}</strong><span>{(document.size / 1024).toFixed(0)} KB · {new Date(document.uploadedAt).toLocaleDateString()}</span></div>
+                          <button type="button" title="View document" onClick={() => window.open(document.dataUrl, "_blank", "noopener,noreferrer")}><Eye size={15} /></button>
+                          <a title="Download document" href={document.dataUrl} download={document.name}><Download size={15} /></a>
+                          <button type="button" title="Remove document" onClick={() => removeDestinationDocument(document.id)}><Trash2 size={15} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <div className="destination-dossier-actions">
                   <button
                     type="button"
                     className="catalog-delete-button"
@@ -1476,14 +1591,13 @@ export function CounsellingDashboard() {
                   <button
                     type="button"
                     className="btn-primary"
-                    style={{ flex: 1 }}
                     onClick={() => {
                       setActiveCountryDetail(null);
-                      navigate("/leads");
+                      navigate("/applications", { state: { openApplicationForm: true, country: activeCountryDetail.name, countryCode: activeCountryDetail.code } });
                     }}
                   >
-                    <Plus size={15} />
-                    <span>Create Lead for {activeCountryDetail.name}</span>
+                    <PlaneTakeoff size={15} />
+                    <span>Start application</span>
                   </button>
                 </div>
               </div>

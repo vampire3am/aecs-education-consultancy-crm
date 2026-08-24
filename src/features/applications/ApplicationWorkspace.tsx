@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Check, CheckCircle2, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ApplicationService,
   type UniversityApplication,
@@ -24,6 +25,8 @@ const STAGES: { key: ApplicationStage | "ALL"; label: string; tabLabel: string; 
 
 export function ApplicationWorkspace() {
   const { profile } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [applications, setApplications] = useState<UniversityApplication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +70,18 @@ export function ApplicationWorkspace() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadApplications();
   }, []);
+
+  useEffect(() => {
+    const routeState = location.state as { openApplicationForm?: boolean; country?: string; countryCode?: string } | null;
+    if (!routeState?.openApplicationForm) return;
+    setNewAppForm(current => ({
+      ...current,
+      country: routeState.country || current.country,
+      countryCode: routeState.countryCode || current.countryCode,
+    }));
+    setShowSubmitModal(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   // Compute 4 Top Metrics (Matching User Screenshot)
   const totalActive = applications.length;
@@ -116,7 +131,7 @@ export function ApplicationWorkspace() {
     e.preventDefault();
     if (!newAppForm.studentName.trim() || !newAppForm.universityName.trim()) return;
 
-    let cCode: UniversityApplication["countryCode"] = "GB";
+    let cCode: UniversityApplication["countryCode"] = newAppForm.countryCode || "GB";
     if (newAppForm.country === "Australia") cCode = "AU";
     else if (newAppForm.country === "Canada") cCode = "CA";
     else if (newAppForm.country === "USA") cCode = "US";
@@ -768,8 +783,11 @@ export function ApplicationWorkspace() {
                       <label>Destination Country *</label>
                       <select
                         value={newAppForm.country}
-                        onChange={e => setNewAppForm({ ...newAppForm, country: e.target.value as UniversityApplication["country"] })}
+                        onChange={e => setNewAppForm({ ...newAppForm, country: e.target.value })}
                       >
+                        {!['UK','Australia','Canada','USA','Germany','New Zealand','Finland','Ireland','Japan'].includes(newAppForm.country) && (
+                          <option value={newAppForm.country}>{newAppForm.country}</option>
+                        )}
                         <option value="UK">United Kingdom</option>
                         <option value="Australia">Australia</option>
                         <option value="Canada">Canada</option>
