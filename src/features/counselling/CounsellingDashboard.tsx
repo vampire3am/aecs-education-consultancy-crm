@@ -93,6 +93,18 @@ const INITIAL_DESTINATIONS_MASTER: DestinationCatalog[] = [];
 const INITIAL_PARTNER_UNIVERSITIES: PartnerUniversity[] = [];
 
 const DESTINATIONS_STORAGE_KEY = "aecs_destinations_catalog_v2";
+const SYNTHETIC_ENGLISH_TESTS = ["IELTS (6.0+)", "PTE (56+)", "Duolingo"];
+
+const removeSyntheticDestinationData = (destination: DestinationCatalog): DestinationCatalog => ({
+  ...destination,
+  universitiesCount: destination.universitiesCount === 5 ? 0 : destination.universitiesCount,
+  coursesCount: destination.coursesCount === 35 ? 0 : destination.coursesCount,
+  visaSuccessRate: destination.visasApproved === 0 ? "0%" : destination.visaSuccessRate,
+  acceptedEnglishTests:
+    JSON.stringify(destination.acceptedEnglishTests) === JSON.stringify(SYNTHETIC_ENGLISH_TESTS)
+      ? []
+      : destination.acceptedEnglishTests,
+});
 
 const COUNTRY_AUTOFILL = COUNTRY_METADATA;
 
@@ -127,7 +139,7 @@ export function CounsellingDashboard() {
     const saved = localStorage.getItem(DESTINATIONS_STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return (JSON.parse(saved) as DestinationCatalog[]).map(removeSyntheticDestinationData);
       } catch (e) {}
     }
     return INITIAL_DESTINATIONS_MASTER;
@@ -142,6 +154,10 @@ export function CounsellingDashboard() {
     }
     return INITIAL_PARTNER_UNIVERSITIES;
   });
+
+  useEffect(() => {
+    localStorage.setItem(DESTINATIONS_STORAGE_KEY, JSON.stringify(destinations));
+  }, [destinations]);
 
   // Modal States
   const [showAddCountryModal, setShowAddCountryModal] = useState(false);
@@ -274,15 +290,15 @@ export function CounsellingDashboard() {
       currency: newCountryForm.currency.trim().toUpperCase(),
       dialCode: newCountryForm.dialCode.trim(),
       region: newCountryForm.region,
-      universitiesCount: Number(newCountryForm.universitiesCount) || 5,
-      coursesCount: Number(newCountryForm.coursesCount) || 35,
+      universitiesCount: 0,
+      coursesCount: 0,
       activeProcessing: 0,
       visasApproved: 0,
-      visaSuccessRate: "100%",
+      visaSuccessRate: "0%",
       avgTuition: newCountryForm.avgTuition.trim(),
       avgLivingCost: newCountryForm.avgLivingCost.trim(),
       pswvWorkRights: newCountryForm.pswvWorkRights.trim(),
-      acceptedEnglishTests: ["IELTS (6.0+)", "PTE (56+)", "Duolingo"],
+      acceptedEnglishTests: [],
       popularIntakes: intakesArray.length > 0 ? intakesArray : ["September", "February"],
       intakeCycles: intakesArray.map(i => `${i} 2026`),
       keyHighlights: newCountryForm.keyHighlights.trim(),
@@ -393,8 +409,16 @@ export function CounsellingDashboard() {
   }, [destinations, selectedRegion, searchQuery]);
 
   // Aggregate Top Statistics
-  const totalUniversitiesCount = destinations.reduce((acc, curr) => acc + curr.universitiesCount, 0);
-  const totalCoursesCount = destinations.reduce((acc, curr) => acc + curr.coursesCount, 0);
+  const destinationUniversities = (destination: DestinationCatalog) =>
+    universities.filter(university => university.countryCode === destination.code || university.country === destination.name);
+  const destinationUniversityCount = (destination: DestinationCatalog) => destinationUniversities(destination).length;
+  const destinationCourseCount = (destination: DestinationCatalog) =>
+    new Set(destinationUniversities(destination).flatMap(university => university.popularCourses || [])).size;
+  const destinationVisaSuccessRate = (destination: DestinationCatalog) =>
+    destination.visasApproved > 0 ? destination.visaSuccessRate : "0%";
+
+  const totalUniversitiesCount = universities.length;
+  const totalCoursesCount = new Set(universities.flatMap(university => university.popularCourses || [])).size;
   const totalApprovedCount = destinations.reduce((acc, curr) => acc + curr.visasApproved, 0);
 
   return (
@@ -454,7 +478,7 @@ export function CounsellingDashboard() {
               <Building2 size={18} />
             </div>
           </div>
-          <div className="metric-value">{totalUniversitiesCount}+ Available</div>
+          <div className="metric-value">{totalUniversitiesCount} Available</div>
           <span className="metric-sub">Available institutions</span>
         </div>
 
@@ -465,7 +489,7 @@ export function CounsellingDashboard() {
               <GraduationCap size={18} />
             </div>
           </div>
-          <div className="metric-value">{totalCoursesCount}+ Programs</div>
+          <div className="metric-value">{totalCoursesCount} Programs</div>
           <span className="metric-sub">Configured programs</span>
         </div>
 
@@ -624,21 +648,21 @@ export function CounsellingDashboard() {
                     <span style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>
                       Universities
                     </span>
-                    <strong style={{ fontSize: "15px", color: "var(--text-main)" }}>{dest.universitiesCount}</strong>
+                    <strong style={{ fontSize: "15px", color: "var(--text-main)" }}>{destinationUniversityCount(dest)}</strong>
                   </div>
 
                   <div style={{ background: "var(--bg-card)", padding: "10px", textAlign: "center" }}>
                     <span style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>
                       Courses
                     </span>
-                    <strong style={{ fontSize: "15px", color: "var(--text-main)" }}>{dest.coursesCount}</strong>
+                    <strong style={{ fontSize: "15px", color: "var(--text-main)" }}>{destinationCourseCount(dest)}</strong>
                   </div>
 
                   <div style={{ background: "var(--bg-card)", padding: "10px", textAlign: "center" }}>
                     <span style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>
                       Visa Grant %
                     </span>
-                    <strong style={{ fontSize: "15px", color: "var(--success-text, #059669)" }}>{dest.visaSuccessRate}</strong>
+                    <strong style={{ fontSize: "15px", color: "var(--success-text, #059669)" }}>{destinationVisaSuccessRate(dest)}</strong>
                   </div>
 
                   <div style={{ background: "var(--bg-card)", padding: "10px", textAlign: "center" }}>
@@ -1397,7 +1421,7 @@ export function CounsellingDashboard() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ color: "var(--text-muted)" }}>Partner Universities:</span>
-                    <strong>{activeCountryDetail.universitiesCount} Institutions</strong>
+                    <strong>{destinationUniversityCount(activeCountryDetail)} Institutions</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ color: "var(--text-muted)" }}>Statutory Living Expenses:</span>
@@ -1414,23 +1438,29 @@ export function CounsellingDashboard() {
                     Accepted English Language Qualifications
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {activeCountryDetail.acceptedEnglishTests.map((t, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          fontSize: "12.5px",
-                          padding: "6px 10px",
-                          borderRadius: "4px",
-                          background: "var(--bg-card-subtle)",
-                        }}
-                      >
-                        <BadgeCheck size={15} style={{ color: "var(--success, #059669)" }} />
-                        <span>{t}</span>
-                      </div>
-                    ))}
+                    {activeCountryDetail.acceptedEnglishTests.length > 0 ? (
+                      activeCountryDetail.acceptedEnglishTests.map((t, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            fontSize: "12.5px",
+                            padding: "6px 10px",
+                            borderRadius: "4px",
+                            background: "var(--bg-card-subtle)",
+                          }}
+                        >
+                          <BadgeCheck size={15} style={{ color: "var(--success, #059669)" }} />
+                          <span>{t}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+                        No English-test requirements have been configured.
+                      </span>
+                    )}
                   </div>
                 </div>
 
