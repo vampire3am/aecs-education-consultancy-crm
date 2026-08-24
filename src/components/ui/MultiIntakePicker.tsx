@@ -30,7 +30,9 @@ export function MultiIntakePicker({ value, onChange, required = false }: { value
       </span>
       <ChevronDown size={17}/>
     </button>
-    {required && <input className="multi-intake-validation" value={value} required readOnly tabIndex={-1}/>} 
+    {required && (
+      <input className="multi-intake-validation" value={value} required readOnly tabIndex={-1} />
+    )}
     {open && <div className="multi-intake-popover">
       <header><div><strong>Popular intake periods</strong><span>Select one or multiple intakes</span></div><span className="multi-intake-count">{selected.length} selected</span></header>
       <div className="multi-intake-year-strip" role="listbox" aria-label="Intake year">{INTAKE_YEARS.map(item => <button type="button" className={item === year ? "active" : ""} key={item} onClick={() => setYear(item)}>{item}</button>)}</div>
