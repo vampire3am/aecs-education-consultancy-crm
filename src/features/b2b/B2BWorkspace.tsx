@@ -69,6 +69,9 @@ export function B2BWorkspace() {
   const [activePartnerDetail, setActivePartnerDetail] = useState<B2BPartner | null>(null);
   const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
+  const [savingInteraction, setSavingInteraction] = useState(false);
+  const [interactionError, setInteractionError] = useState("");
+  const [interactionSuccess, setInteractionSuccess] = useState("");
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
 
@@ -97,10 +100,17 @@ export function B2BWorkspace() {
   // Interaction / Meeting Log Form
   const [interactionNote, setInteractionNote] = useState({
     type: "Call / WhatsApp",
-    date: "",
+    date: new Date().toISOString().slice(0, 10),
     summary: "",
     nextFollowUp: "",
   });
+
+  const openInteractionModal = (partner: B2BPartner | null = activePartnerDetail) => {
+    if (partner) setActivePartnerDetail(partner);
+    setInteractionError("");
+    setInteractionNote({ type: "Call / WhatsApp", date: new Date().toISOString().slice(0, 10), summary: "", nextFollowUp: partner?.nextFollowUp || "" });
+    setShowInteractionModal(true);
+  };
 
   const handlePartnerPhoto = (file?: File) => {
     if (!file) return;
@@ -245,22 +255,31 @@ export function B2BWorkspace() {
   // Handle Log Interaction Submit
   const handleSaveInteraction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activePartnerDetail || !interactionNote.summary.trim()) return;
-
-    const newNote = `${activePartnerDetail.notes ? activePartnerDetail.notes + "\n\n" : ""}[${interactionNote.date} - ${interactionNote.type}]: ${interactionNote.summary}`;
-    await B2BService.updatePartner(activePartnerDetail.id, {
-      notes: newNote,
-      nextFollowUp: interactionNote.nextFollowUp,
-    });
-
-    await loadPartners();
-    setShowInteractionModal(false);
-    setInteractionNote({
-      type: "Call / WhatsApp",
-      date: "",
-      summary: "",
-      nextFollowUp: "",
-    });
+    if (!activePartnerDetail || !interactionNote.summary.trim() || !interactionNote.date) {
+      setInteractionError("Choose an interaction date and enter a meaningful summary.");
+      return;
+    }
+    setSavingInteraction(true);
+    setInteractionError("");
+    try {
+      const newEntry = `[${interactionNote.date} · ${interactionNote.type}]\n${interactionNote.summary.trim()}`;
+      const newNote = activePartnerDetail.notes ? `${newEntry}\n\n${activePartnerDetail.notes}` : newEntry;
+      const updated = await B2BService.updatePartner(activePartnerDetail.id, {
+        notes: newNote,
+        nextFollowUp: interactionNote.nextFollowUp,
+        status: interactionNote.nextFollowUp ? "Follow-up Due" : activePartnerDetail.status,
+      });
+      if (!updated) throw new Error("The partner record could not be found.");
+      setActivePartnerDetail(updated);
+      setPartners(current => current.map(partner => partner.id === updated.id ? updated : partner));
+      setShowInteractionModal(false);
+      setInteractionSuccess("Interaction saved. The meeting log and follow-up schedule are now updated.");
+      setInteractionNote({ type: "Call / WhatsApp", date: new Date().toISOString().slice(0, 10), summary: "", nextFollowUp: "" });
+    } catch (cause) {
+      setInteractionError(cause instanceof Error ? cause.message : "Unable to save this interaction.");
+    } finally {
+      setSavingInteraction(false);
+    }
   };
 
   // Handle Delete Partner
@@ -563,10 +582,7 @@ export function B2BWorkspace() {
                             type="button"
                             className="btn-secondary"
                             style={{ padding: "4px 8px", fontSize: "11px", color: "var(--success, #059669)" }}
-                            onClick={() => {
-                              setActivePartnerDetail(partner);
-                              setShowInteractionModal(true);
-                            }}
+                            onClick={() => openInteractionModal(partner)}
                             title="Log Meeting / Note"
                           >
                             <MessageSquarePlus size={13} />
@@ -1038,13 +1054,14 @@ export function B2BWorkspace() {
 
                 {/* Notes & Interaction History */}
                 <div>
+                  {interactionSuccess && <div className="b2b-interaction-success"><CheckCircle2 size={16}/><span>{interactionSuccess}</span><button type="button" onClick={() => setInteractionSuccess("")}><X size={14}/></button></div>}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                     <strong style={{ fontSize: "13px" }}>Commercial Terms & Meeting Logs</strong>
                     <button
                       type="button"
                       className="btn-secondary"
                       style={{ padding: "4px 10px", fontSize: "11.5px" }}
-                      onClick={() => setShowInteractionModal(true)}
+                      onClick={() => openInteractionModal()}
                     >
                       <Plus size={12} />
                       <span>Log Interaction</span>
@@ -1081,9 +1098,7 @@ export function B2BWorkspace() {
                     type="button"
                     className="btn-primary"
                     style={{ flex: 1.5 }}
-                    onClick={() => {
-                      setShowInteractionModal(true);
-                    }}
+                    onClick={() => openInteractionModal()}
                   >
                     <MessageSquarePlus size={15} />
                     <span>Log Meeting Note</span>
@@ -1129,6 +1144,7 @@ export function B2BWorkspace() {
 
               <form onSubmit={handleSaveInteraction}>
                 <div className="modal-body-clean">
+                  {interactionError && <div className="case-task-alert"><AlertCircle size={16}/><span>{interactionError}</span></div>}
                   <div className="form-row-2">
                     <div className="form-group">
                       <label>Interaction Channel *</label>
@@ -1144,9 +1160,10 @@ export function B2BWorkspace() {
                     </div>
 
                     <div className="form-group">
-                      <label>Date</label>
+                      <label>Interaction Date *</label>
                       <input
                         type="date"
+                        required
                         value={interactionNote.date}
                         onChange={e => setInteractionNote({ ...interactionNote, date: e.target.value })}
                       />
@@ -1182,9 +1199,9 @@ export function B2BWorkspace() {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary">
+                  <button type="submit" className="btn-primary" disabled={savingInteraction}>
                     <Check size={15} />
-                    <span>Save Note & Update Partner</span>
+                    <span>{savingInteraction ? "Saving interaction…" : "Save Interaction"}</span>
                   </button>
                 </div>
               </form>
