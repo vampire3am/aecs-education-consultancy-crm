@@ -151,6 +151,11 @@ export function ApplicationWorkspace() {
   ).length;
   const visaQueue = applications.filter(a => a.stage === "VISA_LODGED").length;
   const visasApproved = applications.filter(a => a.stage === "VISA_APPROVED").length;
+  const activeCountries = new Set(applications.map(application => application.country).filter(Boolean)).size;
+  const offerRate = totalActive ? Math.round((confirmedOffers / totalActive) * 100) : 0;
+  const visaDecisionTotal = applications.filter(application => application.stage === "VISA_APPROVED" || application.stage === "VISA_LODGED").length;
+  const visaApprovalRate = visaDecisionTotal ? Math.round((visasApproved / visaDecisionTotal) * 100) : 0;
+  const upcomingDeadline = applications.map(application => application.deadline).filter(Boolean).filter(deadline => new Date(deadline) >= new Date()).sort()[0];
 
   // Filtered applications
   const filteredApplications = useMemo(() => {
@@ -295,7 +300,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{totalActive}</div>
-          <KpiTrendIndicator metricKey="applications.active" value={totalActive} label="Across UK, Aus, Canada, USA, Germany" />
+          <KpiTrendIndicator metricKey="applications.active" value={totalActive} label={`${activeCountries} active destination${activeCountries === 1 ? "" : "s"} · ${upcomingDeadline ? `Next deadline ${new Date(upcomingDeadline).toLocaleDateString()}` : "No upcoming deadline"}`} />
         </div>
 
         <div className="metric-box">
@@ -306,7 +311,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{confirmedOffers}</div>
-          <KpiTrendIndicator metricKey="applications.offers" value={confirmedOffers} label="Ready for fee deposit & CAS" />
+          <KpiTrendIndicator metricKey="applications.offers" value={confirmedOffers} label={`${offerRate}% of applications · Fee deposit and CAS readiness`} />
         </div>
 
         <div className="metric-box">
@@ -317,7 +322,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{visaQueue}</div>
-          <KpiTrendIndicator metricKey="applications.visa-queue" value={visaQueue} label="Biometrics & decision pending" />
+          <KpiTrendIndicator metricKey="applications.visa-queue" value={visaQueue} label={`${visaQueue ? "Biometrics and embassy decisions require follow-up" : "No embassy decisions currently pending"}`} />
         </div>
 
         <div className="metric-box">
@@ -328,7 +333,7 @@ export function ApplicationWorkspace() {
             </div>
           </div>
           <div className="metric-value">{visasApproved}</div>
-          <KpiTrendIndicator metricKey="applications.visas-approved" value={visasApproved} label="Approved application records" />
+          <KpiTrendIndicator metricKey="applications.visas-approved" value={visasApproved} label={`${visaApprovalRate}% approval across recorded visa decisions`} />
         </div>
       </div>
 
