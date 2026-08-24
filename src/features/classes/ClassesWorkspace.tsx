@@ -1044,9 +1044,6 @@ export function ClassesWorkspace() {
                         value={studentForm.expectedCompletion}
                         onChange={e => setStudentForm({ ...studentForm, expectedCompletion: e.target.value })}
                       />
-                      <small style={{ color: "var(--text-muted)", fontSize: "10.5px" }}>
-                        Calculated automatically from the class mode and start date.
-                      </small>
                     </div>
                   </div>
 
@@ -1072,33 +1069,19 @@ export function ClassesWorkspace() {
                     </div>
                   </div>
 
-                  <div className="form-row-2">
-                    <div className="form-group">
-                      <label>Mode</label>
-                      <select
-                        value={studentForm.mode}
-                        onChange={e => setStudentForm({ ...studentForm, mode: e.target.value as ClassStudent["mode"] })}
-                      >
-                        <option value="Classroom">Classroom</option>
-                        <option value="Online">Online</option>
-                        <option value="Hybrid">Hybrid</option>
-                      </select>
-                      <small style={{ color: "var(--text-muted)", fontSize: "10.5px" }}>
-                        CrashCourse is available for IELTS, PTE and DET only.
-                      </small>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Class status</label>
-                      <select
-                        value={studentForm.classStatus}
-                        onChange={e => setStudentForm({ ...studentForm, classStatus: e.target.value as ClassStudent["classStatus"] })}
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Completed">Completed</option>
-                        <option value="On Hold">On Hold</option>
-                      </select>
-                    </div>
+                  <div className="form-group">
+                    <label>Mode</label>
+                    <select
+                      value={studentForm.mode}
+                      onChange={e => setStudentForm({ ...studentForm, mode: e.target.value as ClassStudent["mode"] })}
+                    >
+                      <option value="Classroom">Classroom</option>
+                      <option value="Online">Online</option>
+                      <option value="Hybrid">Hybrid</option>
+                    </select>
+                    <small style={{ color: "var(--text-muted)", fontSize: "10.5px" }}>
+                      CrashCourse is available for IELTS, PTE and DET only.
+                    </small>
                   </div>
 
                   <div className="form-group">
