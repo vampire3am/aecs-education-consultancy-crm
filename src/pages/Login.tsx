@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { AECS_ORGANIZATION } from "../config/organization";
 import { type FormEvent, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { isSupabaseConfigured } from "../lib/supabase";
 
@@ -212,14 +212,6 @@ export function Login() {
             </button>
           </form>
 
-          {/* Footer Navigation */}
-          <div className="login-footer-links">
-            <span>Student walk-in or public inquiry?</span>
-            <Link to="/register" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span>Open Student Registration</span>
-              <ArrowRight size={12} />
-            </Link>
-          </div>
         </div>
       </div>
     </div>

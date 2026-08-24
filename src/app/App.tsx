@@ -6,7 +6,6 @@ import { CrmNotificationCenter } from "../components/common/CrmNotifications";
 const AppShell = lazy(() => import("../components/layout/AppShell").then(m => ({ default: m.AppShell })));
 const LoginArea = lazy(() => import("../features/auth/AuthRoutes").then(m => ({ default: m.LoginArea })));
 const ProtectedArea = lazy(() => import("../features/auth/AuthRoutes").then(m => ({ default: m.ProtectedArea })));
-const PublicIntake = lazy(() => import("../pages/PublicIntake").then(m => ({ default: m.PublicIntake })));
 
 // Core Bespoke Workspaces
 const ManagementDashboard = lazy(() =>
@@ -88,9 +87,8 @@ export default function App() {
   return (
     <><CrmNotificationCenter/><Suspense fallback={<CrmSkeleton />}>
       <Routes>
-        {/* Public & Login Routes */}
+        {/* Staff login route */}
         <Route path="/login" element={<LoginArea />} />
-        <Route path="/register" element={<PublicIntake />} />
 
         {/* Protected Staff Operational Workspace */}
         <Route element={<ProtectedArea />}>
