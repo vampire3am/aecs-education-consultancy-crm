@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Eye, FileSpreadsheet, GraduationCap, Kanban, Pencil, PlaneTakeoff, Plus, Search, Table as TableIcon, User, X } from "lucide-react";
+import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Download, Eye, FileSpreadsheet, FileText, GraduationCap, ImagePlus, Kanban, Pencil, PlaneTakeoff, Plus, Search, ShieldCheck, Table as TableIcon, UploadCloud, User, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -11,6 +11,8 @@ import { CaseTaskPanel } from "./CaseTaskPanel";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import { StudentDirectoryRecord, StudentService } from "../../services/studentService";
+import { DocumentRecord, DocumentService } from "../../services/documentService";
+import { notifyError, notifySuccess } from "../../components/common/CrmNotifications";
 
 type ApplicationDestination = { name: string; code: string; popularIntakes?: string[]; intakeCycles?: string[] };
 type ApplicationUniversity = { name: string; country: string; countryCode: string; popularCourses?: string[]; tuition?: string; intake?: string };
@@ -77,6 +79,9 @@ export function ApplicationWorkspace() {
   const [applicationFormStep, setApplicationFormStep] = useState<1 | 2 | 3>(1);
   const [activeDossier, setActiveDossier] = useState<UniversityApplication | null>(null);
   const [stageChangeApp, setStageChangeApp] = useState<UniversityApplication | null>(null);
+  const [dossierDocuments, setDossierDocuments] = useState<DocumentRecord[]>([]);
+  const [dossierFilesBusy, setDossierFilesBusy] = useState(false);
+  const [studentPhotoUrl, setStudentPhotoUrl] = useState("");
 
   // Submit Application Form State
   const [newAppForm, setNewAppForm] = useState({
@@ -165,6 +170,63 @@ export function ApplicationWorkspace() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadApplications();
   }, []);
+
+  useEffect(() => {
+    if (!activeDossier) { setDossierDocuments([]); setStudentPhotoUrl(""); return; }
+    let cancelled = false;
+    DocumentService.list().then(async records => {
+      if (cancelled) return;
+      const studentRecords = records.filter(record => record.studentCode === activeDossier.studentCode);
+      setDossierDocuments(studentRecords);
+      const photo = studentRecords.find(record => record.fileName.startsWith("Student profile photo") && record.mimeType.startsWith("image/"));
+      if (photo) {
+        const url = await DocumentService.signedUrl(photo.storagePath);
+        if (!cancelled) setStudentPhotoUrl(url);
+      }
+    }).catch(() => { if (!cancelled) setDossierDocuments([]); });
+    return () => { cancelled = true; };
+  }, [activeDossier?.id, activeDossier?.studentCode]);
+
+  const refreshDossierDocuments = async (studentCode:string) => {
+    const records = (await DocumentService.list()).filter(record => record.studentCode === studentCode);
+    setDossierDocuments(records);
+    const photo = records.find(record => record.fileName.startsWith("Student profile photo") && record.mimeType.startsWith("image/"));
+    setStudentPhotoUrl(photo ? await DocumentService.signedUrl(photo.storagePath) : "");
+  };
+
+  const uploadDossierPhoto = async (file?:File) => {
+    if (!activeDossier || !file) return;
+    if (!file.type.startsWith("image/")) { notifyError("Invalid profile photo", "Choose a JPG, PNG, WEBP, or GIF image."); return; }
+    if (file.size > 5 * 1024 * 1024) { notifyError("Photo is too large", "Choose an image smaller than 5 MB."); return; }
+    setDossierFilesBusy(true);
+    try {
+      await DocumentService.upload({studentCode:activeDossier.studentCode,category:"Profile Photo",title:`Student profile photo - ${activeDossier.studentName}`,file,expiresOn:"",notes:"Uploaded from the university application dossier"});
+      await refreshDossierDocuments(activeDossier.studentCode);
+      notifySuccess("Student photo updated", "The photo is visible in this dossier and secured in the Document Vault.");
+    } catch (error) { notifyError("Photo upload failed", error instanceof Error ? error.message : "The photo could not be uploaded."); }
+    finally { setDossierFilesBusy(false); }
+  };
+
+  const uploadDossierDocuments = async (files:File[]) => {
+    if (!activeDossier || files.length === 0) return;
+    if (files.length > 15) { notifyError("Too many documents", "Upload a maximum of 15 documents in one batch."); return; }
+    setDossierFilesBusy(true);
+    try {
+      const results = await Promise.allSettled(files.map(file => DocumentService.upload({studentCode:activeDossier.studentCode,category:"Application Documents",title:file.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," "),file,expiresOn:"",notes:`Application dossier: ${activeDossier.universityName}`})));
+      const failed = results.filter(result => result.status === "rejected");
+      await refreshDossierDocuments(activeDossier.studentCode);
+      if (failed.length) throw new Error(`${results.length-failed.length} uploaded; ${failed.length} failed.`);
+      notifySuccess(`${files.length} document${files.length === 1 ? "" : "s"} uploaded`, "Every file is now linked to this application and available in the central Document Vault.");
+    } catch (error) { notifyError("Document upload failed", error instanceof Error ? error.message : "The documents could not be uploaded."); }
+    finally { setDossierFilesBusy(false); }
+  };
+
+  const openDossierDocument = async (document:DocumentRecord, download=false) => {
+    try {
+      const url = await DocumentService.signedUrl(document.storagePath, download);
+      if (download) window.location.assign(url); else window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) { notifyError("Document unavailable", error instanceof Error ? error.message : "The document could not be opened."); }
+  };
 
   useEffect(() => {
     void StudentService.getStudents().then(setStudents).catch(() => setStudents([]));
@@ -652,7 +714,7 @@ export function ApplicationWorkspace() {
                       >
                         {/* 1. Student Candidate */}
                         <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div className="application-candidate-cell">
                             <div
                               style={{
                                 width: "32px",
@@ -670,7 +732,7 @@ export function ApplicationWorkspace() {
                             >
                               {initials}
                             </div>
-                            <div>
+                            <div className="application-candidate-copy">
                               <strong style={{ fontSize: "13px", color: "var(--text-main)" }}>
                                 {app.studentName}
                               </strong>
@@ -738,7 +800,7 @@ export function ApplicationWorkspace() {
 
                         {/* 8. Actions */}
                         <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
-                          <div style={{ display: "flex", justifyContent: "flex-end", gap: "6px" }}>
+                          <div className="application-row-actions">
                             <button
                               type="button"
                               className="btn-secondary"
@@ -1172,7 +1234,7 @@ export function ApplicationWorkspace() {
                       fontSize: "12px",
                     }}
                   >
-                    <CountryDisplay country={activeDossier.country} size={18}/>
+                    {studentPhotoUrl ? <img src={studentPhotoUrl} alt={`${activeDossier.studentName} profile`} className="application-student-photo"/> : <CountryDisplay country={activeDossier.country} size={18}/>} 
                   </div>
                   <div>
                     <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>
@@ -1195,6 +1257,36 @@ export function ApplicationWorkspace() {
               </div>
 
               <div style={{ padding: "22px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <section className="application-dossier-vault">
+                  <header>
+                    <div>
+                      <span>Student identity & files</span>
+                      <strong>Application document vault</strong>
+                      <small>Uploads here remain available in the central CRM Document Vault.</small>
+                    </div>
+                    <ShieldCheck size={20}/>
+                  </header>
+                  <div className="application-dossier-upload-actions">
+                    <label className="btn-secondary">
+                      <ImagePlus size={15}/><span>{studentPhotoUrl ? "Replace photo" : "Upload photo"}</span>
+                      <input type="file" hidden accept="image/jpeg,image/png,image/webp,image/gif" disabled={dossierFilesBusy} onChange={event => { const file=event.target.files?.[0]; event.currentTarget.value=""; void uploadDossierPhoto(file); }}/>
+                    </label>
+                    <label className="btn-primary">
+                      <UploadCloud size={15}/><span>{dossierFilesBusy ? "Uploading…" : "Upload documents"}</span>
+                      <input type="file" hidden multiple accept=".pdf,.jpg,.jpeg,.png,.docx,application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={dossierFilesBusy} onChange={event => { const files=Array.from(event.target.files??[]); event.currentTarget.value=""; void uploadDossierDocuments(files); }}/>
+                    </label>
+                    <button type="button" className="btn-secondary" onClick={()=>navigate("/documents")}><FileText size={15}/><span>Open vault</span></button>
+                  </div>
+                  {dossierDocuments.filter(document=>!document.fileName.startsWith("Student profile photo")).length > 0 ? <div className="application-dossier-files">
+                    {dossierDocuments.filter(document=>!document.fileName.startsWith("Student profile photo")).slice(0,4).map(document=><article key={document.id}>
+                      <FileText size={17}/><div><strong>{document.fileName}</strong><span>{document.category} · {document.fileSize} · {document.status.replace("_"," ")}</span></div>
+                      <button type="button" title="Secure preview" onClick={()=>void openDossierDocument(document)}><Eye size={14}/></button>
+                      <button type="button" title="Download" onClick={()=>void openDossierDocument(document,true)}><Download size={14}/></button>
+                    </article>)}
+                    {dossierDocuments.filter(document=>!document.fileName.startsWith("Student profile photo")).length>4&&<button type="button" className="application-vault-more" onClick={()=>navigate("/documents")}>View all {dossierDocuments.filter(document=>!document.fileName.startsWith("Student profile photo")).length} documents</button>}
+                  </div> : <div className="application-dossier-empty"><FileText size={17}/><span>No application documents uploaded yet.</span></div>}
+                </section>
+
                 <div
                   style={{
                     background: "var(--bg-card-subtle)",

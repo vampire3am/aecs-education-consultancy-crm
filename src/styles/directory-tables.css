@@ -334,6 +334,175 @@
   padding: 17px 13px !important;
 }
 
+/* Applications directory mirrors the Students directory row-card contract. */
+.application-directory-panel {
+  overflow: hidden !important;
+  box-shadow: none !important;
+}
+
+.application-directory-panel .application-directory-heading {
+  padding: 20px 20px 8px !important;
+}
+
+.application-directory-panel .application-directory-toolbar {
+  align-items: stretch !important;
+  gap: 14px !important;
+  padding: 14px 20px 18px !important;
+}
+
+.application-directory-panel .application-directory-toolbar .search-input-wrap,
+.application-directory-panel .application-directory-toolbar .crm-select {
+  height: 40px !important;
+  border-radius: 8px !important;
+}
+
+.application-directory-panel .application-stage-tabs {
+  gap: 7px !important;
+  padding: 11px 20px !important;
+  overflow-x: auto !important;
+}
+
+.application-directory-panel > .application-table-body .table-wrapper {
+  padding: 10px 14px 16px !important;
+  background: #f8fafc !important;
+}
+
+.application-directory-table {
+  min-width: 1080px !important;
+  border-collapse: separate !important;
+  border-spacing: 0 8px !important;
+  table-layout: auto !important;
+}
+
+.application-directory-table thead th {
+  padding: 5px 13px !important;
+  font-size: 9.5px !important;
+}
+
+.application-directory-table tbody tr {
+  height: 72px !important;
+}
+
+.application-directory-table tbody td {
+  padding: 14px 13px !important;
+  font-size: 12px !important;
+}
+
+.application-candidate-cell {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 220px;
+}
+
+.application-candidate-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.application-candidate-copy strong,
+.application-university-cell strong,
+.application-study-cell strong,
+.application-finance-cell strong {
+  font-size: 12.5px !important;
+  line-height: 1.3 !important;
+}
+
+.application-directory-table .application-university-cell { min-width: 230px !important; }
+.application-directory-table .application-study-cell { min-width: 150px !important; }
+.application-directory-table .application-finance-cell { min-width: 130px !important; }
+
+.application-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  min-width: 92px;
+}
+
+.application-row-actions .btn-secondary {
+  min-height: 30px;
+  border-radius: 7px !important;
+  background: #f8fafc !important;
+}
+
+.application-student-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.application-dossier-vault {
+  padding: 15px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fffaf5;
+}
+
+.application-dossier-vault > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: #0f172a;
+}
+
+.application-dossier-vault > header div { display: grid; gap: 3px; }
+.application-dossier-vault > header span { color: #ea580c; font-size: 9px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.application-dossier-vault > header strong { font-size: 14px; }
+.application-dossier-vault > header small { color: #64748b; font-size: 10.5px; }
+.application-dossier-vault > header > svg { color: #059669; }
+
+.application-dossier-upload-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.application-dossier-upload-actions .btn-primary,
+.application-dossier-upload-actions .btn-secondary {
+  min-height: 36px;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.application-dossier-files { display: grid; gap: 7px; margin-top: 12px; }
+.application-dossier-files article {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) 28px 28px;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+.application-dossier-files article > svg { color: #f97316; }
+.application-dossier-files article div { display: grid; gap: 2px; min-width: 0; }
+.application-dossier-files article strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.application-dossier-files article span { color: #64748b; font-size: 9.5px; }
+.application-dossier-files article button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+}
+.application-dossier-empty { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px; border-radius: 8px; background: #fff; color: #64748b; font-size: 10.5px; }
+.application-vault-more { padding: 6px; border: 0; background: transparent; color: #ea580c; font-size: 10.5px; font-weight: 700; cursor: pointer; }
+
+@media (max-width: 560px) {
+  .application-dossier-upload-actions { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 1180px) {
   .application-workspace { padding-inline: 22px !important; }
   .application-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
