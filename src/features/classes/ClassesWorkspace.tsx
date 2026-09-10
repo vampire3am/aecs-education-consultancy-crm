@@ -97,7 +97,10 @@ export function ClassesWorkspace() {
   // Submit Handler for Add Class Student (Matching User's Screenshot Form)
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentForm.fullName.trim() || !studentForm.phone.trim()) return;
+    if (!studentForm.fullName.trim() || !studentForm.phone.trim() || !studentForm.batchName) {
+      setErrorMessage("Enter the student name and phone, then select an available batch.");
+      return;
+    }
     try { await ClassStudentService.createStudent({
       fullName: studentForm.fullName.trim(),
       phone: studentForm.phone.trim(),
@@ -154,7 +157,10 @@ export function ClassesWorkspace() {
   // Submit Handler for Add Batch
   const handleCreateBatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!batchForm.batchCode.trim()) return;
+    if (!batchForm.batchCode.trim() || !batchForm.timing.trim() || !batchForm.instructor.trim() || !batchForm.startDate) {
+      setErrorMessage("Batch code, schedule, instructor and start date are required.");
+      return;
+    }
 
     try { await ClassStudentService.createBatch({...batchForm,batchCode:batchForm.batchCode.trim(),timing:batchForm.timing.trim(),maxCapacity:Number(batchForm.maxCapacity)||15,room:batchForm.room.trim()});
     await loadStudents();
@@ -204,18 +210,31 @@ export function ClassesWorkspace() {
   const occupiedSeats = batches.reduce((acc, b) => acc + b.enrolledStudents, 0);
   const occupancyRate = classroomSeats > 0 ? Math.round((occupiedSeats / classroomSeats) * 100) : 0;
   const faculty = useMemo(()=>Array.from(new Set(batches.map(batch=>batch.instructor.trim()).filter(name=>name&&name!=="Unassigned"))).map(name=>({name,batches:batches.filter(batch=>batch.instructor.trim()===name),students:batches.filter(batch=>batch.instructor.trim()===name).reduce((sum,batch)=>sum+batch.enrolledStudents,0)})),[batches]);
-  const teacherOptions=["Unassigned",...faculty.map(teacher=>teacher.name)];
   const attendanceStudents=students.filter(student=>attendanceBatch==="ALL"||student.batchName===attendanceBatch);
   const attendanceMarked=attendanceStudents.filter(student=>attendance[student.id]).length;
+  const eligibleBatches = batches.filter(batch => batch.status !== "COMPLETED" && batch.enrolledStudents < batch.maxCapacity);
+
+  const selectBatch = (batchCode: string) => {
+    const batch = batches.find(item => item.batchCode === batchCode);
+    if (!batch) {
+      setStudentForm(current => ({ ...current, batchName: "", teacher: "", schedule: "" }));
+      return;
+    }
+    setStudentForm(current => ({
+      ...current,
+      batchName: batch.batchCode,
+      enrolledClass: batch.courseName,
+      teacher: batch.instructor,
+      schedule: batch.timing,
+      startDate: current.startDate || batch.startDate,
+    }));
+  };
 
   return (
     <div className="page-container classes-workspace">
       {/* 1. Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow" style={{ color: "var(--accent-blue)" }}>
-            LANGUAGE & TEST PREPARATION
-          </span>
           <h2>Classes & Test Preparation Workspace</h2>
           <p>
             Manage enrolled class students, language batches, faculty assignments, and daily attendance.
@@ -944,19 +963,6 @@ export function ClassesWorkspace() {
                   </div>
 
                   <div className="form-group">
-                    <label>Record status</label>
-                    <select
-                      value={studentForm.recordStatus}
-                      onChange={e => setStudentForm({ ...studentForm, recordStatus: e.target.value as ClassStudent["recordStatus"] })}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Completed">Completed</option>
-                      <option value="On Hold">On Hold</option>
-                      <option value="Dropped">Dropped</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
                     <label>Notes</label>
                     <textarea
                       rows={2}
@@ -996,34 +1002,13 @@ export function ClassesWorkspace() {
                     <strong style={{ fontSize: "13.5px" }}>First class enrolment</strong>
                   </div>
 
-                  <div className="form-row-2">
-                    <div className="form-group">
-                      <label>Class *</label>
-                      <select
-                        value={studentForm.enrolledClass}
-                        onChange={e => setStudentForm({ ...studentForm, enrolledClass: e.target.value as ClassStudent["enrolledClass"] })}
-                      >
-                        <option value="IELTS Preparation">IELTS Preparation</option>
-                        <option value="PTE Academic">PTE Academic</option>
-                        <option value="Duolingo (DET)">Duolingo (DET)</option>
-                        <option value="TOEFL iBT">TOEFL iBT</option>
-                        <option value="German Language (A1/A2)">German Language (A1/A2)</option>
-                        <option value="Japanese (NAT/JLPT)">Japanese (NAT/JLPT)</option>
-                        <option value="Korean (TOPIK)">Korean (TOPIK)</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Teacher</label>
-                      <select
-                        value={studentForm.teacher}
-                        onChange={e => setStudentForm({ ...studentForm, teacher: e.target.value })}
-                      >
-                        {teacherOptions.map((t, idx) => (
-                          <option key={idx} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="form-group">
+                    <label>Assign to batch *</label>
+                    <select required value={studentForm.batchName} onChange={event => selectBatch(event.target.value)}>
+                      <option value="">Select an active batch</option>
+                      {eligibleBatches.map(batch => <option key={batch.id} value={batch.batchCode}>{batch.batchCode} · {batch.courseName} · {batch.timing} ({batch.enrolledStudents}/{batch.maxCapacity})</option>)}
+                    </select>
+                    {!eligibleBatches.length && <small>No available batch exists. Create a batch before enrolling a class student.</small>}
                   </div>
 
                   <div className="form-row-2">
@@ -1047,27 +1032,7 @@ export function ClassesWorkspace() {
                     </div>
                   </div>
 
-                  <div className="form-row-2">
-                    <div className="form-group">
-                      <label>Batch</label>
-                      <input
-                        type="text"
-                        value={studentForm.batchName}
-                        onChange={e => setStudentForm({ ...studentForm, batchName: e.target.value })}
-                        placeholder="e.g. IELTS Morning A"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Class schedule</label>
-                      <input
-                        type="text"
-                        value={studentForm.schedule}
-                        onChange={e => setStudentForm({ ...studentForm, schedule: e.target.value })}
-                        placeholder="e.g. Sun–Fri, 7:00–8:30 AM"
-                      />
-                    </div>
-                  </div>
+                  {studentForm.batchName && <div className="classes-batch-assignment"><div><span>Course</span><strong>{studentForm.enrolledClass}</strong></div><div><span>Instructor</span><strong>{studentForm.teacher || "Unassigned"}</strong></div><div><span>Schedule</span><strong>{studentForm.schedule || "Not set"}</strong></div></div>}
 
                   <div className="form-group">
                     <label>Mode</label>
@@ -1230,6 +1195,10 @@ export function ClassesWorkspace() {
                         onChange={e => setBatchForm({ ...batchForm, maxCapacity: Number(e.target.value) })}
                       />
                     </div>
+                  </div>
+                  <div className="form-row-2">
+                    <div className="form-group"><label>Batch start date *</label><input type="date" required value={batchForm.startDate} onChange={e=>setBatchForm({...batchForm,startDate:e.target.value})}/></div>
+                    <div className="form-group"><label>Operational status</label><select value={batchForm.status} onChange={e=>setBatchForm({...batchForm,status:e.target.value as BatchItem["status"]})}><option value="UPCOMING">Upcoming</option><option value="ACTIVE">Active</option></select></div>
                   </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import { KeyRound, Pencil, Plus, UserCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ROLE_PERMISSIONS, type StaffRole } from "../auth/AuthProvider";
-import { STAFF_MODULES, STAFF_ROLES, StaffAdminService, type StaffAdminInput, type StaffAdminRecord } from "../../services/staffAdminService";
+import { normalizeStaffModules, STAFF_MODULES, STAFF_ROLES, StaffAdminService, type StaffAdminInput, type StaffAdminRecord } from "../../services/staffAdminService";
 
 const defaultModules = (role: StaffRole) => Object.entries(ROLE_PERMISSIONS[role]).filter(([, enabled]) => enabled).map(([key]) => key);
 const emptyForm = (): StaffAdminInput => ({
@@ -27,7 +27,8 @@ export function StaffManagement() {
   const startCreate = () => { setEditing(null); setForm(emptyForm()); setOpen(true); };
   const startEdit = (member: StaffAdminRecord) => {
     setEditing(member);
-    setForm({ ...member, phone: member.phone ?? "", desktop_modules: member.desktop_modules ?? defaultModules(member.role), password: "" });
+    const savedModules = normalizeStaffModules(member.desktop_modules);
+    setForm({ ...member, phone: member.phone ?? "", desktop_modules: savedModules.length ? savedModules : defaultModules(member.role), password: "" });
     setOpen(true);
   };
   const toggleModule = (module: string) => setForm(current => ({

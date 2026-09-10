@@ -56,9 +56,11 @@ import { CountryDisplay } from "../../components/ui/CountryDisplay";
 import { AECS_AUTHORIZED_COUNTRIES, DestinationCountry } from "../../lib/destinationsData";
 import { COUNTRY_METADATA } from "../../lib/countryMetadata.generated";
 import { MultiIntakePicker } from "../../components/ui/MultiIntakePicker";
-import { notifySuccess } from "../../components/common/CrmNotifications";
+import { notifyError, notifySuccess } from "../../components/common/CrmNotifications";
 import { CounsellingService } from "../../services/counsellingService";
 import { DestinationCatalogService } from "../../services/destinationCatalogService";
+import { UniversityCatalogService } from "../../services/universityCatalogService";
+import { DestinationDocumentService, type DestinationDocumentRecord } from "../../services/destinationDocumentService";
 import { useAuth } from "../auth/AuthProvider";
 
 export interface DestinationCatalog extends DestinationCountry {
@@ -146,16 +148,6 @@ const COUNTRY_NAME_ALIASES: Record<string, string> = {
   "REPUBLIC OF KOREA": "South Korea",
 };
 const UNIVERSITIES_STORAGE_KEY = "aecs_partner_universities_v2";
-const DESTINATION_DOCUMENTS_STORAGE_KEY = "aecs_destination_documents_v1";
-
-interface DestinationDocument {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  dataUrl: string;
-  uploadedAt: string;
-}
 
 export function CounsellingDashboard() {
   const { profile } = useAuth();
@@ -167,9 +159,7 @@ export function CounsellingDashboard() {
   const [activeCountryDetail, setActiveCountryDetail] = useState<DestinationCatalog | null>(null);
   const [isEditingDestination, setIsEditingDestination] = useState(false);
   const [destinationEdit, setDestinationEdit] = useState({ name: "", currency: "", dialCode: "", avgLivingCost: "", pswvWorkRights: "", popularIntakes: "", acceptedEnglishTests: "", keyHighlights: "" });
-  const [destinationDocuments, setDestinationDocuments] = useState<Record<string, DestinationDocument[]>>(() => {
-    try { return JSON.parse(localStorage.getItem(DESTINATION_DOCUMENTS_STORAGE_KEY) || "{}"); } catch { return {}; }
-  });
+  const [destinationDocuments, setDestinationDocuments] = useState<Record<string, DestinationDocumentRecord[]>>({});
   const [catalogError,setCatalogError]=useState("");
   const [catalogLoading,setCatalogLoading]=useState(true);
 
@@ -205,6 +195,40 @@ export function CounsellingDashboard() {
     return()=>{live=false};
     // Initial migration intentionally runs once; subsequent changes use explicit database writes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+    const local = universities;
+    UniversityCatalogService.list()
+      .then(async remote => {
+        if (!live) return;
+        if (remote.length) {
+          setUniversities(remote);
+          localStorage.setItem(UNIVERSITIES_STORAGE_KEY, JSON.stringify(remote));
+        } else if (local.length) {
+          await UniversityCatalogService.saveMany(local);
+        }
+      })
+      .catch(error => {
+        if (live) setCatalogError(error instanceof Error ? error.message : "Unable to load university catalogue");
+      });
+    return () => { live = false; };
+    // One-time migration of a legacy browser catalogue into the shared database.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const refreshDestinationDocuments = async () => {
+    const records = await DestinationDocumentService.list();
+    setDestinationDocuments(records.reduce<Record<string, DestinationDocumentRecord[]>>((grouped, record) => {
+      (grouped[record.destinationCode] ||= []).push(record);
+      return grouped;
+    }, {}));
+  };
+
+  useEffect(() => {
+    void refreshDestinationDocuments().catch(error =>
+      setCatalogError(error instanceof Error ? error.message : "Unable to load destination documents"));
   }, []);
 
   // Modal States
@@ -309,9 +333,10 @@ export function CounsellingDashboard() {
     localStorage.setItem(DESTINATIONS_STORAGE_KEY, JSON.stringify(updated));
   };
 
-  const saveUniversities = (updated: PartnerUniversity[]) => {
+  const saveUniversities = async (updated: PartnerUniversity[]) => {
     setUniversities(updated);
     localStorage.setItem(UNIVERSITIES_STORAGE_KEY, JSON.stringify(updated));
+    await UniversityCatalogService.saveMany(updated);
   };
 
   const selectedCourseUniversity = universities.find(university => university.id === courseUniversityId) ?? null;
@@ -352,7 +377,7 @@ export function CounsellingDashboard() {
     setCourseForm(details);
   };
 
-  const saveUniversityCourse = (event: React.FormEvent) => {
+  const saveUniversityCourse = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedCourseUniversity || !courseForm.name.trim()) return;
     const currentCourses = universityCourses(selectedCourseUniversity);
@@ -364,17 +389,17 @@ export function CounsellingDashboard() {
     const courses = editingCourseId
       ? currentCourses.map(course => course.id === editingCourseId ? savedCourse : course)
       : [savedCourse, ...currentCourses];
-    saveUniversities(universities.map(university => university.id === selectedCourseUniversity.id
+    await saveUniversities(universities.map(university => university.id === selectedCourseUniversity.id
       ? { ...university, courses, popularCourses: courses.filter(course => course.status === "ACTIVE").map(course => course.name) }
       : university));
     notifySuccess(editingCourseId ? "Course updated" : "Course added", `${savedCourse.name} is now available in ${selectedCourseUniversity.name}'s programme catalogue.`);
     resetCourseEditor();
   };
 
-  const deleteUniversityCourse = (course: UniversityCourse) => {
+  const deleteUniversityCourse = async (course: UniversityCourse) => {
     if (!selectedCourseUniversity || !window.confirm(`Remove ${course.name} from ${selectedCourseUniversity.name}?`)) return;
     const courses = universityCourses(selectedCourseUniversity).filter(item => item.id !== course.id);
-    saveUniversities(universities.map(university => university.id === selectedCourseUniversity.id
+    await saveUniversities(universities.map(university => university.id === selectedCourseUniversity.id
       ? { ...university, courses, popularCourses: courses.filter(item => item.status === "ACTIVE").map(item => item.name) }
       : university));
     notifySuccess("Course removed", `${course.name} was removed from ${selectedCourseUniversity.name}.`);
@@ -413,33 +438,35 @@ export function CounsellingDashboard() {
     } catch(error){setCatalogError(error instanceof Error?error.message:"Unable to save destination changes")}
   };
 
-  const saveDestinationDocuments = (updated: Record<string, DestinationDocument[]>) => {
-    setDestinationDocuments(updated);
-    localStorage.setItem(DESTINATION_DOCUMENTS_STORAGE_KEY, JSON.stringify(updated));
-  };
-
   const handleDestinationDocuments = async (files: FileList | null) => {
     if (!files || !activeCountryDetail) return;
-    const allowed = Array.from(files).slice(0, 10).filter(file => file.size <= 5 * 1024 * 1024);
-    const additions = await Promise.all(allowed.map(file => new Promise<DestinationDocument>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({ id: crypto.randomUUID(), name: file.name, size: file.size, type: file.type, dataUrl: String(reader.result), uploadedAt: new Date().toISOString() });
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    })));
-    const code = activeCountryDetail.code;
+    const allowed = Array.from(files).slice(0, 10).filter(file => file.size <= 20 * 1024 * 1024);
     try {
-      saveDestinationDocuments({ ...destinationDocuments, [code]: [...(destinationDocuments[code] || []), ...additions] });
-      window.alert(`${additions.length} destination document${additions.length === 1 ? "" : "s"} uploaded successfully.`);
-    } catch {
-      window.alert("The browser could not store these files. Upload fewer or smaller documents and try again.");
+      await Promise.all(allowed.map(file => DestinationDocumentService.upload(activeCountryDetail.code, file)));
+      await refreshDestinationDocuments();
+      notifySuccess("Destination documents uploaded", `${allowed.length} file${allowed.length === 1 ? " is" : "s are"} now stored in the central CRM vault.`);
+    } catch (error) {
+      notifyError("Destination upload failed", error instanceof Error ? error.message : "The files could not be stored.");
     }
   };
 
-  const removeDestinationDocument = (id: string) => {
-    if (!activeCountryDetail) return;
-    const code = activeCountryDetail.code;
-    saveDestinationDocuments({ ...destinationDocuments, [code]: (destinationDocuments[code] || []).filter(document => document.id !== id) });
+  const removeDestinationDocument = async (document:DestinationDocumentRecord) => {
+    try {
+      await DestinationDocumentService.remove(document);
+      await refreshDestinationDocuments();
+      notifySuccess("Document removed", `${document.name} was removed from the vault.`);
+    } catch (error) {
+      notifyError("Unable to remove document", error instanceof Error ? error.message : "The document could not be removed.");
+    }
+  };
+
+  const openDestinationDocument = async (document:DestinationDocumentRecord, download=false) => {
+    try {
+      const url = await DestinationDocumentService.signedUrl(document.storagePath, download);
+      if (download) window.location.assign(url); else window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      notifyError("Document unavailable", error instanceof Error ? error.message : "The document could not be opened.");
+    }
   };
 
   const handleDeleteUniversity = async (university: PartnerUniversity) => {
@@ -448,7 +475,9 @@ export function CounsellingDashboard() {
     );
     if (!confirmed) return;
 
-    saveUniversities(universities.filter(item => item.id !== university.id));
+    await UniversityCatalogService.remove(university.id);
+    setUniversities(universities.filter(item => item.id !== university.id));
+    localStorage.setItem(UNIVERSITIES_STORAGE_KEY, JSON.stringify(universities.filter(item => item.id !== university.id)));
     const updatedDestinations=destinations.map(destination =>
         destination.code === university.countryCode || destination.name === university.country
           ? { ...destination, universitiesCount: Math.max(0, destination.universitiesCount - 1) }
@@ -552,7 +581,7 @@ export function CounsellingDashboard() {
     };
 
     const updatedUnis = [newUni, ...universities];
-    saveUniversities(updatedUnis);
+    await saveUniversities(updatedUnis);
 
     // Also increment the country's universities count
     const updatedDests = destinations.map(d =>
@@ -631,7 +660,6 @@ export function CounsellingDashboard() {
       {/* 1. Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">GLOBAL DESTINATIONS & INSTITUTIONS</span>
           <h2>Abroad & Global Destinations Hub</h2>
           <p>
             Official catalog for the {destinations.length} AECS authorized study destinations, partner universities, and intake cycles.
@@ -1795,9 +1823,9 @@ export function CounsellingDashboard() {
                         <div className="destination-document-row" key={document.id}>
                           <FileText size={18} />
                           <div><strong>{document.name}</strong><span>{(document.size / 1024).toFixed(0)} KB · {new Date(document.uploadedAt).toLocaleDateString()}</span></div>
-                          <button type="button" title="View document" onClick={() => window.open(document.dataUrl, "_blank", "noopener,noreferrer")}><Eye size={15} /></button>
-                          <a title="Download document" href={document.dataUrl} download={document.name}><Download size={15} /></a>
-                          <button type="button" title="Remove document" onClick={() => removeDestinationDocument(document.id)}><Trash2 size={15} /></button>
+                          <button type="button" title="View document" onClick={() => { void openDestinationDocument(document); }}><Eye size={15} /></button>
+                          <button type="button" title="Download document" onClick={() => { void openDestinationDocument(document, true); }}><Download size={15} /></button>
+                          <button type="button" title="Remove document" onClick={() => { void removeDestinationDocument(document); }}><Trash2 size={15} /></button>
                         </div>
                       ))}
                     </div>

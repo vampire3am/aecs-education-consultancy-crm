@@ -242,7 +242,6 @@ export function LeadsWorkspace() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Prospect Acquisition & Intake Pipeline</span>
           <h2>Leads & Inquiries Management</h2>
           <p>
             Prospect capture across Facebook/Instagram, walk-ins, and education fairs with 1-click conversion to enrolled students.

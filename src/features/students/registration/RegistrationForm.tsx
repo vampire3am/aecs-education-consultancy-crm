@@ -282,7 +282,6 @@ export function RegistrationForm() {
       {/* Header */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Admissions Workspace</span>
           <h2>Student Registration</h2>
           <p>
             Build a complete student profile for counselling, applications, and admission processing.

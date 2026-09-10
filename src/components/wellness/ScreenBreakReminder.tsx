@@ -18,15 +18,16 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { HrmsService } from "../../services/hrmsService";
 
 // Config constants
-const WORK_LIMIT_SECONDS = 30 * 60; // 30 minutes
+const WORK_LIMIT_SECONDS = 60 * 60; // 60 minutes
 const BREAK_LIMIT_SECONDS = 5 * 60; // 5 minutes
 const SNOOZE_SECONDS = 5 * 60; // 5 minutes
 const IDLE_TIMEOUT_SECONDS = 3 * 60; // 3 minutes without mouse/keyboard -> pause timer
 
 export function ScreenBreakReminder() {
-  // Active work seconds (counts up to 30 mins)
+  // Active work seconds (counts up to 60 mins)
   const [activeSeconds, setActiveSeconds] = useState(0);
   // Break countdown seconds (counts down from 5 mins)
   const [breakSecondsLeft, setBreakSecondsLeft] = useState(BREAK_LIMIT_SECONDS);
@@ -41,6 +42,8 @@ export function ScreenBreakReminder() {
 
   const lastInteractionRef = useRef(Date.now());
   const timerRef = useRef<any>(null);
+  const activeBreakIdRef = useRef<string | null>(null);
+  const breakSourceRef = useRef<"AUTOMATIC" | "MANUAL">("MANUAL");
 
   // Listen to user interactions to detect active screen time
   useEffect(() => {
@@ -88,7 +91,7 @@ export function ScreenBreakReminder() {
         setActiveSeconds(prev => {
           const next = prev + 1;
           if (next >= WORK_LIMIT_SECONDS) {
-            triggerBreakPrompt();
+            triggerBreakPrompt("AUTOMATIC");
             return 0;
           }
           return next;
@@ -114,7 +117,8 @@ export function ScreenBreakReminder() {
     return () => clearInterval(interval);
   }, [isBreakActive]);
 
-  const triggerBreakPrompt = () => {
+  const triggerBreakPrompt = (source: "AUTOMATIC" | "MANUAL" = "MANUAL") => {
+    breakSourceRef.current = source;
     setShowPromptModal(true);
     // Play gentle chime sound if enabled
     if (soundEnabled) {
@@ -137,10 +141,11 @@ export function ScreenBreakReminder() {
     }
   };
 
-  const handleStartBreak = () => {
+  const handleStartBreak = async () => {
     setShowPromptModal(false);
     setIsBreakActive(true);
     setBreakSecondsLeft(BREAK_LIMIT_SECONDS);
+    try { activeBreakIdRef.current = await HrmsService.startWorkBreak(breakSourceRef.current); } catch { activeBreakIdRef.current = null; }
   };
 
   const handleSnooze = (mins = 5) => {
@@ -154,7 +159,10 @@ export function ScreenBreakReminder() {
     setActiveSeconds(0);
   };
 
-  const handleCompleteBreak = () => {
+  const handleCompleteBreak = async () => {
+    const breakId = activeBreakIdRef.current;
+    activeBreakIdRef.current = null;
+    if (breakId) { try { await HrmsService.completeWorkBreak(breakId); } catch { /* The timer must still resume if audit sync fails. */ } }
     setIsBreakActive(false);
     setActiveSeconds(0);
     setBreakSecondsLeft(BREAK_LIMIT_SECONDS);
@@ -176,16 +184,16 @@ export function ScreenBreakReminder() {
       <div
         className="wellness-topbar-pill"
         title={`Screen Time: ${minutesWorked}m active • Next 5-min break in ${minutesUntilNext}m. Click to test reminder.`}
-        onClick={() => triggerBreakPrompt()}
+        onClick={() => triggerBreakPrompt("MANUAL")}
         style={{
           display: "inline-flex",
           alignItems: "center",
           gap: "6px",
           padding: "4px 10px",
           borderRadius: "20px",
-          background: activeSeconds > 25 * 60 ? "var(--danger-soft, #FEF2F2)" : "var(--bg-card-subtle)",
-          border: activeSeconds > 25 * 60 ? "1px solid var(--danger, #DC2626)" : "1px solid var(--border-subtle)",
-          color: activeSeconds > 25 * 60 ? "var(--danger, #DC2626)" : "var(--text-muted)",
+          background: activeSeconds > 55 * 60 ? "var(--danger-soft, #FEF2F2)" : "var(--bg-card-subtle)",
+          border: activeSeconds > 55 * 60 ? "1px solid var(--danger, #DC2626)" : "1px solid var(--border-subtle)",
+          color: activeSeconds > 55 * 60 ? "var(--danger, #DC2626)" : "var(--text-muted)",
           fontSize: "11.5px",
           fontWeight: 600,
           cursor: "pointer",
@@ -198,9 +206,9 @@ export function ScreenBreakReminder() {
             width: "7px",
             height: "7px",
             borderRadius: "50%",
-            background: isIdle ? "#94A3B8" : activeSeconds > 25 * 60 ? "#DC2626" : "#10B981",
+            background: isIdle ? "#94A3B8" : activeSeconds > 55 * 60 ? "#DC2626" : "#10B981",
             display: "inline-block",
-            boxShadow: activeSeconds > 25 * 60 ? "0 0 6px rgba(220, 38, 38, 0.6)" : "none",
+            boxShadow: activeSeconds > 55 * 60 ? "0 0 6px rgba(220, 38, 38, 0.6)" : "none",
           }}
         />
         <Coffee size={13} />
@@ -319,7 +327,7 @@ export function ScreenBreakReminder() {
                   margin: "0 auto 16px",
                 }}
               >
-                You've been active for <strong>30 minutes</strong> continuously. Look away from the screen, stretch, rest your eyes, and have a glass of water.
+                You've been active for <strong>60 minutes</strong> continuously. Look away from the screen, stretch, rest your eyes, and have a glass of water.
               </p>
 
               {/* Department Signature (Matching Photo) */}

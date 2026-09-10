@@ -40,6 +40,7 @@ import { useAuth } from "../../features/auth/AuthProvider";
 import { ScreenBreakReminder } from "../wellness/ScreenBreakReminder";
 import { GlobalMessageNotifier } from "../common/GlobalMessageNotifier";
 import { IncomingCallToast } from "../calling/IncomingCallToast";
+import { CALLING_ENABLED } from "../../services/callingService";
 
 const SEARCH_ITEMS = [
   { label: "Dashboard Overview", detail: "Kathmandu Hub operations snapshot", to: "/dashboard", icon: LayoutDashboard },
@@ -167,15 +168,17 @@ export function AppShell() {
           <div className="nav-group">
             <span className="nav-section-title">WORKSPACE</span>
 
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
-            >
-              <div className="sidebar-link-content">
-                <LayoutDashboard size={16} />
-                <span>Dashboard</span>
-              </div>
-            </NavLink>
+            {permissions.dashboard && (
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+              >
+                <div className="sidebar-link-content">
+                  <LayoutDashboard size={16} />
+                  <span>Dashboard</span>
+                </div>
+              </NavLink>
+            )}
 
             {permissions.leads && (
               <NavLink
@@ -392,16 +395,18 @@ export function AppShell() {
             </NavLink>
 
             {/* EMAIL AUTOMATION & DRIP ENGINE */}
-            <NavLink
-              to="/email-automation"
-              className={({ isActive }) => (isActive || location.pathname.startsWith("/email-automation") ? "sidebar-link active" : "sidebar-link")}
-            >
-              <div className="sidebar-link-content">
-                <Mail size={16} />
-                <span>Email Automation</span>
-              </div>
-              <span className="sidebar-badge" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10B981", fontSize: "10.5px", fontWeight: 700 }}>Auto</span>
-            </NavLink>
+            {permissions.settings && (
+              <NavLink
+                to="/email-automation"
+                className={({ isActive }) => (isActive || location.pathname.startsWith("/email-automation") ? "sidebar-link active" : "sidebar-link")}
+              >
+                <div className="sidebar-link-content">
+                  <Mail size={16} />
+                  <span>Email Automation</span>
+                </div>
+                <span className="sidebar-badge" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10B981", fontSize: "10.5px", fontWeight: 700 }}>Auto</span>
+              </NavLink>
+            )}
           </div>
 
           {/* ADMINISTRATION SECTION (ONLY ADMIN / IT) */}
@@ -478,14 +483,16 @@ export function AppShell() {
             </button>
 
             {/* Quick lead capture */}
-            <button
-              type="button"
-              className="quick-action-primary-btn"
-              onClick={() => navigate("/leads", { state: { openLeadCapture: true } })}
-            >
-              <Plus size={15} />
-              <span>New Lead</span>
-            </button>
+            {permissions.leads && (
+              <button
+                type="button"
+                className="quick-action-primary-btn"
+                onClick={() => navigate("/leads", { state: { openLeadCapture: true } })}
+              >
+                <Plus size={15} />
+                <span>New Lead</span>
+              </button>
+            )}
 
             {/* Screen Time & Wellness Break Reminder (30-min active use -> 5-min break) */}
             <ScreenBreakReminder />
@@ -709,7 +716,7 @@ export function AppShell() {
         <GlobalMessageNotifier />
 
         {/* Global WebRTC Incoming Call Overlay */}
-        <IncomingCallToast />
+        {CALLING_ENABLED && <IncomingCallToast />}
 
         {/* Dynamic Route Content */}
         <main id="main-content" className="app-content" style={{ flex: 1 }} tabIndex={-1}>

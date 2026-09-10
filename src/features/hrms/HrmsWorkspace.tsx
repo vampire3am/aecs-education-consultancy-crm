@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   Clock,
+  Coffee,
   FileText,
   Plus,
   Printer,
@@ -49,6 +50,16 @@ interface AttendanceRecord {
   workedHours: string;
   status: "PRESENT" | "LATE" | "HALF_DAY" | "ON_LEAVE" | "ABSENT";
   lateMinutes?: number;
+}
+
+interface WorkBreakRecord {
+  id: string;
+  empCode: string;
+  fullName: string;
+  source: "AUTOMATIC" | "MANUAL";
+  startedLabel: string;
+  duration: string;
+  status: "ACTIVE" | "COMPLETED";
 }
 
 interface LeaveRequest {
@@ -112,6 +123,7 @@ export function HrmsWorkspace() {
 
   const [staffList, setStaffList] = useState<StaffMember[]>(INITIAL_STAFF);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [workBreaks, setWorkBreaks] = useState<WorkBreakRecord[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>(INITIAL_LEAVES);
   const [payroll, setPayroll] = useState<PayrollRecord[]>(INITIAL_PAYROLL);
   const [dataError, setDataError] = useState("");
@@ -120,14 +132,15 @@ export function HrmsWorkspace() {
   const loadHrmsData = async () => {
     try {
       setDataError("");
-      const [staff, attendanceRows, leaveRows, payrollRows, ownAttendance] = await Promise.all([
-        HrmsService.getStaff(), HrmsService.getAttendance(), HrmsService.getLeaves(), HrmsService.getPayroll(), HrmsService.getMyTodayAttendance(),
+      const [staff, attendanceRows, leaveRows, payrollRows, ownAttendance, breakRows] = await Promise.all([
+        HrmsService.getStaff(), HrmsService.getAttendance(), HrmsService.getLeaves(), HrmsService.getPayroll(), HrmsService.getMyTodayAttendance(), HrmsService.getWorkBreaks(),
       ]);
       setStaffList(staff as StaffMember[]);
       setAttendance(attendanceRows as AttendanceRecord[]);
       setLeaves(leaveRows as LeaveRequest[]);
       setPayroll(payrollRows as PayrollRecord[]);
       setMyAttendance(ownAttendance);
+      setWorkBreaks(breakRows as WorkBreakRecord[]);
     } catch (error) {
       setDataError(error instanceof Error ? error.message : "HRMS records could not be loaded");
     }
@@ -230,7 +243,6 @@ export function HrmsWorkspace() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Human Resource & Personnel Management</span>
           <h2>HRMS, Attendance & Payroll Portal</h2>
           <p>
             Employee master directory, biometric attendance clock-in, leave approval workflow, and monthly payroll execution.
@@ -495,6 +507,7 @@ export function HrmsWorkspace() {
 
       {/* TAB 2: ATTENDANCE */}
       {activeTab === "attendance" && (
+        <div className="hrms-attendance-stack">
         <div className="crm-panel">
           <div className="panel-header-bar">
             <div>
@@ -557,6 +570,20 @@ export function HrmsWorkspace() {
               </tbody>
             </table>
           </div>
+        </div>
+        <div className="crm-panel">
+          <div className="panel-header-bar">
+            <div><h3>Screen-Time Break Audit</h3><p>Automatic 60-minute prompts and employee-initiated five-minute breaks</p></div>
+            <span className="status-pill"><Coffee size={13} /><span>60 min work · 5 min recovery</span></span>
+          </div>
+          <div className="table-wrapper"><table className="crm-table">
+            <thead><tr><th>Emp Code</th><th>Staff Member</th><th>Break Started</th><th>Trigger</th><th>Duration</th><th>Status</th></tr></thead>
+            <tbody>
+              {workBreaks.map(item => <tr key={item.id}><td><span className="account-code-cell">{item.empCode}</span></td><td><strong>{item.fullName}</strong></td><td>{item.startedLabel}</td><td><span className="status-pill">{item.source === "AUTOMATIC" ? "Scheduled prompt" : "Manual break"}</span></td><td><strong className="code-font">{item.duration}</strong></td><td><span className={`badge-status ${item.status === "COMPLETED" ? "enrolled" : "counselling"}`}>{item.status}</span></td></tr>)}
+              {!workBreaks.length && <tr><td colSpan={6} style={{ textAlign:"center", padding:"28px" }}>No screen-time breaks have been recorded yet.</td></tr>}
+            </tbody>
+          </table></div>
+        </div>
         </div>
       )}
 

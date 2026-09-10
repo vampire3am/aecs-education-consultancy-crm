@@ -159,8 +159,8 @@ export function EmailAutomationWorkspace() {
   // Toggle Automation Rule
   const handleToggleAutomation = async (ruleId: string) => {
     const updated = automations.map(a => (a.id === ruleId ? { ...a, isActive: !a.isActive } : a));
-    setAutomations(updated);
-    await EmailAutomationService.saveAutomations(updated);
+    if (await EmailAutomationService.saveAutomations(updated)) setAutomations(updated);
+    else alert("The automation change was not saved. Check your email-management permission and try again.");
   };
 
   // Test Trigger Rule
@@ -194,13 +194,17 @@ export function EmailAutomationWorkspace() {
   const handleQuickSend = async () => {
     if (!quickSendRecipient.trim() || !quickSendTemplateId) return;
     setQuickSendSending(true);
-    await EmailAutomationService.sendEmail({
+    const result = await EmailAutomationService.sendEmail({
       to: quickSendRecipient.trim(),
       toName: quickSendName.trim() || "Valued Student",
       templateId: quickSendTemplateId,
       triggerEvent: "Manual Staff Dispatch",
     });
     setQuickSendSending(false);
+    if (!result.success) {
+      alert(`Email could not be queued: ${result.error || "Unknown delivery error"}`);
+      return;
+    }
     setQuickSendSuccess(true);
     setTimeout(() => {
       setQuickSendSuccess(false);
@@ -744,9 +748,7 @@ export function EmailAutomationWorkspace() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => {
-                alert("🚀 Campaign queued! Dispatched 184 personalized emails to targeted student segment.");
-              }}
+              onClick={() => alert("Mass campaign dispatch is disabled until a verified server-side mail provider is connected. No emails were sent.")}
               style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px" }}
             >
               <Send size={15} />
@@ -1026,8 +1028,8 @@ export function EmailAutomationWorkspace() {
                   type="button"
                   className="btn btn-primary"
                   onClick={async () => {
-                    await EmailAutomationService.saveSettings(settings);
-                    alert("✅ SMTP Settings saved and verified successfully!");
+                    const saved = await EmailAutomationService.saveSettings(settings);
+                    alert(saved ? "SMTP settings saved." : "SMTP secrets cannot be stored in the browser. Configure them on the production server first; nothing was saved.");
                   }}
                 >
                   Save Settings

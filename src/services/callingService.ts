@@ -3,6 +3,7 @@ import { getGuitarNokiaRingtoneAudio } from "../utils/guitarNokiaRingtone";
 
 export type CallType = "audio" | "video";
 export type CallStatus = "RINGING" | "CONNECTED" | "ENDED" | "DECLINED" | "BUSY";
+export const CALLING_ENABLED = import.meta.env.VITE_CALLING_ENABLED === "true";
 
 export interface ActiveCallSession {
   callId: string;

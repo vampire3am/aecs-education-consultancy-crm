@@ -46,6 +46,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MockTestResult, MockTestService, MockTestSlot } from "../../services/mockTestService";
+import { ClassStudent, ClassStudentService } from "../../services/classStudentService";
 import { useAuth } from "../auth/AuthProvider";
 
 export function MockTestsWorkspace() {
@@ -55,6 +56,10 @@ export function MockTestsWorkspace() {
   const [activeTab, setActiveTab] = useState<"results" | "slots" | "analytics">("results");
   const [results, setResults] = useState<MockTestResult[]>([]);
   const [slots, setSlots] = useState<MockTestSlot[]>([]);
+  const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
+  const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [testTypeFilter, setTestTypeFilter] = useState("ALL");
 
@@ -95,12 +100,14 @@ export function MockTestsWorkspace() {
   });
 
   const loadData = async () => {
-    const [resData, slotData] = await Promise.all([
+    const [resData, slotData, studentData] = await Promise.all([
       MockTestService.getResults(),
       MockTestService.getSlots(),
+      ClassStudentService.getStudents(),
     ]);
     setResults(resData);
     setSlots(slotData);
+    setClassStudents(studentData);
   };
 
   useEffect(() => {
@@ -128,9 +135,9 @@ export function MockTestsWorkspace() {
   // Handle Score Submit
   const handleSaveResult = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scoreForm.studentName.trim()) return;
-
-    await MockTestService.createResult({
+    if (!scoreForm.studentCode || !scoreForm.testDate || !scoreForm.overallScore.trim()) { setFormError("Select a class student and enter the required evaluation details."); return; }
+    setSaving(true); setFormError("");
+    try { await MockTestService.createResult({
       studentName: scoreForm.studentName.trim(),
       studentCode: scoreForm.studentCode.trim(),
       testType: scoreForm.testType,
@@ -148,7 +155,7 @@ export function MockTestsWorkspace() {
     });
 
     await loadData();
-    setShowAddResultModal(false);
+    setShowAddResultModal(false); setSuccessMessage("Mock-test evaluation recorded successfully.");
     setScoreForm({
       studentName: "",
       studentCode: "",
@@ -164,15 +171,16 @@ export function MockTestsWorkspace() {
       status: "Score Issued",
       examinerFeedback: "",
       targetAchieved: false,
-    });
+    }); } catch(error) { setFormError(error instanceof Error ? error.message : "Unable to save this mock-test evaluation."); }
+    finally { setSaving(false); }
   };
 
   // Handle Slot Submit
   const handleSaveSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slotForm.title.trim()) return;
-
-    await MockTestService.createSlot({
+    if (!slotForm.title.trim() || !slotForm.date || !slotForm.time || !slotForm.room.trim() || !slotForm.invigilator.trim()) { setFormError("Title, date, time, venue and invigilator are required."); return; }
+    setSaving(true); setFormError("");
+    try { await MockTestService.createSlot({
       title: slotForm.title.trim(),
       testType: slotForm.testType,
       date: slotForm.date.trim(),
@@ -185,21 +193,24 @@ export function MockTestsWorkspace() {
     });
 
     await loadData();
-    setShowAddSlotModal(false);
+    setShowAddSlotModal(false); setSuccessMessage("Mock-test session scheduled successfully.");
+    setSlotForm({title:"",testType:"IELTS Academic",date:"",time:"",room:"",invigilator:"",totalSeats:0,bookedSeats:0,status:"OPEN"});
+    } catch(error) { setFormError(error instanceof Error ? error.message : "Unable to schedule this mock-test session."); }
+    finally { setSaving(false); }
   };
 
   // Metrics
   const totalMocks = results.length;
   const examReadyCount = results.filter(r => r.targetAchieved).length;
+  const upcomingSlots = slots.filter(slot => slot.status === "OPEN").length;
+  const readinessRate = totalMocks ? Math.round((examReadyCount / totalMocks) * 100) : 0;
+  const averageScore = totalMocks ? (results.reduce((sum, result) => sum + (Number.parseFloat(result.overallScore) || 0), 0) / totalMocks).toFixed(1) : "—";
 
   return (
     <div className="page-container">
       {/* 1. Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow" style={{ color: "var(--accent-orange, #EA580C)" }}>
-            TESTING & EVALUATION
-          </span>
           <h2>Mock Tests & Evaluation Suite</h2>
           <p>
             Schedule full-length examination simulations, evaluate sectional band scores, and issue diagnostic report cards.
@@ -236,6 +247,8 @@ export function MockTestsWorkspace() {
           </button>
         </div>
       </div>
+      {formError&&<div className="phase2-alert phase2-alert-error"><AlertCircle size={16}/>{formError}<button type="button" onClick={()=>setFormError("")}><X size={14}/></button></div>}
+      {successMessage&&<div className="classes-success"><Check size={16}/><span>{successMessage}</span><button type="button" onClick={()=>setSuccessMessage("")}><X size={14}/></button></div>}
 
       {/* 2. Top 4 Metric Strip */}
       <div className="metrics-grid-4" style={{ marginBottom: "20px" }}>
@@ -252,24 +265,24 @@ export function MockTestsWorkspace() {
 
         <div className="metric-box">
           <div className="metric-header">
-            <span className="metric-label">Average IELTS Band</span>
+            <span className="metric-label">Average Recorded Score</span>
             <div className="metric-icon-wrap green">
               <Sparkles size={17} />
             </div>
           </div>
-          <div className="metric-value">6.9 Band</div>
-          <span className="metric-sub">Target for UK & Australia</span>
+          <div className="metric-value">{averageScore}</div>
+          <span className="metric-sub">Across issued evaluations</span>
         </div>
 
         <div className="metric-box">
           <div className="metric-header">
-            <span className="metric-label">Average PTE Score</span>
+            <span className="metric-label">Upcoming Sessions</span>
             <div className="metric-icon-wrap purple">
               <TrendingUp size={17} />
             </div>
           </div>
-          <div className="metric-value">65 / 90</div>
-          <span className="metric-sub">Direct university entry benchmark</span>
+          <div className="metric-value">{upcomingSlots}</div>
+          <span className="metric-sub">Open scheduled mock slots</span>
         </div>
 
         <div className="metric-box">
@@ -279,8 +292,8 @@ export function MockTestsWorkspace() {
               <CheckCircle2 size={17} />
             </div>
           </div>
-          <div className="metric-value">{examReadyCount} Candidates</div>
-          <span className="metric-sub">Cleared university cutoff</span>
+          <div className="metric-value">{readinessRate}%</div>
+          <span className="metric-sub">{examReadyCount} of {totalMocks} evaluations cleared</span>
         </div>
       </div>
 
@@ -593,6 +606,25 @@ export function MockTestsWorkspace() {
       )}
 
       {/* =========================================================================
+          MODAL: SCHEDULE MOCK TEST
+          ========================================================================= */}
+      <AnimatePresence>
+        {showAddSlotModal && <div className="modal-backdrop-clean" onClick={()=>setShowAddSlotModal(false)}>
+          <motion.div initial={{scale:.96,opacity:0}} animate={{scale:1,opacity:1}} exit={{scale:.96,opacity:0}} className="modal-dialog-clean" style={{maxWidth:620}} onClick={event=>event.stopPropagation()}>
+            <div className="modal-header-clean"><div><h3>Schedule a mock-test session</h3><p>Create a controlled exam slot with accountable venue and invigilator details.</p></div><button type="button" className="drawer-close-btn" onClick={()=>setShowAddSlotModal(false)}><X size={18}/></button></div>
+            <form onSubmit={handleSaveSlot}>
+              <div className="modal-body-clean mock-schedule-form">
+                <section className="workflow-form-section"><header><span>1</span><div><strong>Test session</strong><small>Choose the exam format and session identity.</small></div></header><div className="form-row-2"><div className="form-group"><label>Session title *</label><input required value={slotForm.title} onChange={e=>setSlotForm({...slotForm,title:e.target.value})} placeholder="IELTS Academic Full Mock"/></div><div className="form-group"><label>Test format *</label><select value={slotForm.testType} onChange={e=>setSlotForm({...slotForm,testType:e.target.value as MockTestSlot["testType"]})}><option>IELTS Academic</option><option>PTE Academic</option><option>Duolingo (DET)</option><option>German A1</option></select></div></div></section>
+                <section className="workflow-form-section"><header><span>2</span><div><strong>Schedule and controls</strong><small>Set the operational details used by staff.</small></div></header><div className="form-row-2"><div className="form-group"><label>Date *</label><input type="date" required value={slotForm.date} onChange={e=>setSlotForm({...slotForm,date:e.target.value})}/></div><div className="form-group"><label>Start time *</label><input type="time" required value={slotForm.time} onChange={e=>setSlotForm({...slotForm,time:e.target.value})}/></div></div><div className="form-row-2"><div className="form-group"><label>Venue / room *</label><input required value={slotForm.room} onChange={e=>setSlotForm({...slotForm,room:e.target.value})}/></div><div className="form-group"><label>Invigilator *</label><input required value={slotForm.invigilator} onChange={e=>setSlotForm({...slotForm,invigilator:e.target.value})}/></div></div><div className="form-group"><label>Seat capacity *</label><input type="number" min="1" required value={slotForm.totalSeats||""} onChange={e=>setSlotForm({...slotForm,totalSeats:Number(e.target.value)})}/></div></section>
+                {formError&&<div className="phase2-alert phase2-alert-error"><AlertCircle size={16}/>{formError}</div>}
+              </div>
+              <div className="modal-footer-clean"><button type="button" className="btn-secondary" onClick={()=>setShowAddSlotModal(false)}>Cancel</button><button type="submit" className="btn-primary" disabled={saving}><CalendarCheck2 size={15}/>{saving?"Scheduling…":"Schedule session"}</button></div>
+            </form>
+          </motion.div>
+        </div>}
+      </AnimatePresence>
+
+      {/* =========================================================================
           MODAL: LOG MOCK TEST SCORES
           ========================================================================= */}
       <AnimatePresence>
@@ -628,25 +660,16 @@ export function MockTestsWorkspace() {
                 <div className="modal-body-clean">
                   <div className="form-row-2">
                     <div className="form-group">
-                      <label>Candidate Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={scoreForm.studentName}
-                        onChange={e => setScoreForm({ ...scoreForm, studentName: e.target.value })}
-                        placeholder="e.g. Rohan Shrestha"
-                      />
+                      <label>Class student *</label>
+                      <select required value={scoreForm.studentCode} onChange={event=>{const student=classStudents.find(item=>item.studentCode===event.target.value);setScoreForm(current=>({...current,studentCode:student?.studentCode??"",studentName:student?.fullName??""}))}}>
+                        <option value="">Select student by name or code</option>
+                        {classStudents.map(student=><option key={student.id} value={student.studentCode}>{student.fullName} · {student.studentCode} · {student.enrolledClass}</option>)}
+                      </select>
                     </div>
 
                     <div className="form-group">
                       <label>Student Code *</label>
-                      <input
-                        type="text"
-                        required
-                        value={scoreForm.studentCode}
-                        onChange={e => setScoreForm({ ...scoreForm, studentCode: e.target.value })}
-                        placeholder="e.g. CLS-2026-001"
-                      />
+                      <input type="text" readOnly value={scoreForm.studentCode} placeholder="Filled from selected student" />
                     </div>
                   </div>
 
@@ -775,9 +798,9 @@ export function MockTestsWorkspace() {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary">
+                  <button type="submit" className="btn-primary" disabled={saving}>
                     <Award size={15} />
-                    <span>Issue Mock Result</span>
+                    <span>{saving?"Saving…":"Issue Mock Result"}</span>
                   </button>
                 </div>
               </form>

@@ -142,9 +142,6 @@ export function ManagementDashboard() {
       {/* Executive Welcome Header */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">
-            AECS Bagbazar · Executive Operations
-          </span>
           <h2>Executive Operations Hub</h2>
           <p>
             Real-time admissions pipeline, counselling schedule, and revenue analytics for {AECS_ORGANIZATION.officeName}.

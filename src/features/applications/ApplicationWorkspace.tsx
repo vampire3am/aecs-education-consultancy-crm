@@ -24,8 +24,8 @@ type ApplicationUniversity = {
   tuition?: string;
   intake?: string;
 };
-const APPLICATION_DESTINATIONS_KEY = "aecs_destinations_catalog_v2";
-const APPLICATION_UNIVERSITIES_KEY = "aecs_partner_universities_v2";
+import { DestinationCatalogService } from "../../services/destinationCatalogService";
+import { UniversityCatalogService } from "../../services/universityCatalogService";
 
 const normalizeCountryCode = (value?: string) => {
   const code = (value || "").trim().toUpperCase();
@@ -251,14 +251,23 @@ export function ApplicationWorkspace() {
   };
 
   useEffect(() => {
-    void StudentService.getStudents().then(setStudents).catch(() => setStudents([]));
-    try {
-      setCatalogDestinations(JSON.parse(localStorage.getItem(APPLICATION_DESTINATIONS_KEY) || "[]"));
-      setCatalogUniversities(JSON.parse(localStorage.getItem(APPLICATION_UNIVERSITIES_KEY) || "[]"));
-    } catch {
+    let live = true;
+    void Promise.all([
+      StudentService.getStudents(),
+      DestinationCatalogService.list(),
+      UniversityCatalogService.list(),
+    ]).then(([studentRows, destinationRows, universityRows]) => {
+      if (!live) return;
+      setStudents(studentRows);
+      setCatalogDestinations(destinationRows);
+      setCatalogUniversities(universityRows);
+    }).catch(error => {
+      if (!live) return;
       setCatalogDestinations([]);
       setCatalogUniversities([]);
-    }
+      notifyError("Catalogue unavailable", error instanceof Error ? error.message : "The shared Abroad catalogue could not be loaded.");
+    });
+    return () => { live = false; };
   }, [showSubmitModal]);
 
   useEffect(() => {
@@ -446,9 +455,6 @@ export function ApplicationWorkspace() {
       {/* 1. Header Row (Matching User Screenshot Layout) */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow" style={{ color: "#38BDF8", letterSpacing: "0.04em" }}>
-            AECS UNIVERSITY ADMISSIONS & VISAS
-          </span>
           <h2>University Applications & Lodgements</h2>
           <p>
             Track overseas university submissions, conditional offer letters, CAS/I-20 confirmations, and embassy visa outcomes.

@@ -94,7 +94,14 @@ export default function App() {
         <Route element={<ProtectedArea />}>
           <Route element={<AppShell />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<ManagementDashboard />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RoleRouteGuard permission="dashboard" workspaceName="Management Dashboard">
+                  <ManagementDashboard />
+                </RoleRouteGuard>
+              }
+            />
             
             {/* Leads Workspace */}
             <Route

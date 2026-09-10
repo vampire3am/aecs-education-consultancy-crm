@@ -76,7 +76,6 @@ export function AnalyticsDashboard() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Business Intelligence & Reporting</span>
           <h2>Analytics & Core Reports</h2>
           <p>
             Operational conversion funnels and master directory of 50 blueprint consultancy CRM reports.
@@ -450,7 +449,14 @@ export function AnalyticsDashboard() {
                 type="button"
                 className="btn-primary"
                 onClick={() => {
-                  alert(`Exporting Report #${selectedReport.id}: "${selectedReport.heading}" to Excel/CSV.`);
+                  const escape = (value:unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+                  const csv = ["Report ID,Report heading,Exported at", [selectedReport.id, selectedReport.heading, new Date().toISOString()].map(escape).join(",")].join("\n");
+                  const url = URL.createObjectURL(new Blob([csv], { type:"text/csv;charset=utf-8" }));
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = `crm-report-${selectedReport.id}.csv`;
+                  link.click();
+                  URL.revokeObjectURL(url);
                 }}
               >
                 <Download size={15} />

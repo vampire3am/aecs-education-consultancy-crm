@@ -83,6 +83,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { playChimeNotification } from "../../components/common/GlobalMessageNotifier";
 import {
   type ActiveCallSession,
+  CALLING_ENABLED,
   CallingService,
 } from "../../services/callingService";
 import { CallModal } from "../../components/calling/CallModal";
@@ -545,23 +546,23 @@ export function MessagesWorkspace() {
             </div>
 
             <div className="messenger-header-actions">
-              <button
+              {CALLING_ENABLED && <button
                 type="button"
                 className="messenger-icon-btn"
                 onClick={handleStartVoiceCall}
                 title="Start Encrypted Voice Call"
               >
                 <Phone size={17} style={{ color: "#F97316" }} />
-              </button>
+              </button>}
 
-              <button
+              {CALLING_ENABLED && <button
                 type="button"
                 className="messenger-icon-btn"
                 onClick={handleStartVideoCall}
                 title="Start HD Video Conference"
               >
                 <Video size={18} style={{ color: "#F97316" }} />
-              </button>
+              </button>}
 
               <button
                 type="button"
@@ -1041,7 +1042,7 @@ export function MessagesWorkspace() {
       {/* =========================================================================
           ACTIVE OUTGOING CALL MODAL
           ========================================================================= */}
-      {outgoingCallSession && (
+      {CALLING_ENABLED && outgoingCallSession && (
         <CallModal
           session={outgoingCallSession}
           currentUserId={currentUserId}

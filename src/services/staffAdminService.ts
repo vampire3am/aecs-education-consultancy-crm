@@ -9,6 +9,12 @@ export const STAFF_MODULES = [
   ["hrms", "HRMS"], ["messages", "Messages"], ["settings", "Administration"],
 ] as const;
 
+const STAFF_MODULE_IDS = new Set<string>(STAFF_MODULES.map(([id]) => id));
+
+export function normalizeStaffModules(modules: readonly string[] | null | undefined): string[] {
+  return [...new Set((modules ?? []).map(module => module.trim()).filter(module => STAFF_MODULE_IDS.has(module)))];
+}
+
 export const STAFF_ROLES: StaffRole[] = [
   "ADMIN", "DIRECTOR", "SENIOR_COUNSELLOR", "COUNSELLOR", "VISA_OFFICER",
   "ACCOUNTANT", "FRONT_DESK", "FACULTY", "MARKETING", "IT_ADMIN",
@@ -47,7 +53,11 @@ export const StaffAdminService = {
     if (error) throw error;
     return (data ?? []) as StaffAdminRecord[];
   },
-  create(input: StaffAdminInput) { return invoke({ action: "create", ...input }); },
-  update(id: string, input: StaffAdminInput) { return invoke({ action: "update", user_id: id, ...input }); },
+  create(input: StaffAdminInput) {
+    return invoke({ ...input, desktop_modules: normalizeStaffModules(input.desktop_modules), action: "create" });
+  },
+  update(id: string, input: StaffAdminInput) {
+    return invoke({ ...input, desktop_modules: normalizeStaffModules(input.desktop_modules), action: "update", user_id: id });
+  },
   setPassword(id: string, password: string) { return invoke({ action: "set_password", user_id: id, password }); },
 };

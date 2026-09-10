@@ -383,16 +383,17 @@ export class EmailAutomationService {
 
   // 4. Save Automation Rules
   static async saveAutomations(automations: AutomationRule[]): Promise<boolean> {
-    try {
-      const res = await fetch("/api/sync/email/automations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(automations),
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return false;
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const rows = automations.filter(rule => uuid.test(rule.id) && uuid.test(rule.templateId)).map(rule => ({
+      id:rule.id, name:rule.name, trigger_event:rule.triggerEvent, template_id:rule.templateId,
+      is_active:rule.isActive, delay_hours:Math.max(0, rule.delayHours),
+      destination_filter:rule.destinationFilter || "ALL", created_by:user.id,
+    }));
+    if (!rows.length && automations.length) return false;
+    const { error } = await supabase.from("email_automations").upsert(rows, { onConflict:"id" });
+    return !error;
   }
 
   // 5. Fetch Activity Logs
@@ -402,13 +403,6 @@ export class EmailAutomationService {
 
   // 6. Fetch SMTP Settings
   static async getSettings(): Promise<SmtpSettings> {
-    try {
-      const res = await fetch("/api/sync/email/settings");
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.senderEmail) return data;
-      }
-    } catch {}
     return {
       provider: "smtp",
       senderName: "AECS Global Admissions",
@@ -423,31 +417,14 @@ export class EmailAutomationService {
 
   // 7. Save SMTP Settings
   static async saveSettings(settings: SmtpSettings): Promise<boolean> {
-    try {
-      const res = await fetch("/api/sync/email/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
+    void settings;
+    return false;
   }
 
   // 7.1 Test SMTP Connection
   static async testSmtpConnection(settings: SmtpSettings): Promise<{ success: boolean; message?: string; error?: string }> {
-    try {
-      const res = await fetch("/api/sync/email/test-connection", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      const data = await res.json();
-      return data;
-    } catch (e: any) {
-      return { success: false, error: e.message };
-    }
+    void settings;
+    return { success:false, error:"SMTP credentials must be configured as server secrets. Browser-side password storage is disabled for security." };
   }
 
   // 8. Variable Interpolator (Replaces {{student_name}}, {{destination_country}}, etc.)
@@ -508,8 +485,8 @@ export class EmailAutomationService {
 
       void finalHtml;
       const{data,error}=await supabase.rpc("queue_email",{payload:{to:params.to,to_name:params.toName||"Student",subject:finalSubject,template_id:params.templateId&&/^[0-9a-f-]{36}$/i.test(params.templateId)?params.templateId:"",automation_id:params.automationId&&/^[0-9a-f-]{36}$/i.test(params.automationId)?params.automationId:"",student_id:params.studentId||"",trigger_event:params.triggerEvent||"Manual Send"}});if(error)throw error;const logs=await this.getLogs();return{success:true,log:logs.find(log=>log.id===data)};
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : "The email could not be queued." };
     }
   }
 

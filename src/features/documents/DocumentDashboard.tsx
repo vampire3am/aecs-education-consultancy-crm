@@ -19,8 +19,9 @@ import { StudentService } from "../../services/studentService";
 import { KpiTrendIndicator } from "../../components/common/KpiTrendIndicator";
 import { DocumentService, type DocumentRecord } from "../../services/documentService";
 import { notifyError, notifySuccess } from "../../components/common/CrmNotifications";
+import { DestinationDocumentService } from "../../services/destinationDocumentService";
 
-type DocItem = DocumentRecord;
+type DocItem = DocumentRecord & { source?: "student" | "destination" };
 
 const DOCUMENT_CATEGORIES = [
   "All Categories",
@@ -30,6 +31,7 @@ const DOCUMENT_CATEGORIES = [
   "Financial Documents",
   "Visa & Embassy Files",
   "Recommendation Letters",
+  "Destination Resources",
 ] as const;
 
 const DOCUMENT_CHECKLIST = [
@@ -83,9 +85,18 @@ export function DocumentDashboard() {
   });
 
   useEffect(() => {
-    Promise.all([StudentService.getStudents(), DocumentService.list()]).then(([studentRows,documents]) => {
+    Promise.all([StudentService.getStudents(), DocumentService.list(), DestinationDocumentService.list()]).then(([studentRows,documents,destinationDocuments]) => {
       setStudents(studentRows || []);
-      setDocs(documents);
+      setDocs([
+        ...documents.map(document => ({ ...document, source:"student" as const })),
+        ...destinationDocuments.map(document => ({
+          id:document.id, studentCode:`DEST-${document.destinationCode}`, studentName:document.destinationName,
+          fileName:document.name, category:"Destination Resources",
+          fileSize:document.size < 1024 * 1024 ? `${Math.ceil(document.size / 1024)} KB` : `${(document.size / 1024 / 1024).toFixed(1)} MB`,
+          uploadedAt:new Date(document.uploadedAt).toLocaleString(), status:document.status, notes:document.notes,
+          storagePath:document.storagePath, version:1, mimeType:document.type, activities:[], source:"destination" as const,
+        })),
+      ]);
       if (studentRows && studentRows.length > 0) {
         setUploadForm(prev => ({
           ...prev,
@@ -112,7 +123,12 @@ export function DocumentDashboard() {
   };
 
   const handleUpdateStatus = async (id: string, newStatus: DocItem["status"]) => {
-    setSaving(true);setErrorMessage("");try{await DocumentService.review(id,newStatus);const updated=await DocumentService.list();setDocs(updated);setInspectDoc(updated.find(d=>d.id===id)??null);const labels:Record<DocItem["status"],string>={VERIFIED:"Document verified",ACTION_REQUIRED:"Action requested",REJECTED:"Document rejected",UNDER_REVIEW:"Review status updated",EXPIRED:"Document marked expired"};notifySuccess(labels[newStatus],"The verification audit and student record were updated successfully.")}catch(error){const message=error instanceof Error?error.message:"Review failed.";setErrorMessage(message);notifyError("Status update failed",message)}finally{setSaving(false)}
+    setSaving(true);setErrorMessage("");try{
+      if (inspectDoc?.source === "destination") await DestinationDocumentService.review(id,newStatus);
+      else await DocumentService.review(id,newStatus);
+      setDocs(current => current.map(document => document.id === id ? { ...document, status:newStatus } : document));
+      setInspectDoc(current => current?.id === id ? { ...current, status:newStatus } : current);
+      const labels:Record<DocItem["status"],string>={VERIFIED:"Document verified",ACTION_REQUIRED:"Action requested",REJECTED:"Document rejected",UNDER_REVIEW:"Review status updated",EXPIRED:"Document marked expired"};notifySuccess(labels[newStatus],"The verification state was saved successfully.")}catch(error){const message=error instanceof Error?error.message:"Review failed.";setErrorMessage(message);notifyError("Status update failed",message)}finally{setSaving(false)}
   };
 
   const exportCSV = () => {
@@ -145,7 +161,6 @@ export function DocumentDashboard() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Compliance & Verification Desk</span>
           <h2>Student Document Vault & Scrutiny Checklist</h2>
           <p>
             Audit academic transcripts, passport bio-pages, English TRFs, bank balance proofs, and 10-point standard visa documentation.
@@ -564,7 +579,7 @@ export function DocumentDashboard() {
           <div className="modal-dialog-clean" style={{ maxWidth: "560px" }} onClick={e => e.stopPropagation()}>
             <div className="modal-header-clean">
               <div>
-                <button type="button" className="btn-secondary" onClick={async()=>{try{window.open(await DocumentService.signedUrl(inspectDoc.storagePath),"_blank","noopener,noreferrer")}catch(error){setErrorMessage(error instanceof Error?error.message:"Preview failed.")}}}><Eye size={14}/>Secure preview (5 min)</button>
+                <button type="button" className="btn-secondary" onClick={async()=>{try{const url=inspectDoc.source==="destination"?await DestinationDocumentService.signedUrl(inspectDoc.storagePath):await DocumentService.signedUrl(inspectDoc.storagePath);window.open(url,"_blank","noopener,noreferrer")}catch(error){setErrorMessage(error instanceof Error?error.message:"Preview failed.")}}}><Eye size={14}/>Secure preview (5 min)</button>
               </div>
 
               <div>

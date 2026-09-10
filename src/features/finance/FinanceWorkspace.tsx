@@ -250,7 +250,6 @@ export function FinanceWorkspace() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Financial Operations & Double-Entry Ledger Engine</span>
           <h2>Finance, Invoicing & Chart of Accounts</h2>
           <p>
             Every fee entry, payment receipt, and university commission automatically posts to the 454-account master ledger.

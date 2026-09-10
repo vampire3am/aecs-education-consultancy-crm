@@ -240,16 +240,16 @@ export function StudentDirectory() {
     }
   };
 
-  const handleAddNoteToActiveStudent = () => {
+  const handleAddNoteToActiveStudent = async () => {
     if (!newInspectorNote.trim() || !activeStudent) return;
-    const updatedNotes = [newInspectorNote.trim(), ...activeStudent.notes];
-    const updatedStudent = { ...activeStudent, notes: updatedNotes };
-    setActiveStudent(updatedStudent);
-
-    const updatedList = students.map(s => (s.id === activeStudent.id ? updatedStudent : s));
-    setStudents(updatedList);
-    localStorage.setItem("aecs_persistent_students", JSON.stringify(updatedList));
-    setNewInspectorNote("");
+    try {
+      const updated = await StudentService.addNote(activeStudent.id, newInspectorNote);
+      setStudents(updated as StudentRecord[]);
+      setActiveStudent((updated as StudentRecord[]).find(student => student.id === activeStudent.id) ?? activeStudent);
+      setNewInspectorNote("");
+    } catch (error) {
+      notifyError("Note not saved", error instanceof Error ? error.message : "The note could not be saved.");
+    }
   };
 
   const exportCSV = () => {
@@ -273,7 +273,6 @@ export function StudentDirectory() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Registered Candidates & Admissions Directory</span>
           <h2>Students & Admissions Pipeline</h2>
           <p>
             Official registered candidate dossiers with verified academic records, 10-point document compliance, and university admissions.

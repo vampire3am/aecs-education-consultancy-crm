@@ -57,7 +57,6 @@ export function AdminDashboard() {
       {/* Header Row */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow">AECS Configuration & Governance Console</span>
           <h2>System Settings & Enterprise Governance</h2>
           <p>
             Organization parameters, multi-branch setup, 18-role RBAC matrix, and maker-checker segregation rules.

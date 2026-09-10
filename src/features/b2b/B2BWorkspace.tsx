@@ -373,9 +373,6 @@ export function B2BWorkspace() {
       {/* 1. Header Row (Matching User Screenshot) */}
       <div className="page-header-row">
         <div className="page-header-titles">
-          <span className="page-category-eyebrow" style={{ color: "var(--accent-orange, #EA580C)" }}>
-            PARTNERSHIP OPERATIONS
-          </span>
           <h2>B2B partner tracking</h2>
           <p>
             Manage universities, institutions, agents, aggregators, and recruitment partners.

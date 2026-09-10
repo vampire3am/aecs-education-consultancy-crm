@@ -22,52 +22,73 @@ export interface B2BPartner {
   createdAt: string;
 }
 
-const STORAGE_KEY = "aecs_persistent_b2b_partners_v2";
+type B2BRow = {
+  id: string; code: string; name: string; partner_type: B2BPartner["type"]; country: string;
+  country_code: string; city: string | null; photo_url: string | null; contact_person: string;
+  contact_email: string; contact_phone: string; status: B2BPartner["status"];
+  commission_terms: string; agreement_status: B2BPartner["agreementStatus"];
+  agreement_expiry: string | null; assigned_staff: string; next_follow_up: string | null;
+  referred_students_count: number; total_payout_claimed: string; notes: string; created_at: string;
+};
 
-const INITIAL_B2B_PARTNERS: B2BPartner[] = [];
+const fromRow = (row: B2BRow): B2BPartner => ({
+  id: row.id, code: row.code, name: row.name, type: row.partner_type, country: row.country,
+  countryCode: row.country_code, city: row.city ?? "", photoUrl: row.photo_url ?? "",
+  contactPerson: row.contact_person, contactEmail: row.contact_email, contactPhone: row.contact_phone,
+  status: row.status, commissionTerms: row.commission_terms, agreementStatus: row.agreement_status,
+  agreementExpiry: row.agreement_expiry ?? "", assignedStaff: row.assigned_staff,
+  nextFollowUp: row.next_follow_up ?? "", referredStudentsCount: row.referred_students_count,
+  totalPayoutClaimed: row.total_payout_claimed, notes: row.notes, createdAt: row.created_at,
+});
+
+const toRow = (partner: B2BPartner) => ({
+  id: partner.id, code: partner.code, name: partner.name, partner_type: partner.type,
+  country: partner.country, country_code: partner.countryCode, city: partner.city || null,
+  photo_url: partner.photoUrl || "", contact_person: partner.contactPerson,
+  contact_email: partner.contactEmail, contact_phone: partner.contactPhone, status: partner.status,
+  commission_terms: partner.commissionTerms, agreement_status: partner.agreementStatus,
+  agreement_expiry: partner.agreementExpiry || null, assigned_staff: partner.assignedStaff,
+  next_follow_up: partner.nextFollowUp || null, referred_students_count: partner.referredStudentsCount,
+  total_payout_claimed: partner.totalPayoutClaimed, notes: partner.notes,
+});
 
 export const B2BService = {
   getPartners: async (): Promise<B2BPartner[]> => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return INITIAL_B2B_PARTNERS;
-  },
-
-  savePartners: (partners: B2BPartner[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(partners));
+    const { data, error } = await supabase.from("b2b_partners").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    return ((data ?? []) as B2BRow[]).map(fromRow);
   },
 
   createPartner: async (partner: Omit<B2BPartner, "id" | "code" | "createdAt">): Promise<B2BPartner> => {
-    const current = await B2BService.getPartners();
-    const nextNum = current.length + 101;
+    const { data: code, error: codeError } = await supabase.rpc("next_b2b_code");
+    if (codeError) throw codeError;
     const newPartner: B2BPartner = {
       ...partner,
-      id: `b2b-${Date.now()}`,
-      code: `B2B-${nextNum}`,
-      createdAt: new Date().toISOString().split("T")[0],
+      id: crypto.randomUUID(),
+      code: code as string,
+      createdAt: new Date().toISOString(),
     };
-    const updated = [newPartner, ...current];
-    B2BService.savePartners(updated);
+    const { data: auth } = await supabase.auth.getUser();
+    const { error } = await supabase.from("b2b_partners").insert({ ...toRow(newPartner), created_by: auth.user?.id ?? null });
+    if (error) throw error;
     return newPartner;
   },
 
   updatePartner: async (id: string, patch: Partial<B2BPartner>): Promise<B2BPartner | null> => {
-    const current = await B2BService.getPartners();
-    const index = current.findIndex(p => p.id === id);
-    if (index === -1) return null;
-    current[index] = { ...current[index], ...patch };
-    B2BService.savePartners(current);
-    return current[index];
+    const { data, error: readError } = await supabase.from("b2b_partners").select("*").eq("id", id).maybeSingle();
+    if (readError) throw readError;
+    if (!data) return null;
+    const updated = { ...fromRow(data as B2BRow), ...patch } as B2BPartner;
+    const { id: _id, code: _code, ...changes } = toRow(updated);
+    void _id; void _code;
+    const { error } = await supabase.from("b2b_partners").update({ ...changes, updated_at: new Date().toISOString() }).eq("id", id);
+    if (error) throw error;
+    return updated;
   },
 
   deletePartner: async (id: string): Promise<boolean> => {
-    const current = await B2BService.getPartners();
-    const updated = current.filter(p => p.id !== id);
-    B2BService.savePartners(updated);
+    const { error } = await supabase.from("b2b_partners").delete().eq("id", id);
+    if (error) throw error;
     return true;
   },
 
@@ -121,3 +142,4 @@ export const B2BService = {
     document.body.removeChild(link);
   },
 };
+import { supabase } from "../lib/supabase";
