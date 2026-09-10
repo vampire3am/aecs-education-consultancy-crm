@@ -18,7 +18,7 @@
     "@vitejs/plugin-react": "5.1.1",
     "framer-motion": "latest",
     "lucide-react": "latest",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^10.0.2",
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "latest",
