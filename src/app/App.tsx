@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { CrmSkeleton } from "../components/common/CrmSkeleton";
 import { CrmNotificationCenter } from "../components/common/CrmNotifications";
@@ -84,6 +84,15 @@ const NotFound = () => (
 import { RoleRouteGuard } from "../features/auth/RoleRouteGuard";
 
 export default function App() {
+  const [showStartupLoader, setShowStartupLoader] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowStartupLoader(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (showStartupLoader) return <CrmSkeleton branded />;
+
   return (
     <><CrmNotificationCenter/><Suspense fallback={<CrmSkeleton />}>
       <Routes>

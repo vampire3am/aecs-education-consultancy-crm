@@ -1,10 +1,41 @@
+import { useEffect, useState, type CSSProperties } from "react";
+
 const Block = ({ className = "" }: { className?: string }) => (
   <span className={`crm-skeleton-block ${className}`} aria-hidden="true" />
 );
 
-export function CrmSkeleton() {
+export function CrmSkeleton({ branded = false }: { branded?: boolean }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!branded) return;
+    const startedAt = performance.now();
+    const duration = 1550;
+    let frame = 0;
+    const update = (now: number) => {
+      const next = Math.min(100, Math.round(((now - startedAt) / duration) * 100));
+      setProgress(next);
+      if (next < 100) frame = requestAnimationFrame(update);
+    };
+    frame = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(frame);
+  }, [branded]);
+
   return (
     <div className="crm-skeleton" role="status" aria-live="polite" aria-label="Loading AECS CRM workspace">
+      {branded && (
+        <div
+          className="crm-skeleton-launch"
+          aria-label={`AECS CRM loading ${progress}%`}
+          style={{ "--crm-load-progress": `${progress}%` } as CSSProperties}
+        >
+          <div className="crm-skeleton-launch-wordmark">
+            <strong>AECS CRM</strong>
+            <strong aria-hidden="true">AECS CRM</strong>
+            <span>loading... {progress}%</span>
+          </div>
+        </div>
+      )}
       <aside className="crm-skeleton-sidebar" aria-hidden="true">
         <div className="crm-skeleton-brand"><Block className="crm-skeleton-logo" /><div><Block className="w-56" /><Block className="w-40 small" /></div></div>
         <Block className="w-32 tiny crm-skeleton-section" />

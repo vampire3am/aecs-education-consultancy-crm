@@ -28,6 +28,7 @@ import "./styles/email-workspace.css";
 import "./styles/leads-redesign.css";
 import "./styles/leads-typography.css";
 import "./styles/crm-skeleton.css";
+import "./styles/startup-loader.css";
 import "./styles/metric-indicators.css";
 import "./styles/case-task-panel.css";
 import "./styles/case-task-modal.css";
